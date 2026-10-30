@@ -1,0 +1,21 @@
+
+---
+import Directory from '../layouts/Directory.astro';
+import Topics from '../layouts/Topics.astro';
+import { site } from '../config';
+
+export function getStaticPaths() {
+  return Object.entries(site.pages).map(([slug, page]) => ({
+    params: { section: slug },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props;
+---
+
+{page.type === 'directory' ? (
+  <Directory page={page} />
+) : (
+  <Topics page={page} />
+)}

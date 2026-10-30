@@ -1,0 +1,91 @@
+
+---
+import Layout from '../layouts/Layout.astro';
+import { site } from '../config';
+
+const sections = Object.entries(site.pages).filter(
+  ([, page]) => page.type === 'directory'
+);
+
+const topics = Object.entries(site.pages).filter(
+  ([, page]) => page.type === 'topic'
+);
+---
+
+<Layout>
+  <section class="py-10">
+    <p class="font-mono text-sm text-accent" data-reveal>
+      {site.domain}
+    </p>
+
+    <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl" data-reveal>
+      {site.tagline}
+    </h1>
+
+    <p class="mt-6 max-w-xl text-lg text-muted" data-reveal>
+      {site.home.description}
+    </p>
+  </section>
+
+  <!-- Directories -->
+  <section class="mt-10">
+    <h2 class="text-xl font-semibold tracking-tight" data-reveal>
+      Directories
+    </h2>
+
+    <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {sections.map(([slug, section]) => (
+        <a
+          href={`/${slug}`}
+          data-reveal
+          class="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent/60"
+        >
+          <div class="flex items-center justify-between">
+            <h3 class="font-medium group-hover:text-accent">
+              {section.title}
+            </h3>
+
+            <span class="font-mono text-xs text-muted">
+              {String(section.items.length).padStart(2, '0')}
+            </span>
+          </div>
+
+          <p class="mt-2 text-sm text-muted">
+            {section.description}
+          </p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- Topics -->
+  {topics.length > 0 && (
+    <section class="mt-16">
+      <h2 class="text-xl font-semibold tracking-tight" data-reveal>
+        Topics
+      </h2>
+
+      <p class="mt-2 text-sm text-muted" data-reveal>
+        Guides, collections, and useful information.
+      </p>
+
+      <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {topics.map(([slug, topic]) => (
+          <a
+            href={`/${slug}`}
+            data-reveal
+            class="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent/60"
+          >
+            <h3 class="font-medium group-hover:text-accent">
+              {topic.title}
+            </h3>
+
+            <p class="mt-2 text-sm text-muted">
+              {topic.description}
+            </p>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+</Layout>

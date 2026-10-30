@@ -1,0 +1,539 @@
+
+---
+---
+
+<div class="relative" data-pagefind-ignore>
+  <button
+    id="search-open"
+    type="button"
+    aria-label="Open site search"
+    class="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-accent"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <circle cx="11" cy="11" r="8"></circle>
+      <path d="m21 21-4.35-4.35"></path>
+    </svg>
+
+    <span>Search anything...</span>
+
+    <kbd class="hidden rounded border border-border px-1.5 py-0.5 font-mono text-xs sm:inline">
+      Ctrl K
+    </kbd>
+  </button>
+
+  <div
+    id="search-overlay"
+    class="fixed inset-0 z-[100] hidden items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-sm"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Universal site search"
+  >
+    <div
+      class="w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"
+    >
+      <div class="flex items-center gap-3 border-b border-border px-5">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="shrink-0 text-muted"
+        >
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+
+        <input
+          id="search-input"
+          type="search"
+          placeholder="Search projects, resources, tools..."
+          autocomplete="off"
+          class="min-w-0 flex-1 bg-transparent py-5 text-base text-[var(--color-text)] outline-none placeholder:text-muted"
+        />
+
+        <button
+          id="search-close"
+          type="button"
+          class="rounded-md border border-border px-2 py-1 text-xs text-muted transition hover:text-accent"
+        >
+          ESC
+        </button>
+      </div>
+
+      <div
+        id="search-status"
+        class="px-5 pt-4 text-xs text-muted"
+        aria-live="polite"
+      >
+        Start typing to search the entire website.
+      </div>
+
+      <div
+        id="search-results"
+        class="max-h-[55vh] overflow-y-auto p-3"
+      ></div>
+
+      <div class="flex items-center justify-between border-t border-border px-5 py-3 text-xs text-muted">
+        <span>Enter to open · Esc to close</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  interface SearchItem {
+    url: string;
+    title: string;
+    excerpt: string;
+    content: string;
+  }
+
+  const openButton = document.querySelector<HTMLButtonElement>('#search-open');
+  const closeButton = document.querySelector<HTMLButtonElement>('#search-close');
+  const overlay = document.querySelector<HTMLDivElement>('#search-overlay');
+  const input = document.querySelector<HTMLInputElement>('#search-input');
+  const resultsContainer = document.querySelector<HTMLDivElement>('#search-results');
+  const status = document.querySelector<HTMLDivElement>('#search-status');
+
+  if (
+    openButton &&
+    closeButton &&
+    overlay &&
+    input &&
+    resultsContainer &&
+    status
+  ) {
+    let pagefind: any = null;
+    let devIndex: SearchItem[] | null = null;
+    let activeIndex = -1;
+    let currentResults: HTMLAnchorElement[] = [];
+    let searchCounter = 0;
+    let debounce: ReturnType<typeof setTimeout>;
+
+    // Production: load Pagefind.
+    async function loadSearch() {
+      if (pagefind) return pagefind;
+
+      const url = new URL('/pagefind/pagefind.js', window.location.origin);
+
+      pagefind = await import(/* @vite-ignore */ url.href);
+
+      return pagefind;
+    }
+
+    // Development: crawl the running Astro website.
+    async function buildDevIndex(): Promise<SearchItem[]> {
+      const index: SearchItem[] = [];
+      const visited = new Set<string>();
+      const queue = ['/'];
+
+      const normalize = (url: URL) => {
+        const path = url.pathname.replace(/\/+$/, '') || '/';
+        return path;
+      };
+
+      while (queue.length > 0 && visited.size < 100) {
+        const path = queue.shift()!;
+
+        const url = new URL(path, window.location.origin);
+        const normalizedPath = normalize(url);
+
+        if (visited.has(normalizedPath)) continue;
+        visited.add(normalizedPath);
+
+        try {
+          const response = await fetch(normalizedPath, {
+            headers: { Accept: 'text/html' },
+          });
+
+          if (!response.ok) continue;
+
+          const contentType = response.headers.get('content-type') || '';
+
+          if (!contentType.includes('text/html')) continue;
+
+          const html = await response.text();
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+
+          // Remove non-content elements.
+          doc.querySelectorAll(
+            'script, style, noscript, [data-pagefind-ignore]'
+          ).forEach((element) => element.remove());
+
+          const body = doc.querySelector('main') || doc.body;
+
+          // Index the complete page.
+          const title =
+            doc.querySelector('h1')?.textContent?.trim() ||
+            doc.title ||
+            normalizedPath;
+
+          const content = body.textContent
+            ?.replace(/\s+/g, ' ')
+            .trim() || '';
+
+          if (content.length > 0) {
+            index.push({
+              url: normalizedPath,
+              title,
+              excerpt: content.slice(0, 220),
+              content,
+            });
+          }
+
+          // Index individual directory cards as independent results.
+          doc.querySelectorAll<HTMLAnchorElement>(
+            'a[data-search-item]'
+          ).forEach((card) => {
+            const cardTitle =
+              card.querySelector('h3, h2')?.textContent?.trim() ||
+              card.textContent?.trim() ||
+              'Untitled';
+
+            const cardContent =
+              card.textContent?.replace(/\s+/g, ' ').trim() || '';
+
+            const href = new URL(card.getAttribute('href') || '/', url);
+
+            if (!cardContent) return;
+
+            index.push({
+              url: href.href,
+              title: cardTitle,
+              excerpt: cardContent.slice(0, 220),
+              content: cardContent,
+            });
+          });
+
+          // Discover other internal pages.
+          doc.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((link) => {
+            try {
+              const target = new URL(link.href, url);
+
+              if (target.origin !== window.location.origin) return;
+
+              target.hash = '';
+              target.search = '';
+
+              if (
+                !/\.(xml|json|jpg|jpeg|png|gif|svg|webp|pdf|zip|js|css)$/i.test(
+                  target.pathname
+                ) &&
+                !target.pathname.startsWith('/pagefind/')
+              ) {
+                const targetPath = normalize(target);
+
+                if (!visited.has(targetPath)) {
+                  queue.push(targetPath);
+                }
+              }
+            } catch {
+              // Ignore invalid URLs.
+            }
+          });
+        } catch (error) {
+          console.warn(`Could not index ${normalizedPath}`, error);
+        }
+      }
+
+      return index;
+    }
+
+    function openSearch() {
+      overlay!.classList.remove('hidden');
+      overlay!.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+
+      // Refresh the development index when opening search.
+      if (import.meta.env.DEV) {
+        devIndex = null;
+      }
+
+      requestAnimationFrame(() => input!.focus());
+    }
+
+    function closeSearch() {
+      overlay!.classList.add('hidden');
+      overlay!.classList.remove('flex');
+      document.body.style.overflow = '';
+
+      input!.value = '';
+      resultsContainer!.innerHTML = '';
+      status!.textContent = 'Start typing to search the entire website.';
+
+      currentResults = [];
+      activeIndex = -1;
+    }
+
+    function setActive(index: number) {
+      if (!currentResults.length) return;
+
+      activeIndex = Math.max(
+        0,
+        Math.min(index, currentResults.length - 1)
+      );
+
+      currentResults.forEach((result, i) => {
+        result.classList.toggle('bg-bg', i === activeIndex);
+        result.setAttribute('aria-selected', String(i === activeIndex));
+      });
+
+      currentResults[activeIndex]?.scrollIntoView({
+        block: 'nearest',
+      });
+    }
+
+    function renderResults(results: SearchItem[]) {
+      resultsContainer!.innerHTML = '';
+      currentResults = [];
+      activeIndex = -1;
+
+      for (const result of results) {
+        const link = document.createElement('a');
+
+        const targetUrl = new URL(result.url, window.location.origin);
+        const isExternal = targetUrl.origin !== window.location.origin;
+
+        link.href = result.url;
+
+        link.className =
+          'block rounded-xl p-4 transition hover:bg-bg focus:bg-bg focus:outline-none';
+
+        // Result title and icon wrapper
+        const titleRow = document.createElement('div');
+
+        titleRow.className =
+          'flex items-center justify-between gap-3';
+
+        // Title
+        const title = document.createElement('div');
+
+        title.className =
+          'font-medium text-[var(--color-text)]';
+
+        title.textContent = result.title;
+
+        // Link type icon
+        const icon = document.createElement('span');
+
+        icon.className = `
+          shrink-0 text-lg transition-colors
+          ${isExternal
+            ? 'text-muted group-hover:text-accent'
+            : 'text-muted group-hover:text-accent'}
+        `;
+
+        icon.textContent = isExternal ? '↗' : '→';
+
+        icon.setAttribute(
+          'aria-label',
+          isExternal ? 'External link' : 'Internal link'
+        );
+
+        icon.title = isExternal
+          ? 'External website'
+          : 'Internal page';
+
+        titleRow.append(title, icon);
+
+        // Excerpt
+        const excerpt = document.createElement('p');
+
+        excerpt.className =
+          'mt-1 line-clamp-2 text-sm text-muted';
+
+        excerpt.textContent = result.excerpt;
+
+        link.append(titleRow, excerpt);
+
+        resultsContainer!.appendChild(link);
+
+        currentResults.push(link);
+
+        link.addEventListener('click', () => {
+          closeSearch();
+        });
+      }
+
+      if (currentResults.length) {
+        setActive(0);
+      }
+    }
+
+    async function search(query: string) {
+      const request = ++searchCounter;
+
+      resultsContainer!.innerHTML = '';
+      currentResults = [];
+      activeIndex = -1;
+
+      if (!query.trim()) {
+        status!.textContent = 'Start typing to search the entire website.';
+        return;
+      }
+
+      status!.textContent = import.meta.env.DEV
+        ? 'Searching your website...'
+        : 'Searching...';
+
+      try {
+        let results: SearchItem[];
+
+        if (import.meta.env.DEV) {
+          // Search the live development website.
+          if (!devIndex) {
+            devIndex = await buildDevIndex();
+          }
+
+          if (request !== searchCounter) return;
+
+          const terms = query.toLowerCase().trim().split(/\s+/);
+
+          results = devIndex
+            .map((item) => {
+              const title = item.title.toLowerCase();
+              const content = item.content.toLowerCase();
+
+              const matches = terms.every((term) =>
+                `${title} ${content}`.includes(term)
+              );
+
+              const score =
+                terms.reduce((total, term) => {
+                  return (
+                    total +
+                    (title.includes(term) ? 10 : 0) +
+                    (content.includes(term) ? 1 : 0)
+                  );
+                }, 0);
+
+              return { item, matches, score };
+            })
+            .filter((result) => result.matches)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 12)
+            .map((result) => result.item);
+        } else {
+          // Search the production Pagefind index.
+          const engine = await loadSearch();
+          const response = await engine.search(query);
+
+          if (request !== searchCounter) return;
+
+          const data = await Promise.all(
+            response.results.slice(0, 12).map(
+              async (result: any) => await result.data()
+            )
+          );
+
+          results = data.map((result: any) => ({
+            url: result.url,
+            title: result.meta?.title || 'Untitled page',
+            excerpt: result.excerpt || '',
+            content: result.excerpt || '',
+          }));
+        }
+
+        if (request !== searchCounter) return;
+
+        if (!results.length) {
+          status!.textContent = 'No results found.';
+          return;
+        }
+
+        status!.textContent =
+          `${results.length} results found`;
+
+        renderResults(results);
+      } catch (error) {
+        console.error('Search error:', error);
+        status!.textContent =
+          'Search is unavailable. Check the browser console for details.';
+      }
+    }
+
+    openButton.addEventListener('click', openSearch);
+    closeButton.addEventListener('click', closeSearch);
+
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) closeSearch();
+    });
+
+    input.addEventListener('input', () => {
+      clearTimeout(debounce);
+
+      debounce = setTimeout(() => {
+        search(input!.value);
+      }, 200);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      const shortcut =
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === 'k';
+
+      if (shortcut) {
+        event.preventDefault();
+
+        if (overlay!.classList.contains('hidden')) {
+          openSearch();
+        } else {
+          input!.focus();
+        }
+      }
+
+      if (
+        event.key === '/' &&
+        overlay!.classList.contains('hidden') &&
+        !['INPUT', 'TEXTAREA'].includes(
+          (document.activeElement as HTMLElement)?.tagName
+        )
+      ) {
+        event.preventDefault();
+        openSearch();
+      }
+
+      if (
+        event.key === 'Escape' &&
+        !overlay!.classList.contains('hidden')
+      ) {
+        closeSearch();
+      }
+
+      if (overlay!.classList.contains('hidden')) return;
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActive(activeIndex + 1);
+      }
+
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActive(activeIndex - 1);
+      }
+
+      if (
+        event.key === 'Enter' &&
+        activeIndex >= 0 &&
+        currentResults[activeIndex]
+      ) {
+        currentResults[activeIndex].click();
+      }
+    });
+  }
+</script>

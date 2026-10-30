@@ -1,0 +1,28 @@
+
+---
+import Layout from './Layout.astro';
+import Card from '../components/Card.astro';
+import type { DirectoryPage } from '../config';
+
+interface Props {
+  page: DirectoryPage;
+}
+
+const { page } = Astro.props;
+---
+
+<Layout title={page.title} description={page.description}>
+  <h1 class="text-3xl font-semibold tracking-tight" data-reveal>
+    {page.title}
+  </h1>
+
+  <p class="mt-3 max-w-xl text-muted" data-reveal>
+    {page.description}
+  </p>
+
+  <div class="mt-10 grid gap-4 sm:grid-cols-2">
+    {page.items.map((entry) => (
+      <Card entry={entry} />
+    ))}
+  </div>
+</Layout>

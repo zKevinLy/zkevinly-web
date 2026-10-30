@@ -1,0 +1,190 @@
+
+---
+import Layout from './Layout.astro';
+import type { TopicPage, SitePage } from '../config';
+import { site } from '../config';
+
+interface Props {
+  page: TopicPage;
+}
+
+const { page } = Astro.props;
+
+const segments = Astro.url.pathname.split('/').filter(Boolean);
+
+const breadcrumbs: { title: string; href: string }[] = [];
+
+let current: SitePage | undefined =
+  site.pages[segments[0] as keyof typeof site.pages];
+
+if (current) {
+  breadcrumbs.push({
+    title: current.title,
+    href: `/${segments[0]}`,
+  });
+}
+
+for (const segment of segments.slice(1)) {
+  if (current?.type !== 'topic') break;
+
+  const child = current.children?.find(
+    (item) => item.slug === segment,
+  );
+
+  if (!child) break;
+
+  current = child;
+
+  breadcrumbs.push({
+    title: child.title,
+    href: `/${segments.slice(0, breadcrumbs.length + 1).join('/')}`,
+  });
+}
+
+const currentPath = Astro.url.pathname.replace(/\/$/, '');
+---
+
+<Layout title={page.title} description={page.description}>
+  {breadcrumbs.length > 0 && (
+    <nav aria-label="Breadcrumb" class="mb-8 flex flex-wrap items-center gap-2 text-sm text-muted">
+      <a href="/" class="transition-colors hover:text-accent">
+        Home
+      </a>
+
+      {breadcrumbs.map((crumb, index) => (
+        <>
+          <span>/</span>
+
+          {index === breadcrumbs.length - 1 ? (
+            <span class="text-accent" aria-current="page">
+              {crumb.title}
+            </span>
+          ) : (
+            <a href={crumb.href} class="transition-colors hover:text-accent">
+              {crumb.title}
+            </a>
+          )}
+        </>
+      ))}
+    </nav>
+  )}
+
+  <section class="py-6">
+    <h1 class="text-3xl font-semibold tracking-tight" data-reveal>
+      {page.title}
+    </h1>
+
+    <p class="mt-3 max-w-xl text-muted" data-reveal>
+      {page.introduction ?? page.description}
+    </p>
+  </section>
+
+  {page.children && page.children.length > 0 && (
+    <section class="mt-8" data-reveal>
+      <h2 class="text-xl font-semibold tracking-tight">
+        Explore {page.title}
+      </h2>
+
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        {page.children.map((child) => (
+          <a
+            href={`${currentPath}/${child.slug}`}
+            class="group rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent/60"
+          >
+            <h3 class="font-medium group-hover:text-accent">
+              {child.title}
+            </h3>
+
+            <p class="mt-2 text-sm text-muted">
+              {child.description}
+            </p>
+
+            <span class="mt-4 block font-mono text-xs text-accent">
+              Explore →
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <div class="mt-8 space-y-10">
+    {page.blocks.map((block) => (
+      <section data-reveal>
+        {block.title && (
+          <h2 class="text-xl font-semibold tracking-tight">
+            {block.title}
+          </h2>
+        )}
+
+        {block.type === 'text' && (
+          <p class="mt-3 max-w-2xl text-muted leading-relaxed">
+            {block.content}
+          </p>
+        )}
+
+        {block.type === 'links' && (
+          <>
+            {block.description && (
+              <p class="mt-2 text-sm text-muted">
+                {block.description}
+              </p>
+            )}
+
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+              {block.items.map((item) => (
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="group rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent/60"
+                >
+                  <div class="flex items-center justify-between gap-3">
+                    <h3 class="font-medium group-hover:text-accent">
+                      {item.title}
+                    </h3>
+
+                    {item.label && (
+                      <span class="font-mono text-xs text-accent">
+                        {item.label}
+                      </span>
+                    )}
+                  </div>
+
+                  <p class="mt-2 text-sm text-muted">
+                    {item.description}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </>
+        )}
+
+        {block.type === 'steps' && (
+          <ol class="mt-4 list-decimal space-y-3 pl-5 text-sm text-muted">
+            {block.items.map((item) => (
+              <li class="pl-1 leading-relaxed">{item}</li>
+            ))}
+          </ol>
+        )}
+
+        {block.type === 'image' && (
+          <figure class="mt-4">
+            <img
+              src={block.src}
+              alt={block.alt}
+              loading="lazy"
+              class="w-full rounded-xl border border-border"
+            />
+
+            {block.caption && (
+              <figcaption class="mt-2 text-sm text-muted">
+                {block.caption}
+              </figcaption>
+            )}
+          </figure>
+        )}
+      </section>
+    ))}
+  </div>
+</Layout>

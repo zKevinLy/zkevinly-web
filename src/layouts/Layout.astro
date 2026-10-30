@@ -1,0 +1,54 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { site } from '../config';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description = site.tagline } = Astro.props;
+const fullTitle = title ? `${title} · ${site.name}` : site.name;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <title>{fullTitle}</title>
+    <ClientRouter />
+  </head>
+  <body class="flex flex-col">
+    <Header />
+    <main class="mx-auto w-full max-w-4xl flex-1 px-6 py-12" transition:animate="fade">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      import { gsap } from 'gsap';
+
+      // Runs on first load and after every View Transition navigation.
+      document.addEventListener('astro:page-load', () => {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        gsap.from('[data-reveal]', {
+          y: 16,
+          opacity: 0,
+          duration: 0.6,
+          stagger: 0.06,
+          ease: 'power2.out',
+          clearProps: 'all',
+        });
+      });
+    </script>
+  </body>
+</html>

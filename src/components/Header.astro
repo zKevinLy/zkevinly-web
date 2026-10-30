@@ -1,0 +1,112 @@
+
+---
+import Search from '../components/Search.astro';
+import { site } from '../config';
+
+const nav = Object.entries(site.pages)
+  .filter(([, page]) => page.showInNav === true)
+  .map(([slug, page]) => ({
+    href: `/${slug}`,
+    label: page.title,
+  }));
+
+const path = Astro.url.pathname;
+---
+
+<header
+  class="sticky top-0 z-50 border-b border-border bg-bg/90 backdrop-blur-xl"
+  transition:persist
+>
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
+    <!-- Logo -->
+    <a
+      href="/"
+      class="shrink-0 font-mono text-sm font-bold tracking-tight text-accent transition-opacity hover:opacity-70"
+    >
+      {site.name.toLowerCase()}
+      <span class="ml-1 text-muted">/</span>
+    </a>
+
+    <!-- Desktop Navigation -->
+    <nav class="hidden items-center gap-1 md:flex">
+      {nav.map((item) => {
+        const active =
+          path === item.href ||
+          (item.href !== '/' && path.startsWith(item.href + '/'));
+
+        return (
+          <a
+            href={item.href}
+            data-nav-href={item.href}
+            class:list={[
+              'rounded-lg px-3 py-2 text-sm transition-all duration-200',
+              active
+                ? 'bg-surface text-accent'
+                : 'text-muted hover:bg-surface hover:text-[var(--color-text)]',
+            ]}
+            aria-current={active ? 'page' : undefined}
+          >
+            {item.label}
+          </a>
+        );
+      })}
+    </nav>
+
+    <!-- Search -->
+    <div class="shrink-0">
+      <Search />
+    </div>
+  </div>
+
+  <!-- Mobile Navigation -->
+  <nav class="flex items-center gap-1 overflow-x-auto border-t border-border/60 px-6 py-2 md:hidden">
+    {nav.map((item) => {
+      const active =
+        path === item.href ||
+        (item.href !== '/' && path.startsWith(item.href + '/'));
+
+      return (
+        <a
+          href={item.href}
+          data-nav-href={item.href}
+          class:list={[
+            'shrink-0 rounded-lg px-3 py-2 text-xs transition-colors',
+            active
+              ? 'bg-surface text-accent'
+              : 'text-muted hover:text-[var(--color-text)]',
+          ]}
+          aria-current={active ? 'page' : undefined}
+        >
+          {item.label}
+        </a>
+      );
+    })}
+  </nav>
+</header>
+
+<script>
+  function updateActiveNavigation() {
+    const path = window.location.pathname;
+
+    document.querySelectorAll<HTMLAnchorElement>('[data-nav-href]').forEach((link) => {
+      const href = link.dataset.navHref ?? '';
+
+      const active =
+        path === href ||
+        (href !== '/' && path.startsWith(href + '/'));
+
+      link.classList.toggle('bg-surface', active);
+      link.classList.toggle('text-accent', active);
+      link.classList.toggle('text-muted', !active);
+
+      link.setAttribute('aria-current', active ? 'page' : 'false');
+
+      if (!active) {
+        link.removeAttribute('aria-current');
+      }
+    });
+  }
+
+  document.addEventListener('astro:page-load', updateActiveNavigation);
+  updateActiveNavigation();
+</script>

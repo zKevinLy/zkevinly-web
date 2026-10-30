@@ -1,0 +1,19 @@
+name: Bug report
+description: Something on the site is broken
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you see instead?
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Page URL
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS

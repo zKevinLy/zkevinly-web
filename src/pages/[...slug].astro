@@ -1,0 +1,34 @@
+
+---
+import TopicTemplate from '../layouts/Topics.astro';
+import { site, type TopicPage } from '../config';
+
+export function getStaticPaths() {
+  function getNestedPaths(
+    page: TopicPage,
+    parentPath: string,
+  ) {
+    return (page.children ?? []).flatMap((child) => {
+      const path = `${parentPath}/${child.slug}`;
+
+      return [
+        {
+          params: { slug: path.slice(1) },
+          props: { page: child },
+        },
+        ...getNestedPaths(child, path),
+      ];
+    });
+  }
+
+  return Object.entries(site.pages).flatMap(([slug, page]) => {
+    if (page.type !== 'topic') return [];
+
+    return getNestedPaths(page, `/${slug}`);
+  });
+}
+
+const { page } = Astro.props;
+---
+
+<TopicTemplate page={page} />
