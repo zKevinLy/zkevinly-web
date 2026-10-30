@@ -1,31 +1,47 @@
-
 ---
 import TopicTemplate from '../layouts/Topics.astro';
 import { site, type TopicPage } from '../config';
 
-export function getStaticPaths() {
+interface StaticPath {
+  params: {
+    slug: string;
+  };
+  props: {
+    page: TopicPage;
+  };
+}
+
+export function getStaticPaths(): StaticPath[] {
   function getNestedPaths(
     page: TopicPage,
     parentPath: string,
-  ) {
-    return (page.children ?? []).flatMap((child) => {
-      const path = `${parentPath}/${child.slug}`;
+  ): StaticPath[] {
+    return (page.children ?? []).flatMap(
+      (child): StaticPath[] => {
+        const path = `${parentPath}/${child.slug}`;
 
-      return [
-        {
-          params: { slug: path.slice(1) },
-          props: { page: child },
-        },
-        ...getNestedPaths(child, path),
-      ];
-    });
+        return [
+          {
+            params: { slug: path.slice(1) },
+            props: { page: child },
+          },
+          ...getNestedPaths(child, path),
+        ];
+      },
+    );
   }
 
-  return Object.entries(site.pages).flatMap(([slug, page]) => {
-    if (page.type !== 'topic') return [];
+  return Object.entries(site.pages).flatMap(
+    ([slug, page]): StaticPath[] => {
+      if (page.type !== 'topic') return [];
 
-    return getNestedPaths(page, `/${slug}`);
-  });
+      return getNestedPaths(page, `/${slug}`);
+    },
+  );
+}
+
+interface Props {
+  page: TopicPage;
 }
 
 const { page } = Astro.props;

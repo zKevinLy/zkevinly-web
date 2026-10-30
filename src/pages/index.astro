@@ -1,15 +1,14 @@
-
 ---
 import Layout from '../layouts/Layout.astro';
-import { site } from '../config';
+import { site, type DirectoryPage, type TopicPage } from '../config';
 
 const sections = Object.entries(site.pages).filter(
   ([, page]) => page.type === 'directory'
-);
+) as [string, DirectoryPage][];
 
 const topics = Object.entries(site.pages).filter(
   ([, page]) => page.type === 'topic'
-);
+) as [string, TopicPage][];
 ---
 
 <Layout>

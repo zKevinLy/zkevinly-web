@@ -27,7 +27,7 @@ if (current) {
 for (const segment of segments.slice(1)) {
   if (current?.type !== 'topic') break;
 
-  const child = current.children?.find(
+  const child: TopicPage | undefined = current.children?.find(
     (item) => item.slug === segment,
   );
 

@@ -341,5 +341,5 @@ export const site = {
         },
       ],
     },
-  },
-} satisfies Record<string, SitePage>;
+  } as Record<string, SitePage>,
+};
