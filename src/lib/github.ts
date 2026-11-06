@@ -10,6 +10,13 @@ export interface RepoInfo {
   releaseUrl: string | null;
 }
 
+interface GitHubRelease {
+  tag_name: string;
+  html_url: string;
+  draft?: boolean;
+  prerelease?: boolean;
+}
+
 export type Freshness = 'hot' | 'warm' | 'cold';
 
 const API = 'https://api.github.com';
@@ -33,10 +40,7 @@ export function parseRepo(href: string): string | null {
  * Uses the releases *list* rather than /releases/latest so a repo with no
  * releases answers 200 [] instead of a 404 (which spams the browser console).
  */
-export async function fetchRepoInfo(
-  repo: string,
-  token?: string,
-): Promise<RepoInfo | null> {
+export async function fetchRepoInfo(repo: string, token?: string): Promise<RepoInfo | null> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
   };
@@ -53,7 +57,7 @@ export async function fetchRepoInfo(
     if (!repoRes.ok) return null;
 
     const data = await repoRes.json();
-    const releases: any[] = relRes.ok ? await relRes.json() : [];
+    const releases: GitHubRelease[] = relRes.ok ? await relRes.json() : [];
     const latest = releases.find((r) => !r.draft && !r.prerelease);
 
     return {

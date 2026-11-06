@@ -1,4 +1,3 @@
-
 export interface CopyCommand {
   label?: string;
   command: string;
@@ -155,13 +154,10 @@ export const site = {
       items: [
         {
           title: 'Massgrave',
-          description:
-            'Windows activation scripts, installation resources, and licensing guides.',
+          description: 'Windows activation scripts, installation resources, and licensing guides.',
           href: 'https://github.com/massgravel/Microsoft-Activation-Scripts',
           tags: ['windows', 'activation', 'github'],
-          commands: [
-            { label: 'PowerShell', command: 'irm https://get.activated.win | iex' },
-          ],
+          commands: [{ label: 'PowerShell', command: 'irm https://get.activated.win | iex' }],
         },
         {
           title: 'Chris Titus Tech WinUtil',
@@ -169,9 +165,7 @@ export const site = {
             'Windows utility for system tweaks, debloating, updates, and software installation.',
           href: 'https://github.com/ChrisTitusTech/winutil',
           tags: ['windows', 'utility', 'github'],
-          commands: [
-            { label: 'PowerShell', command: 'irm https://christitus.com/win | iex' },
-          ],
+          commands: [{ label: 'PowerShell', command: 'irm https://christitus.com/win | iex' }],
         },
       ],
     },
@@ -272,8 +266,7 @@ export const site = {
                   items: [
                     {
                       title: 'AIOStreams Configuration',
-                      description:
-                        'Configure stream providers and addon settings.',
+                      description: 'Configure stream providers and addon settings.',
                       href: 'https://aiostreamsfortheweebsstable.midnightignite.me/stremio/configure',
                     },
                   ],
@@ -290,8 +283,7 @@ export const site = {
                 {
                   type: 'text',
                   title: 'About AIOMetadata',
-                  content:
-                    'Configure metadata providers and catalogs for your Nuvio setup.',
+                  content: 'Configure metadata providers and catalogs for your Nuvio setup.',
                 },
                 {
                   type: 'links',
@@ -299,8 +291,7 @@ export const site = {
                   items: [
                     {
                       title: 'AIOMetadata Configuration',
-                      description:
-                        'Configure metadata providers and catalogs.',
+                      description: 'Configure metadata providers and catalogs.',
                       href: 'https://aiometadatafortheweebs.midnightignite.me/configure/',
                     },
                   ],
@@ -319,8 +310,7 @@ export const site = {
             {
               type: 'text',
               title: 'About API Providers',
-              content:
-                'Manage API credentials used by metadata providers and integrations.',
+              content: 'Manage API credentials used by metadata providers and integrations.',
             },
             {
               type: 'links',

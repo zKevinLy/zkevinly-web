@@ -12,32 +12,25 @@ interface StaticPath {
 }
 
 export function getStaticPaths(): StaticPath[] {
-  function getNestedPaths(
-    page: TopicPage,
-    parentPath: string,
-  ): StaticPath[] {
-    return (page.children ?? []).flatMap(
-      (child): StaticPath[] => {
-        const path = `${parentPath}/${child.slug}`;
+  function getNestedPaths(page: TopicPage, parentPath: string): StaticPath[] {
+    return (page.children ?? []).flatMap((child): StaticPath[] => {
+      const path = `${parentPath}/${child.slug}`;
 
-        return [
-          {
-            params: { slug: path.slice(1) },
-            props: { page: child },
-          },
-          ...getNestedPaths(child, path),
-        ];
-      },
-    );
+      return [
+        {
+          params: { slug: path.slice(1) },
+          props: { page: child },
+        },
+        ...getNestedPaths(child, path),
+      ];
+    });
   }
 
-  return Object.entries(site.pages).flatMap(
-    ([slug, page]): StaticPath[] => {
-      if (page.type !== 'topic') return [];
+  return Object.entries(site.pages).flatMap(([slug, page]): StaticPath[] => {
+    if (page.type !== 'topic') return [];
 
-      return getNestedPaths(page, `/${slug}`);
-    },
-  );
+    return getNestedPaths(page, `/${slug}`);
+  });
 }
 
 interface Props {

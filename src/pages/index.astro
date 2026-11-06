@@ -2,13 +2,15 @@
 import Layout from '../layouts/Layout.astro';
 import { site, type DirectoryPage, type TopicPage } from '../config';
 
-const sections = Object.entries(site.pages).filter(
-  ([, page]) => page.type === 'directory'
-) as [string, DirectoryPage][];
+const sections = Object.entries(site.pages).filter(([, page]) => page.type === 'directory') as [
+  string,
+  DirectoryPage,
+][];
 
-const topics = Object.entries(site.pages).filter(
-  ([, page]) => page.type === 'topic'
-) as [string, TopicPage][];
+const topics = Object.entries(site.pages).filter(([, page]) => page.type === 'topic') as [
+  string,
+  TopicPage,
+][];
 ---
 
 <Layout>
@@ -34,24 +36,14 @@ const topics = Object.entries(site.pages).filter(
 
     <div class="grid grid-3">
       {sections.map(([slug, section]) => (
-        <a
-          href={`/${slug}`}
-          data-reveal
-          class="card"
-        >
+        <a href={`/${slug}`} data-reveal class="card">
           <div class="card-head">
-            <h3 class="card-title">
-              {section.title}
-            </h3>
+            <h3 class="card-title">{section.title}</h3>
 
-            <span class="card-meta">
-              {String(section.items.length).padStart(2, '0')}
-            </span>
+            <span class="card-meta">{String(section.items.length).padStart(2, '0')}</span>
           </div>
 
-          <p class="card-desc">
-            {section.description}
-          </p>
+          <p class="card-desc">{section.description}</p>
         </a>
       ))}
     </div>
@@ -70,18 +62,10 @@ const topics = Object.entries(site.pages).filter(
 
       <div class="grid grid-3">
         {topics.map(([slug, topic]) => (
-          <a
-            href={`/${slug}`}
-            data-reveal
-            class="card"
-          >
-            <h3 class="card-title">
-              {topic.title}
-            </h3>
+          <a href={`/${slug}`} data-reveal class="card">
+            <h3 class="card-title">{topic.title}</h3>
 
-            <p class="card-desc">
-              {topic.description}
-            </p>
+            <p class="card-desc">{topic.description}</p>
           </a>
         ))}
       </div>

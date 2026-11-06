@@ -28,6 +28,9 @@ jobs:
 
       - run: npm ci
       - run: npm run build:fast
+        env:
+          # Authenticated GitHub API calls for the card badges (1,000 req/h vs 60).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: lycheeverse/lychee-action@v2
         id: lychee

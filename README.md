@@ -12,13 +12,13 @@ Central site for zkevinly.com: homepage, project directory, resources, tools, ex
 
 ## Where things live
 
-| To change...                              | Edit                          |
-| ----------------------------------------- | ----------------------------- |
-| Name, tagline, nav, GitHub link, About    | `src/config/index.ts`         |
-| Entries on projects/resources/tools/etc.  | `src/config/index.ts`         |
-| Notes (digital garden)                    | `src/content/notes/*.md(x)`   |
-| Colors, fonts, light/dark themes, styling | `public/index.css`            |
-| Page chrome and animations                | `src/layouts/Layout.astro`    |
+| To change...                              | Edit                        |
+| ----------------------------------------- | --------------------------- |
+| Name, tagline, nav, GitHub link, About    | `src/config/index.ts`       |
+| Entries on projects/resources/tools/etc.  | `src/config/index.ts`       |
+| Notes (digital garden)                    | `src/content/notes/*.md(x)` |
+| Colors, fonts, light/dark themes, styling | `public/index.css`          |
+| Page chrome and animations                | `src/layouts/Layout.astro`  |
 
 ## Principles
 

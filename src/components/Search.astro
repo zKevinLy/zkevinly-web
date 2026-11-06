@@ -30,7 +30,9 @@ import { Search } from '@lucide/astro';
         autocomplete="off"
       />
 
-      <button id="search-close" type="button" class="search-esc">ESC</button>
+      <button id="search-close" type="button" class="search-esc">
+        ESC
+      </button>
     </div>
 
     <div id="search-status" class="search-status" aria-live="polite">
@@ -51,6 +53,16 @@ import { Search } from '@lucide/astro';
     content: string;
   }
 
+  interface PagefindResultData {
+    url: string;
+    excerpt?: string;
+    meta?: { title?: string };
+  }
+
+  interface PagefindModule {
+    search(query: string): Promise<{ results: { data(): Promise<PagefindResultData> }[] }>;
+  }
+
   const IDLE_MESSAGE = 'Start typing to search the entire website.';
 
   const openButton = document.querySelector<HTMLButtonElement>('#search-open');
@@ -61,7 +73,7 @@ import { Search } from '@lucide/astro';
   const status = document.querySelector<HTMLDivElement>('#search-status');
 
   if (openButton && closeButton && overlay && input && resultsContainer && status) {
-    let pagefind: any = null;
+    let pagefind: PagefindModule | null = null;
     let devIndex: SearchItem[] | null = null;
     let activeIndex = -1;
     let currentResults: HTMLAnchorElement[] = [];
@@ -71,11 +83,12 @@ import { Search } from '@lucide/astro';
     const isOpen = () => !overlay.hidden;
 
     // Production: load Pagefind.
-    async function loadSearch() {
+    async function loadSearch(): Promise<PagefindModule> {
       if (pagefind) return pagefind;
       const url = new URL('/pagefind/pagefind.js', window.location.origin);
-      pagefind = await import(/* @vite-ignore */ url.href);
-      return pagefind;
+      const loaded: PagefindModule = await import(/* @vite-ignore */ url.href);
+      pagefind = loaded;
+      return loaded;
     }
 
     // Development: crawl the running Astro website.
@@ -113,8 +126,7 @@ import { Search } from '@lucide/astro';
 
           const body = doc.querySelector('main') || doc.body;
 
-          const title =
-            doc.querySelector('h1')?.textContent?.trim() || doc.title || normalizedPath;
+          const title = doc.querySelector('h1')?.textContent?.trim() || doc.title || normalizedPath;
 
           const content = body.textContent?.replace(/\s+/g, ' ').trim() || '';
 
@@ -306,10 +318,10 @@ import { Search } from '@lucide/astro';
           if (request !== searchCounter) return;
 
           const data = await Promise.all(
-            response.results.slice(0, 12).map(async (result: any) => await result.data()),
+            response.results.slice(0, 12).map((result) => result.data()),
           );
 
-          results = data.map((result: any) => ({
+          results = data.map((result) => ({
             url: result.url,
             title: result.meta?.title || 'Untitled page',
             excerpt: result.excerpt || '',

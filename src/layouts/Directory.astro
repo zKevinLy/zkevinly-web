@@ -11,11 +11,17 @@ const { page } = Astro.props;
 ---
 
 <Layout title={page.title} description={page.description}>
-  <h1 class="page-title" data-reveal>{page.title}</h1>
+  <h1 class="page-title" data-reveal>
+    {page.title}
+  </h1>
 
-  <p class="page-lead" data-reveal>{page.description}</p>
+  <p class="page-lead" data-reveal>
+    {page.description}
+  </p>
 
   <div class="grid">
-    {page.items.map((entry) => <Card entry={entry} />)}
+    {page.items.map((entry) => (
+      <Card entry={entry} />
+    ))}
   </div>
 </Layout>

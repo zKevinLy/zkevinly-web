@@ -17,7 +17,8 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
 <header class="topbar" transition:persist>
   <div class="topbar-inner">
     <a href="/" class="brand">
-      {site.name.toLowerCase()}<span>/</span>
+      {site.name.toLowerCase()}
+      <span>/</span>
     </a>
 
     <nav class="nav" aria-label="Primary">
@@ -34,12 +35,7 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
     </nav>
 
     <div class="topbar-actions">
-      <button
-        id="search-open"
-        type="button"
-        class="search-trigger"
-        aria-label="Open site search"
-      >
+      <button id="search-open" type="button" class="search-trigger" aria-label="Open site search">
         <Search size={16} aria-hidden="true" />
         <span class="search-trigger-label">Search anything...</span>
         <kbd>Ctrl K</kbd>
@@ -75,13 +71,7 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
         target="_blank"
         rel="noopener noreferrer"
       >
-        <svg
-          viewBox="0 0 24 24"
-          width="19"
-          height="19"
-          fill="currentColor"
-          aria-hidden="true"
-        >
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true">
           <path d={siGithub.path}></path>
         </svg>
       </a>
@@ -125,15 +115,13 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
 
   function syncToggleLabel() {
     if (!toggle) return;
-    const next =
-      document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
     toggle.setAttribute('aria-label', `Switch to ${next} mode`);
     toggle.dataset.tooltip = next === 'light' ? 'Light mode' : 'Dark mode';
   }
 
   toggle?.addEventListener('click', () => {
-    const next =
-      document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
     document.documentElement.dataset.theme = next;
     try {
       localStorage.setItem('theme', next);

@@ -7,13 +7,19 @@ const { about } = site;
 ---
 
 <Layout title={about.title} description={about.description}>
-  <h1 class="page-title" data-reveal>{about.title}</h1>
+  <h1 class="page-title" data-reveal>
+    {about.title}
+  </h1>
 
-  <p class="page-lead" data-reveal>{about.intro}</p>
+  <p class="page-lead" data-reveal>
+    {about.intro}
+  </p>
 
   <div class="about-body">
     {about.paragraphs.map((text) => (
-      <p class="prose" data-reveal>{text}</p>
+      <p class="prose" data-reveal>
+        {text}
+      </p>
     ))}
   </div>
 

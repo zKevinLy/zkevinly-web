@@ -40,16 +40,16 @@ const showFoot = Boolean(repo || updated);
         {entry.title}
       </a>
     </h3>
-    {entry.status && (
-      <span class:list={['status', `status-${entry.status}`]}>{entry.status}</span>
-    )}
+    {entry.status && <span class:list={['status', `status-${entry.status}`]}>{entry.status}</span>}
   </div>
 
   <p class="card-desc">{entry.description}</p>
 
   {entry.tags && entry.tags.length > 0 && (
     <div class="tags">
-      {entry.tags.map((t) => <span class="tag">{t}</span>)}
+      {entry.tags.map((t) => (
+        <span class="tag">{t}</span>
+      ))}
     </div>
   )}
 
@@ -108,7 +108,11 @@ const showFoot = Boolean(repo || updated);
       >
         <span class="pulse" aria-hidden="true"></span>
         Updated
-        <time datetime={updated} data-relative title={updated ? new Date(updated).toUTCString() : undefined}>
+        <time
+          datetime={updated}
+          data-relative
+          title={updated ? new Date(updated).toUTCString() : undefined}
+        >
           {updated ? relativeTime(updated) : ''}
         </time>
       </span>

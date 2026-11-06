@@ -32,6 +32,9 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm run build # runs astro check + astro build
+        env:
+          # Authenticated GitHub API calls for the card badges (1,000 req/h vs 60).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/upload-artifact@v4
         with:
