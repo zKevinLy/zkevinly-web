@@ -1,6 +1,6 @@
-
 ---
-import Search from '../components/Search.astro';
+import { CircleUserRound, Moon, Search, Sun } from '@lucide/astro';
+import { siGithub } from 'simple-icons';
 import { site } from '../config';
 
 const nav = Object.entries(site.pages)
@@ -10,103 +10,138 @@ const nav = Object.entries(site.pages)
     label: page.title,
   }));
 
-const path = Astro.url.pathname;
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (href: string) => path === href || path.startsWith(href + '/');
 ---
 
-<header
-  class="sticky top-0 z-50 border-b border-border bg-bg/90 backdrop-blur-xl"
-  transition:persist
->
-  <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-    <!-- Logo -->
-    <a
-      href="/"
-      class="shrink-0 font-mono text-sm font-bold tracking-tight text-accent transition-opacity hover:opacity-70"
-    >
-      {site.name.toLowerCase()}
-      <span class="ml-1 text-muted">/</span>
+<header class="topbar" transition:persist>
+  <div class="topbar-inner">
+    <a href="/" class="brand">
+      {site.name.toLowerCase()}<span>/</span>
     </a>
 
-    <!-- Desktop Navigation -->
-    <nav class="hidden items-center gap-1 md:flex">
-      {nav.map((item) => {
-        const active =
-          path === item.href ||
-          (item.href !== '/' && path.startsWith(item.href + '/'));
-
-        return (
-          <a
-            href={item.href}
-            data-nav-href={item.href}
-            class:list={[
-              'rounded-lg px-3 py-2 text-sm transition-all duration-200',
-              active
-                ? 'bg-surface text-accent'
-                : 'text-muted hover:bg-surface hover:text-[var(--color-text)]',
-            ]}
-            aria-current={active ? 'page' : undefined}
-          >
-            {item.label}
-          </a>
-        );
-      })}
-    </nav>
-
-    <!-- Search -->
-    <div class="shrink-0">
-      <Search />
-    </div>
-  </div>
-
-  <!-- Mobile Navigation -->
-  <nav class="flex items-center gap-1 overflow-x-auto border-t border-border/60 px-6 py-2 md:hidden">
-    {nav.map((item) => {
-      const active =
-        path === item.href ||
-        (item.href !== '/' && path.startsWith(item.href + '/'));
-
-      return (
+    <nav class="nav" aria-label="Primary">
+      {nav.map((item) => (
         <a
           href={item.href}
           data-nav-href={item.href}
-          class:list={[
-            'shrink-0 rounded-lg px-3 py-2 text-xs transition-colors',
-            active
-              ? 'bg-surface text-accent'
-              : 'text-muted hover:text-[var(--color-text)]',
-          ]}
-          aria-current={active ? 'page' : undefined}
+          class="nav-link"
+          aria-current={isActive(item.href) ? 'page' : undefined}
         >
           {item.label}
         </a>
-      );
-    })}
+      ))}
+    </nav>
+
+    <div class="topbar-actions">
+      <button
+        id="search-open"
+        type="button"
+        class="search-trigger"
+        aria-label="Open site search"
+      >
+        <Search size={16} aria-hidden="true" />
+        <span class="search-trigger-label">Search anything...</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+
+      <button
+        id="theme-toggle"
+        type="button"
+        class="icon-btn"
+        aria-label="Switch to light mode"
+        data-tooltip="Light mode"
+      >
+        <Sun class="theme-icon-sun" size={19} aria-hidden="true" />
+        <Moon class="theme-icon-moon" size={19} aria-hidden="true" />
+      </button>
+
+      <a
+        href="/about"
+        class="icon-btn"
+        data-nav-href="/about"
+        data-tooltip="About me"
+        aria-label="About me"
+        aria-current={isActive('/about') ? 'page' : undefined}
+      >
+        <CircleUserRound size={19} aria-hidden="true" />
+      </a>
+
+      <a
+        href={site.github}
+        class="icon-btn"
+        data-tooltip="GitHub"
+        aria-label="GitHub"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="19"
+          height="19"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d={siGithub.path}></path>
+        </svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- Mobile navigation -->
+  <nav class="nav-mobile" aria-label="Primary (mobile)">
+    {nav.map((item) => (
+      <a
+        href={item.href}
+        data-nav-href={item.href}
+        class="nav-link"
+        aria-current={isActive(item.href) ? 'page' : undefined}
+      >
+        {item.label}
+      </a>
+    ))}
   </nav>
 </header>
 
 <script>
+  // --- Active link highlighting (header persists across navigations) ---
   function updateActiveNavigation() {
-    const path = window.location.pathname;
+    const path = window.location.pathname.replace(/\/$/, '') || '/';
 
-    document.querySelectorAll<HTMLAnchorElement>('[data-nav-href]').forEach((link) => {
+    document.querySelectorAll<HTMLElement>('[data-nav-href]').forEach((link) => {
       const href = link.dataset.navHref ?? '';
+      const active = path === href || path.startsWith(href + '/');
 
-      const active =
-        path === href ||
-        (href !== '/' && path.startsWith(href + '/'));
-
-      link.classList.toggle('bg-surface', active);
-      link.classList.toggle('text-accent', active);
-      link.classList.toggle('text-muted', !active);
-
-      link.setAttribute('aria-current', active ? 'page' : 'false');
-
-      if (!active) {
-        link.removeAttribute('aria-current');
-      }
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
     });
   }
 
   document.addEventListener('astro:page-load', updateActiveNavigation);
   updateActiveNavigation();
+
+  // --- Theme toggle (dark by default, remembered in localStorage) ---
+  const toggle = document.querySelector<HTMLButtonElement>('#theme-toggle');
+
+  function syncToggleLabel() {
+    if (!toggle) return;
+    const next =
+      document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    toggle.setAttribute('aria-label', `Switch to ${next} mode`);
+    toggle.dataset.tooltip = next === 'light' ? 'Light mode' : 'Dark mode';
+  }
+
+  toggle?.addEventListener('click', () => {
+    const next =
+      document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next;
+    try {
+      localStorage.setItem('theme', next);
+    } catch {
+      // Storage unavailable (private mode); the choice just won't persist.
+    }
+    syncToggleLabel();
+  });
+
+  syncToggleLabel();
 </script>

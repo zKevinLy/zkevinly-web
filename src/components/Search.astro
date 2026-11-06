@@ -1,97 +1,45 @@
-
 ---
+import { Search } from '@lucide/astro';
 ---
 
-<div class="relative" data-pagefind-ignore>
-  <button
-    id="search-open"
-    type="button"
-    aria-label="Open site search"
-    class="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted transition hover:border-accent/60 hover:text-accent"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    >
-      <circle cx="11" cy="11" r="8"></circle>
-      <path d="m21 21-4.35-4.35"></path>
-    </svg>
+<!--
+  Search overlay. Rendered directly under <body> (see Layout.astro), NOT inside
+  the header: the header uses backdrop-filter, which turns it into the containing
+  block for `position: fixed` children and made this overlay only cover the bar.
+  The trigger button (#search-open) lives in Header.astro.
+-->
+<div
+  id="search-overlay"
+  class="search-overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Universal site search"
+  data-pagefind-ignore
+  transition:persist="search-overlay"
+  hidden
+>
+  <div class="search-panel">
+    <div class="search-field">
+      <Search size={20} aria-hidden="true" />
 
-    <span>Search anything...</span>
+      <input
+        id="search-input"
+        class="search-input"
+        type="search"
+        placeholder="Search projects, resources, tools..."
+        autocomplete="off"
+      />
 
-    <kbd class="hidden rounded border border-border px-1.5 py-0.5 font-mono text-xs sm:inline">
-      Ctrl K
-    </kbd>
-  </button>
-
-  <div
-    id="search-overlay"
-    class="fixed inset-0 z-[100] hidden items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-sm"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Universal site search"
-  >
-    <div
-      class="w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl"
-    >
-      <div class="flex items-center gap-3 border-b border-border px-5">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="shrink-0 text-muted"
-        >
-          <circle cx="11" cy="11" r="8"></circle>
-          <path d="m21 21-4.35-4.35"></path>
-        </svg>
-
-        <input
-          id="search-input"
-          type="search"
-          placeholder="Search projects, resources, tools..."
-          autocomplete="off"
-          class="min-w-0 flex-1 bg-transparent py-5 text-base text-[var(--color-text)] outline-none placeholder:text-muted"
-        />
-
-        <button
-          id="search-close"
-          type="button"
-          class="rounded-md border border-border px-2 py-1 text-xs text-muted transition hover:text-accent"
-        >
-          ESC
-        </button>
-      </div>
-
-      <div
-        id="search-status"
-        class="px-5 pt-4 text-xs text-muted"
-        aria-live="polite"
-      >
-        Start typing to search the entire website.
-      </div>
-
-      <div
-        id="search-results"
-        class="max-h-[55vh] overflow-y-auto p-3"
-      ></div>
-
-      <div class="flex items-center justify-between border-t border-border px-5 py-3 text-xs text-muted">
-        <span>Enter to open · Esc to close</span>
-      </div>
+      <button id="search-close" type="button" class="search-esc">ESC</button>
     </div>
+
+    <div id="search-status" class="search-status" aria-live="polite">
+      Start typing to search the entire website.
+    </div>
+
+    <div id="search-results" class="search-results"></div>
+
+    <div class="search-foot">Enter to open · Esc to close</div>
   </div>
 </div>
 
@@ -103,6 +51,8 @@
     content: string;
   }
 
+  const IDLE_MESSAGE = 'Start typing to search the entire website.';
+
   const openButton = document.querySelector<HTMLButtonElement>('#search-open');
   const closeButton = document.querySelector<HTMLButtonElement>('#search-close');
   const overlay = document.querySelector<HTMLDivElement>('#search-overlay');
@@ -110,14 +60,7 @@
   const resultsContainer = document.querySelector<HTMLDivElement>('#search-results');
   const status = document.querySelector<HTMLDivElement>('#search-status');
 
-  if (
-    openButton &&
-    closeButton &&
-    overlay &&
-    input &&
-    resultsContainer &&
-    status
-  ) {
+  if (openButton && closeButton && overlay && input && resultsContainer && status) {
     let pagefind: any = null;
     let devIndex: SearchItem[] | null = null;
     let activeIndex = -1;
@@ -125,14 +68,13 @@
     let searchCounter = 0;
     let debounce: ReturnType<typeof setTimeout>;
 
+    const isOpen = () => !overlay.hidden;
+
     // Production: load Pagefind.
     async function loadSearch() {
       if (pagefind) return pagefind;
-
       const url = new URL('/pagefind/pagefind.js', window.location.origin);
-
       pagefind = await import(/* @vite-ignore */ url.href);
-
       return pagefind;
     }
 
@@ -142,10 +84,7 @@
       const visited = new Set<string>();
       const queue = ['/'];
 
-      const normalize = (url: URL) => {
-        const path = url.pathname.replace(/\/+$/, '') || '/';
-        return path;
-      };
+      const normalize = (url: URL) => url.pathname.replace(/\/+$/, '') || '/';
 
       while (queue.length > 0 && visited.size < 100) {
         const path = queue.shift()!;
@@ -162,30 +101,22 @@
           });
 
           if (!response.ok) continue;
-
-          const contentType = response.headers.get('content-type') || '';
-
-          if (!contentType.includes('text/html')) continue;
+          if (!(response.headers.get('content-type') || '').includes('text/html')) continue;
 
           const html = await response.text();
           const doc = new DOMParser().parseFromString(html, 'text/html');
 
           // Remove non-content elements.
-          doc.querySelectorAll(
-            'script, style, noscript, [data-pagefind-ignore]'
-          ).forEach((element) => element.remove());
+          doc
+            .querySelectorAll('script, style, noscript, [data-pagefind-ignore]')
+            .forEach((element) => element.remove());
 
           const body = doc.querySelector('main') || doc.body;
 
-          // Index the complete page.
           const title =
-            doc.querySelector('h1')?.textContent?.trim() ||
-            doc.title ||
-            normalizedPath;
+            doc.querySelector('h1')?.textContent?.trim() || doc.title || normalizedPath;
 
-          const content = body.textContent
-            ?.replace(/\s+/g, ' ')
-            .trim() || '';
+          const content = body.textContent?.replace(/\s+/g, ' ').trim() || '';
 
           if (content.length > 0) {
             index.push({
@@ -197,18 +128,15 @@
           }
 
           // Index individual directory cards as independent results.
-          doc.querySelectorAll<HTMLAnchorElement>(
-            'a[data-search-item]'
-          ).forEach((card) => {
+          doc.querySelectorAll<HTMLElement>('[data-search-item]').forEach((card) => {
             const cardTitle =
               card.querySelector('h3, h2')?.textContent?.trim() ||
               card.textContent?.trim() ||
               'Untitled';
 
-            const cardContent =
-              card.textContent?.replace(/\s+/g, ' ').trim() || '';
-
-            const href = new URL(card.getAttribute('href') || '/', url);
+            const cardContent = card.textContent?.replace(/\s+/g, ' ').trim() || '';
+            const anchor = card.matches('a[href]') ? card : card.querySelector('a[href]');
+            const href = new URL(anchor?.getAttribute('href') || '/', url);
 
             if (!cardContent) return;
 
@@ -223,7 +151,7 @@
           // Discover other internal pages.
           doc.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((link) => {
             try {
-              const target = new URL(link.href, url);
+              const target = new URL(link.getAttribute('href') || '', url);
 
               if (target.origin !== window.location.origin) return;
 
@@ -231,16 +159,11 @@
               target.search = '';
 
               if (
-                !/\.(xml|json|jpg|jpeg|png|gif|svg|webp|pdf|zip|js|css)$/i.test(
-                  target.pathname
-                ) &&
+                !/\.(xml|json|jpg|jpeg|png|gif|svg|webp|pdf|zip|js|css)$/i.test(target.pathname) &&
                 !target.pathname.startsWith('/pagefind/')
               ) {
                 const targetPath = normalize(target);
-
-                if (!visited.has(targetPath)) {
-                  queue.push(targetPath);
-                }
+                if (!visited.has(targetPath)) queue.push(targetPath);
               }
             } catch {
               // Ignore invalid URLs.
@@ -255,26 +178,22 @@
     }
 
     function openSearch() {
-      overlay!.classList.remove('hidden');
-      overlay!.classList.add('flex');
+      overlay!.hidden = false;
       document.body.style.overflow = 'hidden';
 
       // Refresh the development index when opening search.
-      if (import.meta.env.DEV) {
-        devIndex = null;
-      }
+      if (import.meta.env.DEV) devIndex = null;
 
       requestAnimationFrame(() => input!.focus());
     }
 
     function closeSearch() {
-      overlay!.classList.add('hidden');
-      overlay!.classList.remove('flex');
+      overlay!.hidden = true;
       document.body.style.overflow = '';
 
       input!.value = '';
       resultsContainer!.innerHTML = '';
-      status!.textContent = 'Start typing to search the entire website.';
+      status!.textContent = IDLE_MESSAGE;
 
       currentResults = [];
       activeIndex = -1;
@@ -283,19 +202,14 @@
     function setActive(index: number) {
       if (!currentResults.length) return;
 
-      activeIndex = Math.max(
-        0,
-        Math.min(index, currentResults.length - 1)
-      );
+      activeIndex = Math.max(0, Math.min(index, currentResults.length - 1));
 
       currentResults.forEach((result, i) => {
-        result.classList.toggle('bg-bg', i === activeIndex);
+        result.classList.toggle('is-active', i === activeIndex);
         result.setAttribute('aria-selected', String(i === activeIndex));
       });
 
-      currentResults[activeIndex]?.scrollIntoView({
-        block: 'nearest',
-      });
+      currentResults[activeIndex]?.scrollIntoView({ block: 'nearest' });
     }
 
     function renderResults(results: SearchItem[]) {
@@ -304,75 +218,40 @@
       activeIndex = -1;
 
       for (const result of results) {
-        const link = document.createElement('a');
-
         const targetUrl = new URL(result.url, window.location.origin);
         const isExternal = targetUrl.origin !== window.location.origin;
 
+        const link = document.createElement('a');
         link.href = result.url;
+        link.className = 'search-result';
 
-        link.className =
-          'block rounded-xl p-4 transition hover:bg-bg focus:bg-bg focus:outline-none';
+        const row = document.createElement('div');
+        row.className = 'search-result-row';
 
-        // Result title and icon wrapper
-        const titleRow = document.createElement('div');
-
-        titleRow.className =
-          'flex items-center justify-between gap-3';
-
-        // Title
         const title = document.createElement('div');
-
-        title.className =
-          'font-medium text-[var(--color-text)]';
-
+        title.className = 'search-result-title';
         title.textContent = result.title;
 
-        // Link type icon
-        const icon = document.createElement('span');
+        const arrow = document.createElement('span');
+        arrow.className = 'search-result-arrow';
+        arrow.textContent = isExternal ? '↗' : '→';
+        arrow.title = isExternal ? 'External website' : 'Internal page';
+        arrow.setAttribute('aria-label', isExternal ? 'External link' : 'Internal link');
 
-        icon.className = `
-          shrink-0 text-lg transition-colors
-          ${isExternal
-            ? 'text-muted group-hover:text-accent'
-            : 'text-muted group-hover:text-accent'}
-        `;
+        row.append(title, arrow);
 
-        icon.textContent = isExternal ? '↗' : '→';
-
-        icon.setAttribute(
-          'aria-label',
-          isExternal ? 'External link' : 'Internal link'
-        );
-
-        icon.title = isExternal
-          ? 'External website'
-          : 'Internal page';
-
-        titleRow.append(title, icon);
-
-        // Excerpt
         const excerpt = document.createElement('p');
-
-        excerpt.className =
-          'mt-1 line-clamp-2 text-sm text-muted';
-
+        excerpt.className = 'search-result-excerpt';
         excerpt.textContent = result.excerpt;
 
-        link.append(titleRow, excerpt);
-
+        link.append(row, excerpt);
         resultsContainer!.appendChild(link);
-
         currentResults.push(link);
 
-        link.addEventListener('click', () => {
-          closeSearch();
-        });
+        link.addEventListener('click', closeSearch);
       }
 
-      if (currentResults.length) {
-        setActive(0);
-      }
+      if (currentResults.length) setActive(0);
     }
 
     async function search(query: string) {
@@ -383,22 +262,18 @@
       activeIndex = -1;
 
       if (!query.trim()) {
-        status!.textContent = 'Start typing to search the entire website.';
+        status!.textContent = IDLE_MESSAGE;
         return;
       }
 
-      status!.textContent = import.meta.env.DEV
-        ? 'Searching your website...'
-        : 'Searching...';
+      status!.textContent = import.meta.env.DEV ? 'Searching your website...' : 'Searching...';
 
       try {
         let results: SearchItem[];
 
         if (import.meta.env.DEV) {
           // Search the live development website.
-          if (!devIndex) {
-            devIndex = await buildDevIndex();
-          }
+          if (!devIndex) devIndex = await buildDevIndex();
 
           if (request !== searchCounter) return;
 
@@ -409,18 +284,13 @@
               const title = item.title.toLowerCase();
               const content = item.content.toLowerCase();
 
-              const matches = terms.every((term) =>
-                `${title} ${content}`.includes(term)
-              );
+              const matches = terms.every((term) => `${title} ${content}`.includes(term));
 
-              const score =
-                terms.reduce((total, term) => {
-                  return (
-                    total +
-                    (title.includes(term) ? 10 : 0) +
-                    (content.includes(term) ? 1 : 0)
-                  );
-                }, 0);
+              const score = terms.reduce(
+                (total, term) =>
+                  total + (title.includes(term) ? 10 : 0) + (content.includes(term) ? 1 : 0),
+                0,
+              );
 
               return { item, matches, score };
             })
@@ -436,9 +306,7 @@
           if (request !== searchCounter) return;
 
           const data = await Promise.all(
-            response.results.slice(0, 12).map(
-              async (result: any) => await result.data()
-            )
+            response.results.slice(0, 12).map(async (result: any) => await result.data()),
           );
 
           results = data.map((result: any) => ({
@@ -456,83 +324,60 @@
           return;
         }
 
-        status!.textContent =
-          `${results.length} results found`;
-
+        status!.textContent = `${results.length} results found`;
         renderResults(results);
       } catch (error) {
         console.error('Search error:', error);
-        status!.textContent =
-          'Search is unavailable. Check the browser console for details.';
+        status!.textContent = 'Search is unavailable. Check the browser console for details.';
       }
     }
 
     openButton.addEventListener('click', openSearch);
     closeButton.addEventListener('click', closeSearch);
 
+    // The overlay now covers the whole viewport, so a click anywhere outside
+    // the panel hits the overlay itself and closes it.
     overlay.addEventListener('click', (event) => {
       if (event.target === overlay) closeSearch();
     });
 
     input.addEventListener('input', () => {
       clearTimeout(debounce);
-
-      debounce = setTimeout(() => {
-        search(input!.value);
-      }, 200);
+      debounce = setTimeout(() => search(input!.value), 200);
     });
 
     document.addEventListener('keydown', (event) => {
-      const shortcut =
-        (event.ctrlKey || event.metaKey) &&
-        event.key.toLowerCase() === 'k';
+      const shortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k';
 
       if (shortcut) {
         event.preventDefault();
-
-        if (overlay!.classList.contains('hidden')) {
-          openSearch();
-        } else {
-          input!.focus();
-        }
+        if (isOpen()) input!.focus();
+        else openSearch();
+        return;
       }
 
       if (
         event.key === '/' &&
-        overlay!.classList.contains('hidden') &&
-        !['INPUT', 'TEXTAREA'].includes(
-          (document.activeElement as HTMLElement)?.tagName
-        )
+        !isOpen() &&
+        !['INPUT', 'TEXTAREA'].includes((document.activeElement as HTMLElement)?.tagName)
       ) {
         event.preventDefault();
         openSearch();
+        return;
       }
 
-      if (
-        event.key === 'Escape' &&
-        !overlay!.classList.contains('hidden')
-      ) {
+      if (!isOpen()) return;
+
+      if (event.key === 'Escape') {
         closeSearch();
-      }
-
-      if (overlay!.classList.contains('hidden')) return;
-
-      if (event.key === 'ArrowDown') {
+      } else if (event.key === 'ArrowDown') {
         event.preventDefault();
         setActive(activeIndex + 1);
-      }
-
-      if (event.key === 'ArrowUp') {
+      } else if (event.key === 'ArrowUp') {
         event.preventDefault();
         setActive(activeIndex - 1);
-      }
-
-      if (
-        event.key === 'Enter' &&
-        activeIndex >= 0 &&
-        currentResults[activeIndex]
-      ) {
-        currentResults[activeIndex].click();
+      } else if (event.key === 'Enter' && activeIndex >= 0) {
+        currentResults[activeIndex]?.click();
       }
     });
   }

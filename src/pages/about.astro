@@ -1,0 +1,28 @@
+---
+import { siGithub } from 'simple-icons';
+import Layout from '../layouts/Layout.astro';
+import { site } from '../config';
+
+const { about } = site;
+---
+
+<Layout title={about.title} description={about.description}>
+  <h1 class="page-title" data-reveal>{about.title}</h1>
+
+  <p class="page-lead" data-reveal>{about.intro}</p>
+
+  <div class="about-body">
+    {about.paragraphs.map((text) => (
+      <p class="prose" data-reveal>{text}</p>
+    ))}
+  </div>
+
+  <div class="about-links" data-reveal>
+    <a href={site.github} class="btn" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+        <path d={siGithub.path}></path>
+      </svg>
+      GitHub
+    </a>
+  </div>
+</Layout>

@@ -12,44 +12,44 @@ const topics = Object.entries(site.pages).filter(
 ---
 
 <Layout>
-  <section class="py-10">
-    <p class="font-mono text-sm text-accent" data-reveal>
+  <section class="hero">
+    <p class="hero-eyebrow" data-reveal>
       {site.domain}
     </p>
 
-    <h1 class="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl" data-reveal>
+    <h1 class="hero-title" data-reveal>
       {site.tagline}
     </h1>
 
-    <p class="mt-6 max-w-xl text-lg text-muted" data-reveal>
+    <p class="hero-lead" data-reveal>
       {site.home.description}
     </p>
   </section>
 
   <!-- Directories -->
-  <section class="mt-10">
-    <h2 class="text-xl font-semibold tracking-tight" data-reveal>
+  <section class="home-section">
+    <h2 class="section-title" data-reveal>
       Directories
     </h2>
 
-    <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-3">
       {sections.map(([slug, section]) => (
         <a
           href={`/${slug}`}
           data-reveal
-          class="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent/60"
+          class="card"
         >
-          <div class="flex items-center justify-between">
-            <h3 class="font-medium group-hover:text-accent">
+          <div class="card-head">
+            <h3 class="card-title">
               {section.title}
             </h3>
 
-            <span class="font-mono text-xs text-muted">
+            <span class="card-meta">
               {String(section.items.length).padStart(2, '0')}
             </span>
           </div>
 
-          <p class="mt-2 text-sm text-muted">
+          <p class="card-desc">
             {section.description}
           </p>
         </a>
@@ -59,27 +59,27 @@ const topics = Object.entries(site.pages).filter(
 
   <!-- Topics -->
   {topics.length > 0 && (
-    <section class="mt-16">
-      <h2 class="text-xl font-semibold tracking-tight" data-reveal>
+    <section class="home-section">
+      <h2 class="section-title" data-reveal>
         Topics
       </h2>
 
-      <p class="mt-2 text-sm text-muted" data-reveal>
+      <p class="section-note" data-reveal>
         Guides, collections, and useful information.
       </p>
 
-      <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid grid-3">
         {topics.map(([slug, topic]) => (
           <a
             href={`/${slug}`}
             data-reveal
-            class="group rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent/60"
+            class="card"
           >
-            <h3 class="font-medium group-hover:text-accent">
+            <h3 class="card-title">
               {topic.title}
             </h3>
 
-            <p class="mt-2 text-sm text-muted">
+            <p class="card-desc">
               {topic.description}
             </p>
           </a>

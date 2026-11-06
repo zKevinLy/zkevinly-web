@@ -46,8 +46,8 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '');
 
 <Layout title={page.title} description={page.description}>
   {breadcrumbs.length > 0 && (
-    <nav aria-label="Breadcrumb" class="mb-8 flex flex-wrap items-center gap-2 text-sm text-muted">
-      <a href="/" class="transition-colors hover:text-accent">
+    <nav aria-label="Breadcrumb" class="breadcrumb">
+      <a href="/">
         Home
       </a>
 
@@ -56,11 +56,11 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '');
           <span>/</span>
 
           {index === breadcrumbs.length - 1 ? (
-            <span class="text-accent" aria-current="page">
+            <span aria-current="page">
               {crumb.title}
             </span>
           ) : (
-            <a href={crumb.href} class="transition-colors hover:text-accent">
+            <a href={crumb.href}>
               {crumb.title}
             </a>
           )}
@@ -69,37 +69,37 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '');
     </nav>
   )}
 
-  <section class="py-6">
-    <h1 class="text-3xl font-semibold tracking-tight" data-reveal>
+  <section class="topic-head">
+    <h1 class="page-title" data-reveal>
       {page.title}
     </h1>
 
-    <p class="mt-3 max-w-xl text-muted" data-reveal>
+    <p class="page-lead" data-reveal>
       {page.introduction ?? page.description}
     </p>
   </section>
 
   {page.children && page.children.length > 0 && (
-    <section class="mt-8" data-reveal>
-      <h2 class="text-xl font-semibold tracking-tight">
+    <section class="topic-section" data-reveal>
+      <h2 class="section-title">
         Explore {page.title}
       </h2>
 
-      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+      <div class="grid grid-tight">
         {page.children.map((child) => (
           <a
             href={`${currentPath}/${child.slug}`}
-            class="group rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent/60"
+            class="card card-compact"
           >
-            <h3 class="font-medium group-hover:text-accent">
+            <h3 class="card-title">
               {child.title}
             </h3>
 
-            <p class="mt-2 text-sm text-muted">
+            <p class="card-desc">
               {child.description}
             </p>
 
-            <span class="mt-4 block font-mono text-xs text-accent">
+            <span class="card-cta">
               Explore →
             </span>
           </a>
@@ -108,17 +108,17 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '');
     </section>
   )}
 
-  <div class="mt-8 space-y-10">
+  <div class="topic-blocks">
     {page.blocks.map((block) => (
       <section data-reveal>
         {block.title && (
-          <h2 class="text-xl font-semibold tracking-tight">
+          <h2 class="section-title">
             {block.title}
           </h2>
         )}
 
         {block.type === 'text' && (
-          <p class="mt-3 max-w-2xl text-muted leading-relaxed">
+          <p class="prose">
             {block.content}
           </p>
         )}
@@ -126,32 +126,32 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '');
         {block.type === 'links' && (
           <>
             {block.description && (
-              <p class="mt-2 text-sm text-muted">
+              <p class="section-note">
                 {block.description}
               </p>
             )}
 
-            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <div class="grid grid-tight">
               {block.items.map((item) => (
                 <a
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="group rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent/60"
+                  class="card card-compact"
                 >
-                  <div class="flex items-center justify-between gap-3">
-                    <h3 class="font-medium group-hover:text-accent">
+                  <div class="card-head">
+                    <h3 class="card-title">
                       {item.title}
                     </h3>
 
                     {item.label && (
-                      <span class="font-mono text-xs text-accent">
+                      <span class="card-label">
                         {item.label}
                       </span>
                     )}
                   </div>
 
-                  <p class="mt-2 text-sm text-muted">
+                  <p class="card-desc">
                     {item.description}
                   </p>
                 </a>
@@ -161,24 +161,23 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '');
         )}
 
         {block.type === 'steps' && (
-          <ol class="mt-4 list-decimal space-y-3 pl-5 text-sm text-muted">
+          <ol class="steps">
             {block.items.map((item) => (
-              <li class="pl-1 leading-relaxed">{item}</li>
+              <li>{item}</li>
             ))}
           </ol>
         )}
 
         {block.type === 'image' && (
-          <figure class="mt-4">
+          <figure class="figure">
             <img
               src={block.src}
               alt={block.alt}
               loading="lazy"
-              class="w-full rounded-xl border border-border"
             />
 
             {block.caption && (
-              <figcaption class="mt-2 text-sm text-muted">
+              <figcaption>
                 {block.caption}
               </figcaption>
             )}

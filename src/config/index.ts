@@ -1,10 +1,25 @@
 
+export interface CopyCommand {
+  label?: string;
+  command: string;
+}
+
 export interface Entry {
   title: string;
   description: string;
   href: string;
   tags?: string[];
   status?: 'live' | 'wip' | 'archived';
+  /**
+   * GitHub repo ("owner/name") used for the version badge, stars and
+   * "last updated". Inferred automatically from `href` when it points at
+   * github.com; set to `false` to opt out.
+   */
+  repo?: string | false;
+  /** Click-to-copy commands shown on the card. */
+  commands?: CopyCommand[];
+  /** Manual "last updated" (ISO date) for entries that aren't on GitHub. */
+  updated?: string;
 }
 
 interface BasePage {
@@ -73,6 +88,17 @@ export const site = {
 
   github: 'https://github.com/zKevinLy',
 
+  // Shown on /about (the account icon in the top bar). Edit freely.
+  about: {
+    title: 'About',
+    description: 'A little about me and this site.',
+    intro: 'Hi, I’m Kevin. I build software and collect things worth sharing.',
+    paragraphs: [
+      'This site is my front door: a place for the projects I build, the resources I rely on, and the corners of the internet I find interesting.',
+      'Everything here is a work in progress. Projects live in their own repos; this is where they all get linked together.',
+    ],
+  },
+
   pages: {
     projects: {
       type: 'directory',
@@ -133,6 +159,9 @@ export const site = {
             'Windows activation scripts, installation resources, and licensing guides.',
           href: 'https://github.com/massgravel/Microsoft-Activation-Scripts',
           tags: ['windows', 'activation', 'github'],
+          commands: [
+            { label: 'PowerShell', command: 'irm https://get.activated.win | iex' },
+          ],
         },
         {
           title: 'Chris Titus Tech WinUtil',
@@ -140,6 +169,9 @@ export const site = {
             'Windows utility for system tweaks, debloating, updates, and software installation.',
           href: 'https://github.com/ChrisTitusTech/winutil',
           tags: ['windows', 'utility', 'github'],
+          commands: [
+            { label: 'PowerShell', command: 'irm https://christitus.com/win | iex' },
+          ],
         },
       ],
     },
