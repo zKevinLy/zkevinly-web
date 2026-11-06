@@ -1,0 +1,10 @@
+# Cloudflare Worker that serves the static Astro build (dist/) as assets.
+# The custom domain is attached in the Cloudflare dashboard (Workers & Pages ->
+# this Worker -> Settings -> Domains & Routes), not here.
+name = "zkevinly-web"
+compatibility_date = "2026-11-01"
+
+[assets]
+directory = "./dist"
+# Unknown URLs get dist/404.html with a real 404 status.
+not_found_handling = "404-page"

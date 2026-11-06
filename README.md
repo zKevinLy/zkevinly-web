@@ -45,8 +45,10 @@ Data is fetched at build time and refreshed in the browser (cached 1 hour).
 
 ## Releases
 
-Every push to `main` that passes CI creates a GitHub Release and a matching `vX.Y.Z` tag, with
-generated release notes and the built site attached as a zip. The tag is the version of record
+Every push to `main` that passes CI is deployed to Cloudflare Workers (`wrangler.toml`, using the
+`CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` secrets in the `prod` environment), then tagged:
+a GitHub Release and a matching `vX.Y.Z` tag are created, with generated release notes and the
+built site attached as a zip. A failed deploy means no tag. The tag is the version of record
 (`package.json` is only the starting point before the first tag). If a push contains several
 commits, the highest applicable bump wins. Releases follow
 [Conventional Commits](https://www.conventionalcommits.org/):

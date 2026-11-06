@@ -17,6 +17,7 @@
     "build": "astro check && astro build && pagefind --site dist",
     "build:fast": "astro build && pagefind --site dist",
     "preview": "astro preview",
+    "deploy": "wrangler deploy",
     "start": "astro preview --host 0.0.0.0 --port 4321",
     "prod": "npm ci && npm run build && npm run start",
     "clean": "rm -rf dist .astro",
@@ -45,7 +46,8 @@
     "prettier": "^3.9.10",
     "prettier-plugin-astro": "^1.1.2",
     "typescript-eslint": "^8.72.1",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "wrangler": "^4.158.0"
   },
   "overrides": {
     "@typescript-eslint/typescript-estree": {
