@@ -1,5 +1,5 @@
 ---
-import { Check, Copy, Star, Tag } from '@lucide/astro';
+import { Check, Copy, ExternalLink, Star, Tag } from '@lucide/astro';
 import type { Entry } from '../config';
 import { fetchRepoInfo, freshness, parseRepo, relativeTime } from '../lib/github';
 
@@ -29,6 +29,18 @@ const showFoot = Boolean(repo || updated);
   data-search-item
   data-repo={repo ?? undefined}
 >
+  {external && (
+    <a
+      class="card-external-link"
+      href={entry.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Open ${entry.title} externally`}
+      title="Open external link"
+    >
+      <ExternalLink size={16} aria-hidden="true" />
+    </a>
+  )}
   <div class="card-head">
     <h3 class="card-title">
       <a
@@ -40,7 +52,6 @@ const showFoot = Boolean(repo || updated);
         {entry.title}
       </a>
     </h3>
-    {entry.status && <span class:list={['status', `status-${entry.status}`]}>{entry.status}</span>}
   </div>
 
   <p class="card-desc">{entry.description}</p>

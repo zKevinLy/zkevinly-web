@@ -43,11 +43,9 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '');
 <Layout title={page.title} description={page.description}>
   {breadcrumbs.length > 0 && (
     <nav aria-label="Breadcrumb" class="breadcrumb">
-      <a href="/">Home</a>
-
       {breadcrumbs.map((crumb, index) => (
         <>
-          <span>/</span>
+          {index > 0 && <span>/</span>}
 
           {index === breadcrumbs.length - 1 ? (
             <span aria-current="page">{crumb.title}</span>

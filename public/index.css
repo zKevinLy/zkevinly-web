@@ -538,24 +538,6 @@ kbd {
   color: var(--accent);
 }
 
-.status {
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-}
-
-.status-live {
-  color: var(--accent);
-}
-
-.status-wip {
-  color: var(--warn);
-}
-
-.status-archived {
-  color: var(--muted);
-}
-
 .tags {
   display: flex;
   flex-wrap: wrap;
@@ -611,17 +593,6 @@ kbd {
 
 .card-rich .card-title {
   min-width: 0;
-}
-
-.status-live::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 0.35rem;
-  border-radius: 50%;
-  background: currentColor;
-  vertical-align: 0.05em;
 }
 
 /* Footer: version · stars · updated */
@@ -1110,4 +1081,25 @@ a.badge-link:hover {
   border-top: 1px solid var(--border);
   font-size: 0.75rem;
   color: var(--muted);
+}
+
+.card-rich {
+  position: relative;
+}
+
+.card-external-link {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.65;
+  transition: color 150ms ease, opacity 150ms ease;
+}
+
+.card-external-link:hover {
+  color: var(--accent);
+  opacity: 1;
 }
