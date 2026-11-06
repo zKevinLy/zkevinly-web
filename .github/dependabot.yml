@@ -17,8 +17,6 @@ updates:
     groups:
       astro:
         patterns: ['astro', '@astrojs/*']
-      tailwind:
-        patterns: ['tailwindcss', '@tailwindcss/*']
       lint-and-format:
         patterns:
           - 'eslint'

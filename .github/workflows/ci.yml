@@ -41,3 +41,50 @@ jobs:
           name: dist
           path: dist
           retention-days: 7
+
+  release:
+    name: Release
+    # Every push to main that passes the checks above gets a tagged release.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Serialise releases so two quick pushes can't compute the same tag.
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    permissions:
+      contents: write # create the tag + release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + tags are needed to pick the bump
+          fetch-tags: true
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Determine next version
+        id: version
+        run: echo "tag=$(bash .github/scripts/next-version.sh "$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
+
+      - run: npm ci
+
+      - name: Build site with version
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          PUBLIC_APP_VERSION: ${{ steps.version.outputs.tag }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '{"version":"%s"}\n' "$TAG" > public/version.json
+          npm run build:fast
+          (cd dist && zip -qr "../zkevinly-web-$TAG.zip" .)
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: gh release create "$TAG" "zkevinly-web-$TAG.zip" --target "$GITHUB_SHA" --title "$TAG" --generate-notes

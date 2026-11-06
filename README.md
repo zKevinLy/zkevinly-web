@@ -42,3 +42,24 @@ Data is fetched at build time and refreshed in the browser (cached 1 hour).
 - Non-GitHub entries can set `updated: '2026-01-31'` for a manual "last updated".
 - Set `GITHUB_TOKEN` in the build environment to avoid GitHub's 60 requests/hour
   unauthenticated limit (in GitHub Actions: `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`).
+
+## Releases
+
+Every push to `main` that passes CI creates a GitHub Release and a matching `vX.Y.Z` tag, with
+generated release notes and the built site attached as a zip. The tag is the version of record
+(`package.json` is only the starting point before the first tag). If a push contains several
+commits, the highest applicable bump wins. Releases follow
+[Conventional Commits](https://www.conventionalcommits.org/):
+
+| Commit message                                                    | Effect                             |
+| ----------------------------------------------------------------- | ---------------------------------- |
+| `feat: add dark mode`                                             | minor bump                         |
+| `feat!: rework the layout` or a `BREAKING CHANGE:` footer         | major bump, including before 1.0.0 |
+| Any other commit, including `fix:`, `deps:`, `chore:` and `docs:` | patch bump                         |
+
+When squash-merging a PR, the PR title becomes the commit message, so write it as
+`feat: ...` / `feat!: ...` to trigger a minor / major release.
+
+The deployed build is stamped with its version (shown on the About page and in `/version.json`).
+The logic lives in `.github/scripts/next-version.sh` and can be run locally to preview the next tag:
+`bash .github/scripts/next-version.sh`.

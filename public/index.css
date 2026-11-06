@@ -958,6 +958,17 @@ a.badge-link:hover {
   color: var(--accent);
 }
 
+.about-version {
+  margin-top: 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.about-version span {
+  color: var(--accent);
+}
+
 /* ---------- Search overlay ---------- */
 /* Lives directly under <body> (NOT inside the header) so `position: fixed`
    is relative to the viewport. The header uses backdrop-filter, which would
