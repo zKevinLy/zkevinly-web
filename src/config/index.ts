@@ -150,8 +150,7 @@ export const site = {
         },
         {
           title: 'Microsoft Activation Scripts | Massgravel',
-          description:
-            'Windows activation scripts, installation resources, and licensing guides.',
+          description: 'Windows activation scripts, installation resources, and licensing guides.',
           href: 'https://github.com/massgravel/Microsoft-Activation-Scripts',
           tags: ['windows', 'activation', 'github'],
           commands: [
@@ -184,8 +183,7 @@ export const site = {
       type: 'topic',
       slug: 'collections',
       title: 'Collections',
-      description:
-        'My hand-picked favorites: the best things I’ve found and actually use.',
+      description: 'My hand-picked favorites: the best things I’ve found and actually use.',
       showInNav: true,
       introduction:
         'Unlike Resources, which is a broad reference list, everything here is something I’ve personally chosen as one of the best in its category, or simply a favorite to use.',
@@ -204,8 +202,7 @@ export const site = {
           type: 'topic',
           slug: 'nuvio',
           title: 'Nuvio',
-          description:
-            'My pick for the best media app, with configuration and setup guides.',
+          description: 'My pick for the best media app, with configuration and setup guides.',
           introduction:
             'A central collection of Nuvio-related resources, addon configurations, metadata providers, and integrations.',
 
@@ -305,8 +302,7 @@ export const site = {
                       items: [
                         {
                           title: 'AIOStreams Configuration',
-                          description:
-                            'Configure stream providers and addon settings.',
+                          description: 'Configure stream providers and addon settings.',
                           href: 'https://aiostreamsfortheweebsstable.midnightignite.me/stremio/configure',
                         },
                       ],
@@ -323,8 +319,7 @@ export const site = {
                     {
                       type: 'text',
                       title: 'About AIOMetadata',
-                      content:
-                        'Configure metadata providers and catalogs for your Nuvio setup.',
+                      content: 'Configure metadata providers and catalogs for your Nuvio setup.',
                     },
                     {
                       type: 'links',
@@ -332,8 +327,7 @@ export const site = {
                       items: [
                         {
                           title: 'AIOMetadata Configuration',
-                          description:
-                            'Configure metadata providers and catalogs.',
+                          description: 'Configure metadata providers and catalogs.',
                           href: 'https://aiometadatafortheweebs.midnightignite.me/configure/',
                         },
                       ],
@@ -352,8 +346,7 @@ export const site = {
                 {
                   type: 'text',
                   title: 'About API Providers',
-                  content:
-                    'Manage API credentials used by metadata providers and integrations.',
+                  content: 'Manage API credentials used by metadata providers and integrations.',
                 },
                 {
                   type: 'links',
@@ -366,8 +359,7 @@ export const site = {
                     },
                     {
                       title: 'TheTVDB',
-                      description:
-                        'API information and developer access.',
+                      description: 'API information and developer access.',
                       href: 'https://thetvdb.com/api-information',
                     },
                   ],
@@ -398,8 +390,7 @@ export const site = {
                     },
                     {
                       title: 'All-in-One Nuvio',
-                      description:
-                        'D3adlyRocket community provider manifest.',
+                      description: 'D3adlyRocket community provider manifest.',
                       href: 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json',
                     },
                   ],
