@@ -1,0 +1,17 @@
+---
+/** BASE: Section — optional title + note above arbitrary content. */
+interface Props {
+  title?: string;
+  note?: string;
+  reveal?: boolean;
+  class?: string;
+}
+
+const { title, note, reveal = true, class: className } = Astro.props;
+---
+
+<section class={className} data-reveal={reveal ? '' : undefined}>
+  {title && <h2 class="section-title">{title}</h2>}
+  {note && <p class="section-note">{note}</p>}
+  <slot />
+</section>

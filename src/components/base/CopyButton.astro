@@ -1,0 +1,118 @@
+---
+/**
+ * BASE: CopyButton — click to copy `text` to the clipboard.
+ *
+ * One delegated click handler serves every button on every page (it survives
+ * ClientRouter page swaps). Never write copy logic anywhere else; use this.
+ *
+ * If the browser or an extension refuses the clipboard write (e.g. uBlock
+ * Origin's ClickFix protection on `irm … | iex` commands), the button does NOT
+ * claim success. It selects the text inside the nearest `[data-copy-root]` /
+ * `[data-copy-source]` so the person can press Ctrl/Cmd+C themselves.
+ */
+import { Check, Copy } from '@lucide/astro';
+
+interface Props {
+  text: string;
+  label?: string;
+  class?: string;
+}
+
+const { text, label = 'Copy', class: className } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={['copy-btn', className]}
+  data-copy={text}
+  data-copy-label={label}
+  aria-label={`${label}: ${text}`}
+>
+  <Copy class="copy-btn-icon-copy" size={14} aria-hidden="true" />
+  <Check class="copy-btn-icon-done" size={14} aria-hidden="true" />
+  <span class="copy-btn-text" aria-live="polite">
+    {label}
+  </span>
+</button>
+
+<script>
+  /** Resolves true only if the browser reports the write succeeded. */
+  async function writeClipboard(text: string): Promise<boolean> {
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        // Permission denied / blocked: fall through to the legacy path.
+      }
+    }
+
+    // Legacy path for non-secure contexts and older browsers.
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+
+    try {
+      return document.execCommand('copy');
+    } catch {
+      return false;
+    } finally {
+      area.remove();
+    }
+  }
+
+  /** Selects the visible text so Ctrl/Cmd+C works when scripted copy is refused. */
+  function selectForManualCopy(button: HTMLElement) {
+    const source = button
+      .closest('[data-copy-root]')
+      ?.querySelector<HTMLElement>('[data-copy-source]');
+    if (!source) return;
+
+    const range = document.createRange();
+    range.selectNodeContents(source);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+
+  type State = 'copied' | 'manual';
+  const STATE_TEXT: Record<State, string> = { copied: 'Copied!', manual: 'Press Ctrl+C' };
+  const resetTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+
+  function showState(button: HTMLElement, state: State) {
+    const text = button.querySelector('.copy-btn-text');
+    button.classList.toggle('is-copied', state === 'copied');
+    button.classList.toggle('is-manual', state === 'manual');
+    if (text) text.textContent = STATE_TEXT[state];
+
+    clearTimeout(resetTimers.get(button));
+    resetTimers.set(
+      button,
+      setTimeout(
+        () => {
+          button.classList.remove('is-copied', 'is-manual');
+          if (text) text.textContent = button.dataset.copyLabel ?? 'Copy';
+        },
+        state === 'copied' ? 1800 : 4000,
+      ),
+    );
+  }
+
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as Element).closest<HTMLElement>('[data-copy]');
+    if (!button) return;
+
+    const ok = await writeClipboard(button.dataset.copy ?? '');
+
+    if (ok) {
+      showState(button, 'copied');
+    } else {
+      selectForManualCopy(button);
+      showState(button, 'manual');
+    }
+  });
+</script>

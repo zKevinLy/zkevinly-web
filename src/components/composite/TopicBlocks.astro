@@ -1,0 +1,36 @@
+---
+/** COMPOSITE: renders a topic page's content blocks using the base components. */
+import Section from '../base/Section.astro';
+import Prose from '../base/Prose.astro';
+import Grid from '../base/Grid.astro';
+import Steps from '../base/Steps.astro';
+import Figure from '../base/Figure.astro';
+import LinkCard from './LinkCard.astro';
+import type { TopicBlock } from '../../config';
+
+interface Props {
+  blocks: TopicBlock[];
+}
+
+const { blocks } = Astro.props;
+---
+
+<div class="topic-blocks">
+  {blocks.map((block) => (
+    <Section title={block.title} note={block.type === 'links' ? block.description : undefined}>
+      {block.type === 'text' && <Prose>{block.content}</Prose>}
+
+      {block.type === 'links' && (
+        <Grid tight>
+          {block.items.map((link) => (
+            <LinkCard link={link} />
+          ))}
+        </Grid>
+      )}
+
+      {block.type === 'steps' && <Steps items={block.items} />}
+
+      {block.type === 'image' && <Figure src={block.src} alt={block.alt} caption={block.caption} />}
+    </Section>
+  ))}
+</div>

@@ -1,0 +1,18 @@
+---
+/** BASE: Button — text link styled as a button. Icon goes in the default slot before the text. */
+interface Props {
+  href: string;
+  external?: boolean;
+}
+
+const { href, external = false } = Astro.props;
+---
+
+<a
+  class="btn"
+  href={href}
+  target={external ? '_blank' : undefined}
+  rel={external ? 'noopener noreferrer' : undefined}
+>
+  <slot />
+</a>

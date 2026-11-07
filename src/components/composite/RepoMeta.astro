@@ -1,0 +1,126 @@
+---
+/**
+ * COMPOSITE: card footer for a GitHub-backed entry — latest release, stars and
+ * "updated" (bases: Badge, Freshness).
+ *
+ * Data is baked in at build time so the footer is complete without JS; the
+ * browser then refreshes it (cached 1h in localStorage). Set GITHUB_TOKEN at
+ * build time to avoid GitHub's 60 requests/hour unauthenticated limit.
+ *
+ * Without a `repo` it falls back to a manual `updated` date, or renders nothing.
+ */
+import { Star, Tag } from '@lucide/astro';
+import Badge from '../base/Badge.astro';
+import Freshness from '../base/Freshness.astro';
+import { fetchRepoInfo } from '../../lib/github';
+
+interface Props {
+  /** "owner/name". */
+  repo?: string | null;
+  /** Manual ISO date for entries that aren't on GitHub. */
+  updated?: string;
+}
+
+const { repo, updated: manualUpdated } = Astro.props;
+
+const info = repo ? await fetchRepoInfo(repo, import.meta.env.GITHUB_TOKEN) : null;
+const updated = info?.pushedAt ?? manualUpdated;
+---
+
+{(repo || updated) && (
+  <div class="card-foot" data-repo={repo ?? undefined}>
+    {repo && (
+      <Badge
+        as="a"
+        href={info?.releaseUrl ?? undefined}
+        external
+        data-role="version"
+        title="Latest release"
+        hidden={!info?.version}
+      >
+        <Tag size={12} aria-hidden="true" />
+        <span data-role="version-text">{info?.version}</span>
+      </Badge>
+    )}
+
+    {repo && (
+      <Badge data-role="stars" title="GitHub stars" hidden={!info}>
+        <Star size={12} aria-hidden="true" />
+        <span data-role="stars-text">{info?.stars.toLocaleString('en-US')}</span>
+      </Badge>
+    )}
+
+    <Freshness date={updated} />
+  </div>
+)}
+
+<script>
+  import { fetchRepoInfo, freshness, relativeTime, type RepoInfo } from '../../lib/github';
+
+  const TTL = 60 * 60 * 1000;
+
+  async function getInfo(repo: string): Promise<RepoInfo | null> {
+    const key = `gh:${repo}`;
+
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const cached = JSON.parse(raw) as { t: number; info: RepoInfo };
+        if (Date.now() - cached.t < TTL) return cached.info;
+      }
+    } catch {
+      // Ignore unreadable cache.
+    }
+
+    const info = await fetchRepoInfo(repo);
+
+    if (info) {
+      try {
+        localStorage.setItem(key, JSON.stringify({ t: Date.now(), info }));
+      } catch {
+        // Storage full/unavailable — fine, just refetch next time.
+      }
+    }
+
+    return info; // null (rate-limited/offline) => keep the build-time values.
+  }
+
+  function applyInfo(foot: HTMLElement, info: RepoInfo) {
+    const version = foot.querySelector<HTMLAnchorElement>('[data-role="version"]');
+    const versionText = foot.querySelector('[data-role="version-text"]');
+    if (version && versionText) {
+      version.hidden = !info.version;
+      if (info.version) {
+        versionText.textContent = info.version;
+        if (info.releaseUrl) version.href = info.releaseUrl;
+      }
+    }
+
+    const stars = foot.querySelector<HTMLElement>('[data-role="stars"]');
+    const starsText = foot.querySelector('[data-role="stars-text"]');
+    if (stars && starsText) {
+      stars.hidden = false;
+      starsText.textContent = info.stars.toLocaleString('en-US');
+    }
+
+    const updated = foot.querySelector<HTMLElement>('[data-role="updated"]');
+    const time = updated?.querySelector('time');
+    if (updated && time && info.pushedAt) {
+      updated.hidden = false;
+      time.setAttribute('datetime', info.pushedAt);
+      time.title = new Date(info.pushedAt).toUTCString();
+      time.textContent = relativeTime(info.pushedAt);
+      updated.dataset.fresh = freshness(info.pushedAt);
+    }
+  }
+
+  document.addEventListener('astro:page-load', async () => {
+    const foots = document.querySelectorAll<HTMLElement>('[data-repo]');
+    await Promise.all(
+      Array.from(foots).map(async (foot) => {
+        const info = await getInfo(foot.dataset.repo!);
+        if (info) applyInfo(foot, info);
+      }),
+    );
+  });
+</script>

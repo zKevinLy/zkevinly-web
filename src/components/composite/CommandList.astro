@@ -1,0 +1,19 @@
+---
+/** COMPOSITE: a stack of CommandBlocks. Renders nothing when empty. */
+import CommandBlock from './CommandBlock.astro';
+import type { CopyCommand } from '../../config';
+
+interface Props {
+  commands?: CopyCommand[];
+}
+
+const { commands = [] } = Astro.props;
+---
+
+{commands.length > 0 && (
+  <div class="cmds">
+    {commands.map((command) => (
+      <CommandBlock command={command} />
+    ))}
+  </div>
+)}

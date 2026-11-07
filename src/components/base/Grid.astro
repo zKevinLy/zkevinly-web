@@ -1,0 +1,12 @@
+---
+/** BASE: Grid — responsive 1 → 2 column grid for cards. */
+interface Props {
+  tight?: boolean;
+}
+
+const { tight = false } = Astro.props;
+---
+
+<div class:list={['grid', tight && 'grid-tight']}>
+  <slot />
+</div>

@@ -1,0 +1,13 @@
+---
+/** BASE: NavLink — top-level navigation link. `data-nav-href` lets Header's script keep it highlighted across page swaps. */
+interface Props {
+  href: string;
+  current?: boolean;
+}
+
+const { href, current = false } = Astro.props;
+---
+
+<a {href} class="nav-link" data-nav-href={href} aria-current={current ? 'page' : undefined}>
+  <slot />
+</a>

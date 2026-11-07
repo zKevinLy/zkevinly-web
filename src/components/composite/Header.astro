@@ -1,17 +1,14 @@
 ---
 import { CircleUserRound, Moon, Search, Sun } from '@lucide/astro';
 import { siGithub } from 'simple-icons';
-import { site } from '../config';
+import IconButton from '../base/IconButton.astro';
+import NavLink from '../base/NavLink.astro';
+import { site } from '../../config';
+import { getNavItems, isActivePath } from '../../lib/navigation';
 
-const nav = Object.entries(site.pages)
-  .filter(([, page]) => page.showInNav === true)
-  .map(([slug, page]) => ({
-    href: `/${slug}`,
-    label: page.title,
-  }));
-
-const path = Astro.url.pathname.replace(/\/$/, '') || '/';
-const isActive = (href: string) => path === href || path.startsWith(href + '/');
+const nav = getNavItems();
+const pathname = Astro.url.pathname;
+const isActive = (href: string) => isActivePath(pathname, href);
 ---
 
 <header class="topbar" transition:persist>
@@ -23,14 +20,9 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
 
     <nav class="nav" aria-label="Primary">
       {nav.map((item) => (
-        <a
-          href={item.href}
-          data-nav-href={item.href}
-          class="nav-link"
-          aria-current={isActive(item.href) ? 'page' : undefined}
-        >
+        <NavLink href={item.href} current={isActive(item.href)}>
           {item.label}
-        </a>
+        </NavLink>
       ))}
     </nav>
 
@@ -41,66 +33,42 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
         <kbd>Ctrl K</kbd>
       </button>
 
-      <button
-        id="theme-toggle"
-        type="button"
-        class="icon-btn"
-        aria-label="Switch to light mode"
-        data-tooltip="Light mode"
-      >
+      <IconButton id="theme-toggle" label="Switch to light mode" tooltip="Light mode">
         <Sun class="theme-icon-sun" size={19} aria-hidden="true" />
         <Moon class="theme-icon-moon" size={19} aria-hidden="true" />
-      </button>
+      </IconButton>
 
-      <a
-        href="/about"
-        class="icon-btn"
-        data-nav-href="/about"
-        data-tooltip="About me"
-        aria-label="About me"
-        aria-current={isActive('/about') ? 'page' : undefined}
-      >
+      <IconButton href="/about" navHref="/about" label="About me" current={isActive('/about')}>
         <CircleUserRound size={19} aria-hidden="true" />
-      </a>
+      </IconButton>
 
-      <a
-        href={site.github}
-        class="icon-btn"
-        data-tooltip="GitHub"
-        aria-label="GitHub"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <IconButton href={site.github} label="GitHub" external>
         <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true">
           <path d={siGithub.path}></path>
         </svg>
-      </a>
+      </IconButton>
     </div>
   </div>
 
   <!-- Mobile navigation -->
   <nav class="nav-mobile" aria-label="Primary (mobile)">
     {nav.map((item) => (
-      <a
-        href={item.href}
-        data-nav-href={item.href}
-        class="nav-link"
-        aria-current={isActive(item.href) ? 'page' : undefined}
-      >
+      <NavLink href={item.href} current={isActive(item.href)}>
         {item.label}
-      </a>
+      </NavLink>
     ))}
   </nav>
 </header>
 
 <script>
+  import { isActivePath } from '../../lib/navigation';
+
   // --- Active link highlighting (header persists across navigations) ---
   function updateActiveNavigation() {
-    const path = window.location.pathname.replace(/\/$/, '') || '/';
+    const path = window.location.pathname;
 
     document.querySelectorAll<HTMLElement>('[data-nav-href]').forEach((link) => {
-      const href = link.dataset.navHref ?? '';
-      const active = path === href || path.startsWith(href + '/');
+      const active = isActivePath(path, link.dataset.navHref ?? '');
 
       if (active) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');

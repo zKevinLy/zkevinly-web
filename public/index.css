@@ -438,9 +438,6 @@ kbd {
   color: var(--muted);
 }
 
-.home-section {
-  margin-top: 3rem;
-}
 
 /* ---------- Cards ---------- */
 
@@ -454,16 +451,9 @@ kbd {
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .grid-3 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (min-width: 1024px) {
-  .grid-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 .grid-tight {
@@ -471,7 +461,9 @@ kbd {
 }
 
 .card {
-  display: block;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 1.25rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -487,9 +479,6 @@ kbd {
   background: var(--surface-hover);
 }
 
-.card:active {
-  transform: scale(0.99);
-}
 
 .card-compact {
   padding: 1rem;
@@ -503,6 +492,7 @@ kbd {
 }
 
 .card-title {
+  min-width: 0;
   font-size: 1rem;
   font-weight: 500;
   transition: color 150ms ease;
@@ -518,10 +508,19 @@ kbd {
   color: var(--muted);
 }
 
-.card-meta {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+
+/* Top-right cluster in a card head: label + external-link icon. */
+.card-aside {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--muted);
+  transition: color 150ms ease;
+}
+
+.card:hover .card-aside {
+  color: var(--accent);
 }
 
 .card-label {
@@ -554,24 +553,21 @@ kbd {
   color: var(--muted);
 }
 
-/* ---------- Rich cards (directory entries) ---------- */
+/* ---------- Interactive cards ---------- */
 
 /* The title link stretches over the whole card, so the card is clickable while
    badges / copy buttons (z-index 2) stay independently clickable. */
 
-.card-rich {
-  position: relative;
-  display: flex;
-  flex-direction: column;
+.card-interactive {
   cursor: pointer;
 }
 
-.card-rich:hover {
+.card-interactive:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
-.card-rich:active {
+.card-interactive:active {
   transform: translateY(0) scale(0.995);
 }
 
@@ -589,10 +585,6 @@ kbd {
 .card-link:focus-visible::after {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-
-.card-rich .card-title {
-  min-width: 0;
 }
 
 /* Footer: version · stars · updated */
@@ -778,7 +770,7 @@ a.badge-link:hover {
   user-select: none;
 }
 
-.cmd-copy {
+.copy-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -795,21 +787,26 @@ a.badge-link:hover {
     color 150ms ease;
 }
 
-.cmd-copy:hover {
+.copy-btn:hover {
   background: var(--surface-hover);
   color: var(--text);
 }
 
-.cmd-copy .cmd-icon-done,
-.cmd-copy.is-copied .cmd-icon-copy {
+.copy-btn .copy-btn-icon-done,
+.copy-btn.is-copied .copy-btn-icon-copy {
   display: none;
 }
 
-.cmd-copy.is-copied {
+.copy-btn.is-copied {
   color: var(--accent);
 }
 
-.cmd-copy.is-copied .cmd-icon-done {
+/* Scripted copy was refused (e.g. by an extension): text is selected, user presses Ctrl+C. */
+.copy-btn.is-manual {
+  color: var(--warn);
+}
+
+.copy-btn.is-copied .copy-btn-icon-done {
   display: block;
 }
 
@@ -1081,27 +1078,4 @@ a.badge-link:hover {
   border-top: 1px solid var(--border);
   font-size: 0.75rem;
   color: var(--muted);
-}
-
-.card-rich {
-  position: relative;
-}
-
-.card-external-link {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  opacity: 0.65;
-  transition:
-    color 150ms ease,
-    opacity 150ms ease;
-}
-
-.card-external-link:hover {
-  color: var(--accent);
-  opacity: 1;
 }

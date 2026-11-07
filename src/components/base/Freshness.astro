@@ -1,0 +1,45 @@
+---
+/**
+ * BASE: Freshness — "● Updated 3 days ago" with a heartbeat dot that pulses
+ * when the date is recent. The relative time is refreshed in the browser so it
+ * stays honest while the tab is open.
+ */
+import { freshness, relativeTime } from '../../lib/github';
+
+interface Props {
+  /** ISO date. When missing the component renders hidden, ready to be filled in. */
+  date?: string;
+  label?: string;
+}
+
+const { date, label = 'Updated' } = Astro.props;
+---
+
+<span
+  class="updated"
+  data-role="updated"
+  data-fresh={date ? freshness(date) : undefined}
+  hidden={!date}
+>
+  <span class="pulse" aria-hidden="true"></span>
+  {label}
+  <time datetime={date} data-relative title={date ? new Date(date).toUTCString() : undefined}>
+    {date ? relativeTime(date) : ''}
+  </time>
+</span>
+
+<script>
+  import { freshness, relativeTime } from '../../lib/github';
+
+  function refreshTimes() {
+    document.querySelectorAll<HTMLTimeElement>('time[data-relative]').forEach((el) => {
+      const iso = el.getAttribute('datetime');
+      if (!iso) return;
+      el.textContent = relativeTime(iso);
+      el.closest<HTMLElement>('[data-fresh]')?.setAttribute('data-fresh', freshness(iso));
+    });
+  }
+
+  document.addEventListener('astro:page-load', refreshTimes);
+  setInterval(refreshTimes, 60_000);
+</script>

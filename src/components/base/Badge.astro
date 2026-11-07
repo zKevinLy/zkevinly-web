@@ -1,0 +1,37 @@
+---
+/**
+ * BASE: Badge — a small mono pill. Renders as a link when `href` is given.
+ * Pass an icon through the default slot alongside the text.
+ *
+ * Extra attributes (data-*, hidden, title…) are forwarded, which lets
+ * composites such as RepoMeta update a badge from client script.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'span'> {
+  href?: string;
+  /** Force an <a> even without an href yet (client script may fill it in later). */
+  as?: 'a' | 'span';
+  /** Opens in a new tab when the link is external. */
+  external?: boolean;
+}
+
+const { href, as, external = false, class: className, ...attrs } = Astro.props;
+const isLink = as ? as === 'a' : href !== undefined;
+---
+
+{isLink ? (
+  <a
+    class:list={['badge', 'badge-link', className]}
+    href={href}
+    target={external ? '_blank' : undefined}
+    rel={external ? 'noopener noreferrer' : undefined}
+    {...attrs}
+  >
+    <slot />
+  </a>
+) : (
+  <span class:list={['badge', className]} {...attrs}>
+    <slot />
+  </span>
+)}

@@ -1,0 +1,27 @@
+---
+/**
+ * COMPOSITE: a directory entry. Card + Tags + CommandList + RepoMeta.
+ * This is the "rich" card used on Projects / Resources.
+ */
+import Card from '../base/Card.astro';
+import Tags from '../base/Tags.astro';
+import CommandList from './CommandList.astro';
+import RepoMeta from './RepoMeta.astro';
+import type { Entry } from '../../config';
+import { parseRepo } from '../../lib/github';
+
+interface Props {
+  entry: Entry;
+}
+
+const { entry } = Astro.props;
+
+// Repo is inferred from a github.com link unless explicitly set / disabled.
+const repo = entry.repo === false ? null : (entry.repo ?? parseRepo(entry.href));
+---
+
+<Card title={entry.title} description={entry.description} href={entry.href} reveal searchable>
+  <Tags tags={entry.tags} />
+  <CommandList commands={entry.commands} />
+  <RepoMeta slot="foot" repo={repo} updated={entry.updated} />
+</Card>

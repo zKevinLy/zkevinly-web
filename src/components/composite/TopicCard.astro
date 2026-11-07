@@ -1,0 +1,16 @@
+---
+/** COMPOSITE: link to a child topic page. Card (compact) + "Explore" call to action. */
+import Card from '../base/Card.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  href: string;
+}
+
+const { title, description, href } = Astro.props;
+---
+
+<Card title={title} description={description} href={href} size="compact">
+  <span class="card-cta">Explore →</span>
+</Card>

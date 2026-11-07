@@ -1,0 +1,50 @@
+# Components
+
+Two layers, one direction of dependency: **composite → base**, never the reverse.
+
+## `base/` — primitives
+
+Generic, content-agnostic building blocks. They know about markup, CSS classes
+and behaviour, but nothing about this site's data (`Entry`, `TopicBlock`, GitHub…).
+
+| Component    | Purpose                                                      |
+| ------------ | ------------------------------------------------------------ |
+| `Card`       | The only card. Title, description, optional link, slots      |
+| `Badge`      | Small pill, link or span                                     |
+| `Tags`       | Row of tag pills                                             |
+| `Freshness`  | "Updated 3 days ago" + heartbeat dot (owns the time refresh) |
+| `CopyButton` | Click-to-copy (owns the one delegated copy handler)          |
+| `IconButton` | Square icon control with tooltip, `<a>` or `<button>`        |
+| `Button`     | Text link styled as a button                                 |
+| `NavLink`    | Top-level nav link                                           |
+| `Grid`       | Responsive card grid                                         |
+| `Section`    | Optional title + note around content                         |
+| `PageHeader` | h1 + lead paragraph                                          |
+| `Prose`      | Running text paragraph                                       |
+| `Steps`      | Numbered list                                                |
+| `Figure`     | Image + caption                                              |
+| `Breadcrumb` | Breadcrumb trail                                             |
+
+## `composite/` — built from base (or other composite) components
+
+May know about site data and wire primitives together.
+
+| Component                      | Built from                                                |
+| ------------------------------ | --------------------------------------------------------- |
+| `EntryCard`                    | `Card` + `Tags` + `CommandList` + `RepoMeta`              |
+| `TopicCard`, `LinkCard`        | `Card`                                                    |
+| `CommandBlock` → `CommandList` | `CopyButton`                                              |
+| `RepoMeta`                     | `Badge` + `Freshness` (+ GitHub live data)                |
+| `TopicBlocks`                  | `Section`, `Prose`, `Grid`, `Steps`, `Figure`, `LinkCard` |
+| `Header`                       | `IconButton`, `NavLink`                                   |
+| `Search`                       | (self-contained overlay)                                  |
+
+## Rules
+
+1. Need a new card? Compose `Card`. Do not write `<div class="card">` by hand.
+2. Need new behaviour (copy, relative time, live data)? It lives in exactly one
+   component, with its `<script>` next to its markup.
+3. Pages and layouts only assemble components; they don't carry their own markup
+   for things a component already covers.
+4. Styling for a component lives in `public/index.css` under that component's
+   section. Prefer extending a base component's props over adding a one-off class.

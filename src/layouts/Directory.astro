@@ -1,6 +1,8 @@
 ---
 import Layout from './Layout.astro';
-import Card from '../components/Card.astro';
+import PageHeader from '../components/base/PageHeader.astro';
+import Grid from '../components/base/Grid.astro';
+import EntryCard from '../components/composite/EntryCard.astro';
 import type { DirectoryPage } from '../config';
 
 interface Props {
@@ -11,17 +13,11 @@ const { page } = Astro.props;
 ---
 
 <Layout title={page.title} description={page.description}>
-  <h1 class="page-title" data-reveal>
-    {page.title}
-  </h1>
+  <PageHeader title={page.title} lead={page.description} />
 
-  <p class="page-lead" data-reveal>
-    {page.description}
-  </p>
-
-  <div class="grid">
+  <Grid>
     {page.items.map((entry) => (
-      <Card entry={entry} />
+      <EntryCard entry={entry} />
     ))}
-  </div>
+  </Grid>
 </Layout>

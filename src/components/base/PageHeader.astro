@@ -1,0 +1,23 @@
+---
+/**
+ * BASE: PageHeader — the h1 + lead paragraph every page starts with.
+ * The lead can be given as a prop or, for rich content, through the default slot.
+ */
+interface Props {
+  title: string;
+  lead?: string;
+  /** Extra breathing room (topic pages). */
+  spaced?: boolean;
+}
+
+const { title, lead, spaced = false } = Astro.props;
+---
+
+<header class:list={[spaced && 'topic-head']}>
+  <h1 class="page-title" data-reveal>
+    {title}
+  </h1>
+  <p class="page-lead" data-reveal>
+    <slot>{lead}</slot>
+  </p>
+</header>

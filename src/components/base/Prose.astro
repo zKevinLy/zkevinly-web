@@ -1,0 +1,12 @@
+---
+/** BASE: Prose — a muted paragraph of running text. */
+interface Props {
+  reveal?: boolean;
+}
+
+const { reveal = false } = Astro.props;
+---
+
+<p class="prose" data-reveal={reveal ? '' : undefined}>
+  <slot />
+</p>

@@ -1,0 +1,14 @@
+---
+/** BASE: Steps — numbered list with accent markers. */
+interface Props {
+  items: string[];
+}
+
+const { items } = Astro.props;
+---
+
+<ol class="steps">
+  {items.map((item) => (
+    <li>{item}</li>
+  ))}
+</ol>

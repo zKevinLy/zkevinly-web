@@ -1,7 +1,13 @@
 ---
 import Layout from './Layout.astro';
-import type { TopicPage, SitePage } from '../config';
-import { site } from '../config';
+import PageHeader from '../components/base/PageHeader.astro';
+import Section from '../components/base/Section.astro';
+import Grid from '../components/base/Grid.astro';
+import Breadcrumb from '../components/base/Breadcrumb.astro';
+import TopicCard from '../components/composite/TopicCard.astro';
+import TopicBlocks from '../components/composite/TopicBlocks.astro';
+import type { TopicPage } from '../config';
+import { getBreadcrumbs, normalizePath } from '../lib/navigation';
 
 interface Props {
   page: TopicPage;
@@ -9,130 +15,28 @@ interface Props {
 
 const { page } = Astro.props;
 
-const segments = Astro.url.pathname.split('/').filter(Boolean);
-
-const breadcrumbs: { title: string; href: string }[] = [];
-
-let current: SitePage | undefined = site.pages[segments[0] as keyof typeof site.pages];
-
-if (current) {
-  breadcrumbs.push({
-    title: current.title,
-    href: `/${segments[0]}`,
-  });
-}
-
-for (const segment of segments.slice(1)) {
-  if (current?.type !== 'topic') break;
-
-  const child: TopicPage | undefined = current.children?.find((item) => item.slug === segment);
-
-  if (!child) break;
-
-  current = child;
-
-  breadcrumbs.push({
-    title: child.title,
-    href: `/${segments.slice(0, breadcrumbs.length + 1).join('/')}`,
-  });
-}
-
-const currentPath = Astro.url.pathname.replace(/\/$/, '');
+const breadcrumbs = getBreadcrumbs(Astro.url.pathname);
+const currentPath = normalizePath(Astro.url.pathname);
 ---
 
 <Layout title={page.title} description={page.description}>
-  {breadcrumbs.length > 0 && (
-    <nav aria-label="Breadcrumb" class="breadcrumb">
-      {breadcrumbs.map((crumb, index) => (
-        <>
-          {index > 0 && <span>/</span>}
+  <Breadcrumb items={breadcrumbs} />
 
-          {index === breadcrumbs.length - 1 ? (
-            <span aria-current="page">{crumb.title}</span>
-          ) : (
-            <a href={crumb.href}>{crumb.title}</a>
-          )}
-        </>
-      ))}
-    </nav>
-  )}
-
-  <section class="topic-head">
-    <h1 class="page-title" data-reveal>
-      {page.title}
-    </h1>
-
-    <p class="page-lead" data-reveal>
-      {page.introduction ?? page.description}
-    </p>
-  </section>
+  <PageHeader title={page.title} lead={page.introduction ?? page.description} spaced />
 
   {page.children && page.children.length > 0 && (
-    <section class="topic-section" data-reveal>
-      <h2 class="section-title">Explore {page.title}</h2>
-
-      <div class="grid grid-tight">
+    <Section title={`Explore ${page.title}`} class="topic-section">
+      <Grid tight>
         {page.children.map((child) => (
-          <a href={`${currentPath}/${child.slug}`} class="card card-compact">
-            <h3 class="card-title">{child.title}</h3>
-
-            <p class="card-desc">{child.description}</p>
-
-            <span class="card-cta">Explore →</span>
-          </a>
+          <TopicCard
+            title={child.title}
+            description={child.description}
+            href={`${currentPath}/${child.slug}`}
+          />
         ))}
-      </div>
-    </section>
+      </Grid>
+    </Section>
   )}
 
-  <div class="topic-blocks">
-    {page.blocks.map((block) => (
-      <section data-reveal>
-        {block.title && <h2 class="section-title">{block.title}</h2>}
-
-        {block.type === 'text' && <p class="prose">{block.content}</p>}
-
-        {block.type === 'links' && (
-          <>
-            {block.description && <p class="section-note">{block.description}</p>}
-
-            <div class="grid grid-tight">
-              {block.items.map((item) => (
-                <a
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="card card-compact"
-                >
-                  <div class="card-head">
-                    <h3 class="card-title">{item.title}</h3>
-
-                    {item.label && <span class="card-label">{item.label}</span>}
-                  </div>
-
-                  <p class="card-desc">{item.description}</p>
-                </a>
-              ))}
-            </div>
-          </>
-        )}
-
-        {block.type === 'steps' && (
-          <ol class="steps">
-            {block.items.map((item) => (
-              <li>{item}</li>
-            ))}
-          </ol>
-        )}
-
-        {block.type === 'image' && (
-          <figure class="figure">
-            <img src={block.src} alt={block.alt} loading="lazy" />
-
-            {block.caption && <figcaption>{block.caption}</figcaption>}
-          </figure>
-        )}
-      </section>
-    ))}
-  </div>
+  <TopicBlocks blocks={page.blocks} />
 </Layout>

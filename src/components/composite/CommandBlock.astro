@@ -1,0 +1,21 @@
+---
+/** COMPOSITE: one labelled shell command with a copy button (base: CopyButton). */
+import CopyButton from '../base/CopyButton.astro';
+import type { CopyCommand } from '../../config';
+
+interface Props {
+  command: CopyCommand;
+}
+
+const { command } = Astro.props;
+---
+
+<div class="cmd">
+  {command.label && <span class="cmd-label">{command.label}</span>}
+  <div class="cmd-row" data-copy-root>
+    <code class="cmd-text" data-copy-source>
+      {command.command}
+    </code>
+    <CopyButton text={command.command} />
+  </div>
+</div>

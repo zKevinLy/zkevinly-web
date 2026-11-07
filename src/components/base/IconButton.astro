@@ -1,0 +1,41 @@
+---
+/**
+ * BASE: IconButton — square icon-only control with a hover tooltip.
+ * Renders an <a> when `href` is set, otherwise a <button>. Put the icon in the
+ * default slot.
+ */
+interface Props {
+  label: string;
+  /** Tooltip text; defaults to `label`. */
+  tooltip?: string;
+  href?: string;
+  external?: boolean;
+  /** Marks the current page (nav-style buttons). */
+  current?: boolean;
+  /** Set when client script should track this link's active state. */
+  navHref?: string;
+  id?: string;
+}
+
+const { label, tooltip = label, href, external = false, current, navHref, id } = Astro.props;
+---
+
+{href ? (
+  <a
+    {id}
+    class="icon-btn"
+    href={href}
+    aria-label={label}
+    data-tooltip={tooltip}
+    data-nav-href={navHref}
+    aria-current={current ? 'page' : undefined}
+    target={external ? '_blank' : undefined}
+    rel={external ? 'noopener noreferrer' : undefined}
+  >
+    <slot />
+  </a>
+) : (
+  <button {id} type="button" class="icon-btn" aria-label={label} data-tooltip={tooltip}>
+    <slot />
+  </button>
+)}

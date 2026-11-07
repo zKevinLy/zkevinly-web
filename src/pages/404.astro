@@ -1,16 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/base/PageHeader.astro';
 ---
 
 <Layout title="Not found">
-  <h1 class="page-title" data-reveal>
-    404
-  </h1>
-  <p class="page-lead" data-reveal>
+  <PageHeader title="404">
     Nothing here.{' '}
     <a href="/" class="card-label">
       Go home
     </a>
     .
-  </p>
+  </PageHeader>
 </Layout>
