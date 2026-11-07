@@ -1,4 +1,5 @@
 import type { SiteConfig } from './types';
+export type * from './types';
 
 import projects from './projects';
 import resources from './resources';

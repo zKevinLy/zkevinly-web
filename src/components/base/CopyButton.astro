@@ -38,30 +38,13 @@ const { text, label = 'Copy', class: className } = Astro.props;
 <script>
   /** Resolves true only if the browser reports the write succeeded. */
   async function writeClipboard(text: string): Promise<boolean> {
-    if (navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch {
-        // Permission denied / blocked: fall through to the legacy path.
-      }
-    }
-
-    // Legacy path for non-secure contexts and older browsers.
-    const area = document.createElement('textarea');
-    area.value = text;
-    area.setAttribute('readonly', '');
-    area.style.position = 'fixed';
-    area.style.opacity = '0';
-    document.body.appendChild(area);
-    area.select();
-
+    if (!navigator.clipboard?.writeText) return false;
     try {
-      return document.execCommand('copy');
+      await navigator.clipboard.writeText(text);
+      return true;
     } catch {
+      // Permission denied / blocked: caller falls back to manual copy.
       return false;
-    } finally {
-      area.remove();
     }
   }
 
