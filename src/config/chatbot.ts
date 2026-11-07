@@ -31,9 +31,9 @@ export interface BotRule {
 }
 
 export const chatbot = {
-  name: 'zkevinly bot',
+  name: 'Bob the Bot',
   greeting: { emoji: '👋', motion: 'wiggle' } satisfies BotReply,
-  placeholder: 'Say something…',
+  placeholder: 'Search KLIPY',
 
   /**
    * Live GIF search. Each message the visitor sends is turned into a short search
