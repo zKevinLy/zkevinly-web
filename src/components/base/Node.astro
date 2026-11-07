@@ -106,9 +106,16 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
 
     {hasAside && (
       <span class="node-aside">
-        {badges.map((badge) => <span class="node-badge">{badge}</span>)}
+        {badges.map((badge) => (
+          <span class="node-badge">{badge}</span>
+        ))}
         {label && <span class="node-label">{label}</span>}
-        {href && (external ? <ExternalLink size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />)}
+        {href &&
+          (external ? (
+            <ExternalLink size={16} aria-hidden="true" />
+          ) : (
+            <ChevronRight size={16} aria-hidden="true" />
+          ))}
         {check && (
           <label class="node-check">
             <input type="checkbox" data-check={check} />
@@ -136,7 +143,11 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
               rel={linkExternal ? 'noopener noreferrer' : undefined}
             >
               {link.label}
-              {linkExternal ? <ExternalLink size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
+              {linkExternal ? (
+                <ExternalLink size={14} aria-hidden="true" />
+              ) : (
+                <ChevronRight size={14} aria-hidden="true" />
+              )}
             </a>
           </li>
         );

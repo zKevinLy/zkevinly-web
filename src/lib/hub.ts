@@ -2,7 +2,14 @@
 // beneath it. These helpers resolve hub context for a URL, find which workflow
 // steps reference a page, and fail the build if any page would float free.
 
-import { site, type SitePage, type TopicBlock, type TopicPage, type WorkflowBlock, type WorkflowNode } from '../config';
+import {
+  site,
+  type SitePage,
+  type TopicBlock,
+  type TopicPage,
+  type WorkflowBlock,
+  type WorkflowNode,
+} from '../config';
 import { layoutWorkflow, type LaidOutNode, type WorkflowLayout } from './workflow';
 
 export interface PageRef {

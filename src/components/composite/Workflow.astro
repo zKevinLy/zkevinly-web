@@ -27,8 +27,12 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
   <div class="workflow-progress" data-workflow-progress>
     <span data-progress-text>0 of {layout.nodes.length} steps done</span>
-    <div class="workflow-progress-bar" aria-hidden="true"><div data-progress-bar></div></div>
-    <button type="button" class="workflow-reset" data-workflow-reset hidden>Reset</button>
+    <div class="workflow-progress-bar" aria-hidden="true">
+      <div data-progress-bar></div>
+    </div>
+    <button type="button" class="workflow-reset" data-workflow-reset hidden>
+      Reset
+    </button>
   </div>
 
   <ol class="workflow-phases">
@@ -52,7 +56,10 @@ const pad = (n: number) => String(n).padStart(2, '0');
               title={node.title}
               description={node.description}
               href={node.href}
-              badges={[...(node.optional ? ['Optional'] : []), ...(node.branch ? [node.branch] : [])]}
+              badges={[
+                ...(node.optional ? ['Optional'] : []),
+                ...(node.branch ? [node.branch] : []),
+              ]}
               check={node.id}
               links={node.links}
             >
@@ -135,7 +142,10 @@ const pad = (n: number) => String(n).padStart(2, '0');
         const y2 = b.top - bounds.top;
         const bend = Math.max(24, Math.abs(y2 - y1) * 0.45);
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${y1 + bend}, ${x2} ${y2 - bend}, ${x2} ${y2}`);
+        path.setAttribute(
+          'd',
+          `M ${x1} ${y1} C ${x1} ${y1 + bend}, ${x2} ${y2 - bend}, ${x2} ${y2}`,
+        );
         path.setAttribute('class', 'workflow-edge');
         path.dataset.from = edge.from;
         path.dataset.to = edge.to;
@@ -159,7 +169,9 @@ const pad = (n: number) => String(n).padStart(2, '0');
     };
 
     const trace = (id: string | null) => {
-      const related = id ? new Set([...reach(id, parents), ...reach(id, children)]) : new Set<string>();
+      const related = id
+        ? new Set([...reach(id, parents), ...reach(id, children)])
+        : new Set<string>();
       if (id) {
         root.dataset.focus = 'true';
         root.dataset.active = id;

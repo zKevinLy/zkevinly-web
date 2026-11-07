@@ -51,7 +51,10 @@ const groups = (page.children ?? []).map((child) => {
               <li>
                 <a href={sub.path}>{sub.page.title}</a>
                 {sub.steps.length > 0 && (
-                  <span class="hub-sub-steps"> · step {sub.steps.map((s) => pad(s.number)).join(', ')}</span>
+                  <span class="hub-sub-steps">
+                    {' '}
+                    · step {sub.steps.map((s) => pad(s.number)).join(', ')}
+                  </span>
                 )}
               </li>
             ))}
