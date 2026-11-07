@@ -172,6 +172,25 @@ svg {
   opacity: 0.7;
 }
 
+.brand-group {
+  display: flex;
+  flex-shrink: 0;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.brand-version {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--muted);
+}
+
+@media (max-width: 480px) {
+  .brand-version {
+    display: none;
+  }
+}
+
 .brand span {
   margin-left: 0.25rem;
   color: var(--muted);
@@ -1097,9 +1116,11 @@ a.badge-link:hover {
 }
 
 .search-result-arrow {
+  display: inline-flex;
   flex-shrink: 0;
-  font-size: 1.125rem;
+  align-items: center;
   color: var(--muted);
+  transition: color 150ms ease;
 }
 
 .search-result.is-active .search-result-arrow {

@@ -1,5 +1,5 @@
 ---
-import { Search } from '@lucide/astro';
+import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
 ---
 
 <!--
@@ -43,6 +43,14 @@ import { Search } from '@lucide/astro';
 
     <div class="search-foot">Enter to open · Esc to close</div>
   </div>
+
+  <!-- Same lucide icons Node.astro uses, cloned into each result by the script below. -->
+  <template id="search-icon-external">
+    <ExternalLink size={16} aria-hidden="true" />
+  </template>
+  <template id="search-icon-internal">
+    <ChevronRight size={16} aria-hidden="true" />
+  </template>
 </div>
 
 <script>
@@ -246,9 +254,12 @@ import { Search } from '@lucide/astro';
 
         const arrow = document.createElement('span');
         arrow.className = 'search-result-arrow';
-        arrow.textContent = isExternal ? '↗' : '→';
         arrow.title = isExternal ? 'External website' : 'Internal page';
         arrow.setAttribute('aria-label', isExternal ? 'External link' : 'Internal link');
+        const icon = document.querySelector<HTMLTemplateElement>(
+          isExternal ? '#search-icon-external' : '#search-icon-internal',
+        );
+        if (icon) arrow.append(icon.content.cloneNode(true));
 
         row.append(title, arrow);
 

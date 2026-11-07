@@ -9,14 +9,26 @@ import { getNavItems, isActivePath } from '../../lib/navigation';
 const nav = getNavItems();
 const pathname = Astro.url.pathname;
 const isActive = (href: string) => isActivePath(pathname, href);
+
+// Set at build time by CI (PUBLIC_APP_VERSION); local dev shows "dev".
+const version =
+  (import.meta.env.PUBLIC_APP_VERSION as string | undefined) ||
+  (import.meta.env.DEV ? 'dev' : undefined);
 ---
 
 <header class="topbar" transition:persist>
   <div class="topbar-inner">
-    <a href="/" class="brand">
-      {site.name.toLowerCase()}
-      <span>/</span>
-    </a>
+    <div class="brand-group">
+      <a href="/" class="brand">
+        {site.name.toLowerCase()}
+        <span>/</span>
+      </a>
+      {version && (
+        <span class="brand-version" title="Site version">
+          {version}
+        </span>
+      )}
+    </div>
 
     <nav class="nav" aria-label="Primary">
       {nav.map((item) => (
