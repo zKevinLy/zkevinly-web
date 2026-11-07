@@ -53,7 +53,7 @@ interface Props extends Omit<HTMLAttributes<'article'>, 'title'> {
   size?: 'default' | 'compact';
   /** Fade/slide in on page load (see Layout's GSAP script). */
   reveal?: boolean;
-  /** Include this node as its own search result. */
+  /** Dev search only: index this node as its own result (production indexes whole pages). */
   searchable?: boolean;
 }
 
@@ -82,7 +82,6 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
 <article
   class:list={['node', size === 'compact' && 'node-compact', href && 'node-interactive', className]}
   data-reveal={reveal ? '' : undefined}
-  data-pagefind-body={searchable ? '' : undefined}
   data-search-item={searchable ? '' : undefined}
   {...attrs}
 >

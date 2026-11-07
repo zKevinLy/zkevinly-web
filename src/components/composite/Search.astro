@@ -99,7 +99,7 @@ import { Search } from '@lucide/astro';
 
       const normalize = (url: URL) => url.pathname.replace(/\/+$/, '') || '/';
 
-      while (queue.length > 0 && visited.size < 100) {
+      while (queue.length > 0 && visited.size < 1000) {
         const path = queue.shift()!;
 
         const url = new URL(path, window.location.origin);

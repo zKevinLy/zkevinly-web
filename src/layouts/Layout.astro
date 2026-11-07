@@ -8,9 +8,11 @@ import { site } from '../config';
 interface Props {
   title?: string;
   description?: string;
+  /** Set false to keep a page (e.g. 404) out of the search index. */
+  indexable?: boolean;
 }
 
-const { title, description = site.tagline } = Astro.props;
+const { title, description = site.tagline, indexable = true } = Astro.props;
 const fullTitle = title ? `${title} · ${site.name}` : site.name;
 ---
 
@@ -51,7 +53,17 @@ const fullTitle = title ? `${title} · ${site.name}` : site.name;
   </head>
   <body>
     <Header />
-    <main class="page" transition:animate="fade">
+    <!--
+      Pagefind: once ANY element on the site carries data-pagefind-body, every page
+      without one is dropped from the index. Marking <main> on every page makes the
+      whole site searchable (header, search overlay and chatbot sit outside it).
+    -->
+    <main
+      class="page"
+      transition:animate="fade"
+      data-pagefind-body={indexable ? '' : undefined}
+      data-pagefind-ignore={indexable ? undefined : 'all'}
+    >
       <slot />
     </main>
     <!-- Must be a direct child of <body>, outside the header (see index.css). -->
