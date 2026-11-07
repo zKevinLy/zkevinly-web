@@ -21,43 +21,36 @@ const { blocks, page, path } = Astro.props;
 ---
 
 <div class="topic-blocks">
-  {blocks
-    .filter((block) => !(block.type === 'text' && block.title?.toLowerCase().startsWith('about ')))
-    .map((block) => (
-      <Section
-        title={block.title}
-        note={block.type === 'links' || block.type === 'index' ? block.description : undefined}
-      >
-        {block.type === 'text' && <Prose>{block.content}</Prose>}
+  {blocks.filter((block) => !(block.type === 'text' && block.title?.toLowerCase().startsWith('about '))).map((block) => (
+    <Section title={block.title} note={block.type === 'links' || block.type === 'index' ? block.description : undefined}>
+      {block.type === 'text' && <Prose>{block.content}</Prose>}
 
-        {block.type === 'links' && (
-          <Grid tight>
-            {block.items.map((link) => (
-              <Node
-                title={link.title}
-                description={link.description}
-                href={link.href}
-                label={link.label}
-                size="compact"
-              />
-            ))}
-          </Grid>
-        )}
+      {block.type === 'links' && (
+        <Grid tight>
+          {block.items.map((link) => (
+            <Node
+              title={link.title}
+              description={link.description}
+              href={link.href}
+              label={link.label}
+              size="compact"
+            />
+          ))}
+        </Grid>
+      )}
 
-        {block.type === 'steps' && <Steps items={block.items} />}
+      {block.type === 'steps' && <Steps items={block.items} />}
 
-        {block.type === 'workflow' && (
-          <>
-            {block.description && <p class="workflow-intro">{block.description}</p>}
-            <Workflow nodes={block.nodes} phases={block.phases} />
-          </>
-        )}
+      {block.type === 'workflow' && (
+        <>
+          {block.description && <p class="workflow-intro">{block.description}</p>}
+          <Workflow nodes={block.nodes} phases={block.phases} />
+        </>
+      )}
 
-        {block.type === 'index' && page && path && <HubIndex page={page} path={path} />}
+      {block.type === 'index' && page && path && <HubIndex page={page} path={path} />}
 
-        {block.type === 'image' && (
-          <Figure src={block.src} alt={block.alt} caption={block.caption} />
-        )}
-      </Section>
-    ))}
+      {block.type === 'image' && <Figure src={block.src} alt={block.alt} caption={block.caption} />}
+    </Section>
+  ))}
 </div>

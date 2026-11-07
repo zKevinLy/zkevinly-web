@@ -29,16 +29,16 @@ and behaviour, but nothing about this site's data (`Entry`, `TopicBlock`, GitHub
 
 May know about site data and wire primitives together.
 
-| Component                      | Built from                                            |
-| ------------------------------ | ----------------------------------------------------- |
-| `EntryCard`                    | `Node` + `Tags` + `CommandList` + `RepoMeta`          |
-| `Workflow`                     | `Node` (one per step) + phase rows + trace/check-off  |
-| `HubIndex`                     | `Node` + `Grid`                                       |
-| `CommandBlock` → `CommandList` | `CopyButton`                                          |
-| `RepoMeta`                     | `Badge` + `Freshness` (+ GitHub live data)            |
-| `TopicBlocks`                  | `Section`, `Prose`, `Grid`, `Steps`, `Figure`, `Node` |
-| `Header`                       | `IconButton`, `NavLink`                               |
-| `Search`                       | (self-contained overlay)                              |
+| Component                      | Built from                                                |
+| ------------------------------ | --------------------------------------------------------- |
+| `EntryCard`                    | `Node` + `Tags` + `CommandList` + `RepoMeta`              |
+| `Workflow`                     | `Node` (one per step) + phase rows + trace/check-off      |
+| `HubIndex`                     | `Node` + `Grid`                                           |
+| `CommandBlock` → `CommandList` | `CopyButton`                                              |
+| `RepoMeta`                     | `Badge` + `Freshness` (+ GitHub live data)                |
+| `TopicBlocks`                  | `Section`, `Prose`, `Grid`, `Steps`, `Figure`, `Node`     |
+| `Header`                       | `IconButton`, `NavLink`                                   |
+| `Search`                       | (self-contained overlay)                                  |
 
 ## Rules
 

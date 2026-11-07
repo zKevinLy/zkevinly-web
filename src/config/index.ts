@@ -472,8 +472,7 @@ export const site = {
                         {
                           type: 'text',
                           title: 'About AIOMetadata',
-                          content:
-                            'Build custom catalogs and configure metadata for your Nuvio setup.',
+                          content: 'Build custom catalogs and configure metadata for your Nuvio setup.',
                         },
                         {
                           type: 'links',

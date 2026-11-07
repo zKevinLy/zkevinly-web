@@ -26,7 +26,8 @@
     "update": "npm update",
     "update:latest": "npx npm-check-updates -u && npm install",
     "update:astro": "npx @astrojs/upgrade",
-    "audit": "npm audit --omit=dev"
+    "audit": "npm audit --omit=dev",
+    "pin-actions": "node scripts/pin-actions.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
