@@ -1099,6 +1099,66 @@ a.badge-link:hover {
   gap: 0.75rem;
 }
 
+/* Moving glow: a conic gradient that rotates around the launcher. The wrapper
+   owns the glow so the launcher's overflow:hidden doesn't clip it. */
+@property --chat-glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.chat-glow {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  border-radius: 28%;
+  line-height: 0;
+}
+
+.chat-glow::before,
+.chat-glow::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--chat-glow-angle),
+    transparent 0%,
+    var(--accent) 14%,
+    #5b9dff 28%,
+    #b57bff 42%,
+    transparent 58%
+  );
+  animation: chat-glow-spin 3.6s linear infinite;
+}
+
+/* Soft halo behind the crisp ring. */
+.chat-glow::after {
+  inset: -6px;
+  opacity: 0.65;
+  filter: blur(12px);
+  transition: opacity 300ms ease;
+}
+
+/* Calm down while the panel is open. */
+.chat-glow:has(.chat-launcher[aria-expanded='true'])::after {
+  opacity: 0.3;
+}
+
+@keyframes chat-glow-spin {
+  to {
+    --chat-glow-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-glow::before,
+  .chat-glow::after {
+    animation: none;
+  }
+}
+
 .chat-launcher {
   padding: 0;
   overflow: hidden;
@@ -1216,19 +1276,43 @@ a.badge-link:hover {
 }
 
 .chat-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
   padding: 0 0.75rem 0.6rem;
   font-size: 0.6875rem;
   line-height: 1.4;
   color: var(--muted);
 }
 
-.chat-foot a {
-  text-decoration: underline;
-  text-underline-offset: 2px;
+.chat-foot p {
+  margin: 0;
 }
 
-.chat-foot a:hover {
-  color: var(--accent);
+/* "Powered by GIPHY" attribution: keep it visible whenever the chat is open. */
+.chat-giphy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  transition:
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.chat-giphy strong {
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.chat-giphy:hover {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  color: var(--text);
 }
 
 .chat-emoji[data-motion='bounce'] {

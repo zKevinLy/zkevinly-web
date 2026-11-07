@@ -66,27 +66,36 @@ The deployed build is stamped with its version (shown on the About page and in `
 The logic lives in `.github/scripts/next-version.sh` and can be run locally to preview the next tag:
 `bash .github/scripts/next-version.sh`.
 
-## Chat bot GIFs (KLIPY)
+## Chat bot GIFs (GIPHY)
 
 The bottom-right chat bot answers with GIFs: each message the visitor sends is turned
-into a short search query and looked up on [KLIPY](https://klipy.com). Nothing is
+into a short search query and looked up on [GIPHY](https://giphy.com). Nothing is
 hard-coded per message. If the search is unavailable or finds nothing, the bot falls
 back to the emoji rules in `src/config/chatbot.ts`.
 
-KLIPY puts the API key in the request URL, so the browser never calls it directly.
-Instead `/api/gif` is a tiny Cloudflare Worker route (`worker/`) that holds the key and
-does the search. Visitor text is used only for that search: it isn't logged or stored,
-and no IP/cookies are forwarded. Results are cached by query for an hour.
+The browser never calls GIPHY directly. Instead `/api/gif` is a tiny Cloudflare Worker
+route (`worker/`) that holds the key and does the search. Visitor text is used only for
+that search: it isn't logged or stored, and no IP/cookies are forwarded. Responses are
+not cached, in line with GIPHY's guidelines.
 
-**Production:** create a free key at <https://partner.klipy.com>, then
+The chat panel always shows a "Powered by GIPHY" attribution (required by GIPHY's API
+terms); keep it if you restyle the bot. For a production key GIPHY may also ask for the
+official logo marks, which are available at <https://developers.giphy.com/branding/>.
+
+**Production:** create a free key at <https://developers.giphy.com> (choose "API"), then
 
 ```sh
-npx wrangler secret put KLIPY_API_KEY
+npx wrangler secret put GIPHY_API_KEYS
 npm run deploy
 ```
 
-Optional: set `KLIPY_CONTENT_FILTER` (a Worker variable) to change the default `medium`.
-Consider a Cloudflare rate-limiting rule on `/api/*` so nobody can burn your quota.
+`GIPHY_API_KEYS` takes one key, or several separated by commas (`key1,key2,key3`). Each
+search picks one at random, and if GIPHY rejects that key (invalid or rate limited) the
+Worker tries the next. `GIPHY_API_KEY` (a single key) also still works.
+
+Optional: set `GIPHY_RATING` (a Worker variable) to `g`, `pg`, `pg-13` or `r` to change the
+default `pg`. New keys are "beta" keys limited to about 100 requests per hour, so consider a
+Cloudflare rate-limiting rule on `/api/*` so nobody can burn your quota.
 
 **Local:** copy `.env.example` to `.env`, add the key, and run `npm run dev`. Without a
 key everything still works; the bot just replies with emoji.

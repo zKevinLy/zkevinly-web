@@ -3,9 +3,12 @@
  * COMPOSITE: a fake chat bot that only answers with emoji (or GIFs).
  *
  * Fixed bottom-right on every page (mounted once in Layout). Starts collapsed;
- * the launcher toggles the panel. Privacy: nothing is saved or sent anywhere —
- * no localStorage, no cookies, no network. The conversation lives in memory and
- * survives client-side navigation (transition:persist) but disappears on reload.
+ * the launcher toggles the panel and has a slowly moving glow around it.
+ * Privacy: nothing is saved — no localStorage, no cookies. The only network call
+ * is the visitor's message going to /api/gif (a Worker that searches GIPHY).
+ * The conversation lives in memory and survives client-side navigation
+ * (transition:persist) but disappears on reload. GIFs come from GIPHY, so the
+ * panel always shows the "Powered by GIPHY" attribution.
  *
  * Bases: Avatar, IconButton. Content lives in config/chatbot.ts and the reply
  * picker in lib/chatbot.ts.
@@ -51,25 +54,31 @@ import { chatbot } from '../../config/chatbot';
       </button>
     </form>
 
-    <p class="chat-foot">
-      Your message is used to search{' '}
-      <a href="https://klipy.com" target="_blank" rel="noopener noreferrer">
-        KLIPY
-      </a>{' '}
-      for a GIF. Nothing is stored.
-    </p>
+    <div class="chat-foot">
+      <a
+        class="chat-giphy"
+        href="https://giphy.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Powered by GIPHY"
+      >
+        Powered by <strong>GIPHY</strong>
+      </a>
+    </div>
   </section>
 
-  <button
-    id="chat-launcher"
-    type="button"
-    class="chat-launcher"
-    aria-controls="chat-panel"
-    aria-expanded="false"
-    aria-label="Open chat"
-  >
-    <Avatar size={52} />
-  </button>
+  <span class="chat-glow">
+    <button
+      id="chat-launcher"
+      type="button"
+      class="chat-launcher"
+      aria-controls="chat-panel"
+      aria-expanded="false"
+      aria-label="Open chat"
+    >
+      <Avatar size={52} />
+    </button>
+  </span>
 </aside>
 
 <script>

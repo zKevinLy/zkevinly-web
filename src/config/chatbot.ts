@@ -21,7 +21,7 @@ export interface BotReply {
    * text and as the fallback if the GIF fails to load.
    */
   gif?: string;
-  /** Alt text for the GIF (its title from KLIPY). */
+  /** Alt text for the GIF (its title from GIPHY). */
   alt?: string;
 }
 
@@ -33,11 +33,11 @@ export interface BotRule {
 export const chatbot = {
   name: 'Bob the Bot',
   greeting: { emoji: '👋', motion: 'wiggle' } satisfies BotReply,
-  placeholder: 'Search KLIPY',
+  placeholder: 'Say anything...',
 
   /**
    * Live GIF search. Each message the visitor sends is turned into a short search
-   * query and sent to /api/gif (worker/), which asks KLIPY. If that fails or finds
+   * query and sent to /api/gif (worker/), which asks GIPHY. If that fails or finds
    * nothing, the bot falls back to the emoji rules below.
    */
   gifSearch: {
