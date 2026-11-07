@@ -3,21 +3,32 @@ import Layout from './Layout.astro';
 import PageHeader from '../components/base/PageHeader.astro';
 import Grid from '../components/base/Grid.astro';
 import EntryCard from '../components/composite/EntryCard.astro';
+import FilterBar from '../components/composite/FilterBar.astro';
 import type { DirectoryPage } from '../config';
+import { buildFilterModel, entrySource } from '../lib/filter';
 
 interface Props {
   page: DirectoryPage;
 }
 
 const { page } = Astro.props;
+
+// Page-local filter/search/sort (null when the list is too short to bother).
+const filterModel = buildFilterModel(page.items.map(entrySource), {
+  force: page.alwaysFilter,
+});
 ---
 
 <Layout title={page.title} description={page.description}>
   <PageHeader title={page.title} lead={page.description} />
 
-  <Grid>
-    {page.items.map((entry) => (
-      <EntryCard entry={entry} />
-    ))}
-  </Grid>
+  <div data-filter-scope>
+    {filterModel && <FilterBar model={filterModel} />}
+
+    <Grid>
+      {page.items.map((entry) => (
+        <EntryCard entry={entry} />
+      ))}
+    </Grid>
+  </div>
 </Layout>

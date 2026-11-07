@@ -1,0 +1,215 @@
+---
+/**
+ * COMPOSITE: a page's own filter / search / sort bar (separate from the global
+ * site search, which lives in Search.astro).
+ *
+ * It acts on every `[data-filter-item]` inside the nearest `[data-filter-scope]`
+ * ancestor, and hides any `[data-filter-group]` (a Section) left with no visible
+ * items. Cards get their `data-filter-*` attributes from `filterAttrs()`.
+ *
+ * Text box and tag chips share one query string and one matcher (lib/filter.ts):
+ * a chip just adds/removes a `tag:xyz` term. The query and sort are mirrored to
+ * `?q=` / `?sort=` so a filtered view is shareable.
+ */
+import { Search } from '@lucide/astro';
+import { SORT_LABELS, type FilterModel } from '../../lib/filter';
+
+interface Props {
+  model: FilterModel;
+}
+
+const { model } = Astro.props;
+---
+
+<div
+  class="filter-bar"
+  data-filter-bar
+  data-total={model.total}
+  role="search"
+  aria-label="Filter this page"
+  data-pagefind-ignore
+>
+  <div class="filter-row">
+    <label class="filter-field">
+      <Search size={16} aria-hidden="true" />
+      <span class="sr-only">Filter this page</span>
+      <input
+        class="filter-input"
+        type="search"
+        data-filter-input
+        placeholder="Filter this page…"
+        autocomplete="off"
+        spellcheck="false"
+      />
+    </label>
+
+    <label class="filter-sort">
+      <span class="sr-only">Sort</span>
+      <select data-filter-sort>
+        {model.sorts.map((key) => (
+          <option value={key}>{SORT_LABELS[key]}</option>
+        ))}
+      </select>
+    </label>
+  </div>
+
+  {model.tags.length > 0 && (
+    <div class="filter-chips" role="group" aria-label="Filter by tag">
+      {model.tags.map((tag) => (
+        <button type="button" class="tag filter-chip" data-filter-tag={tag} aria-pressed="false">
+          {tag}
+        </button>
+      ))}
+    </div>
+  )}
+
+  <p class="filter-status">
+    <span data-filter-status aria-live="polite"></span>
+    <button type="button" class="filter-clear" data-filter-clear hidden>
+      Clear
+    </button>
+  </p>
+</div>
+
+<script>
+  import {
+    FILTER_REFRESH_EVENT,
+    activeTags,
+    isSortKey,
+    matches,
+    parseQuery,
+    readItem,
+    sortOrder,
+    toggleTag,
+    type SortKey,
+  } from '../../lib/filter';
+
+  /** apply() for every bar that's been wired up. A bar is only ever wired once. */
+  const appliers = new Map<HTMLElement, () => void>();
+
+  function init(bar: HTMLElement) {
+    if (appliers.has(bar)) return;
+    const scope = bar.closest<HTMLElement>('[data-filter-scope]');
+    const input = bar.querySelector<HTMLInputElement>('[data-filter-input]');
+    const select = bar.querySelector<HTMLSelectElement>('[data-filter-sort]');
+    const status = bar.querySelector<HTMLElement>('[data-filter-status]');
+    const clear = bar.querySelector<HTMLButtonElement>('[data-filter-clear]');
+    if (!scope || !input || !select || !status || !clear) return;
+
+    // Captured once, in document order, before any sorting moves them.
+    const items = Array.from(scope.querySelectorAll<HTMLElement>('[data-filter-item]'));
+    const groups = Array.from(scope.querySelectorAll<HTMLElement>('[data-filter-group]'));
+    const chips = Array.from(bar.querySelectorAll<HTMLButtonElement>('[data-filter-tag]'));
+
+    const params = new URLSearchParams(window.location.search);
+    input.value = params.get('q') ?? '';
+    const initialSort = params.get('sort') ?? '';
+    if (isSortKey(initialSort) && [...select.options].some((o) => o.value === initialSort)) {
+      select.value = initialSort;
+    }
+
+    function syncUrl() {
+      const url = new URL(window.location.href);
+      const sort = select!.value;
+      if (input!.value.trim()) url.searchParams.set('q', input!.value.trim());
+      else url.searchParams.delete('q');
+      if (sort !== 'default') url.searchParams.set('sort', sort);
+      else url.searchParams.delete('sort');
+      history.replaceState(history.state, '', url);
+    }
+
+    function apply() {
+      const terms = parseQuery(input!.value);
+      const sort = select!.value as SortKey;
+      const data = items.map(readItem);
+
+      // Filter.
+      const shown = items.map((_, i) => matches(data[i], terms));
+      items.forEach((item, i) => {
+        item.hidden = !shown[i];
+      });
+
+      // Sort: appending in global order leaves each list sorted within its own parent.
+      // Only touch the DOM when the order actually changed: moving a node restarts its
+      // CSS animations and costs a reflow, and this runs on load and again once GitHub
+      // data arrives (usually with no change to the order).
+      const desired = new Map<Element, HTMLElement[]>();
+      for (const i of sortOrder(data, sort)) {
+        const parent = items[i].parentElement;
+        if (parent) desired.set(parent, [...(desired.get(parent) ?? []), items[i]]);
+      }
+      for (const [parent, ordered] of desired) {
+        const current = Array.from(parent.children).filter((child) =>
+          ordered.includes(child as HTMLElement),
+        );
+        if (current.every((child, index) => child === ordered[index])) continue;
+        for (const item of ordered) parent.append(item);
+      }
+
+      // Hide sections with nothing left in them.
+      for (const group of groups) {
+        group.hidden = !group.querySelector('[data-filter-item]:not([hidden])');
+      }
+
+      // Chips mirror the `tag:` terms in the text box.
+      const active = activeTags(input!.value);
+      for (const chip of chips) {
+        const on = active.has(chip.dataset.filterTag ?? '');
+        chip.classList.toggle('is-active', on);
+        chip.setAttribute('aria-pressed', String(on));
+      }
+
+      const count = shown.filter(Boolean).length;
+      const filtering = terms.length > 0;
+      status!.textContent = !filtering
+        ? `${items.length} items`
+        : count === 0
+          ? 'No matches'
+          : `${count} of ${items.length}`;
+      clear!.hidden = !filtering && sort === 'default';
+    }
+
+    function update() {
+      apply();
+      syncUrl();
+    }
+
+    input.addEventListener('input', update);
+    select.addEventListener('change', update);
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && input.value) {
+        event.preventDefault();
+        input.value = '';
+        update();
+      }
+    });
+    bar.addEventListener('click', (event) => {
+      const target = event.target as Element;
+      const chip = target.closest<HTMLElement>('[data-filter-tag]');
+      if (chip) {
+        input.value = toggleTag(input.value, chip.dataset.filterTag ?? '');
+        update();
+      } else if (target.closest('[data-filter-clear]')) {
+        input.value = '';
+        select.value = 'default';
+        update();
+        input.focus();
+      }
+    });
+
+    apply();
+    appliers.set(bar, apply);
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLElement>('[data-filter-bar]').forEach(init);
+  });
+
+  // RepoMeta fetched fresher GitHub data in the browser: re-sort with it.
+  document.addEventListener(FILTER_REFRESH_EVENT, () => {
+    for (const [bar, apply] of appliers) {
+      if (bar.isConnected) apply();
+      else appliers.delete(bar); // page was swapped out
+    }
+  });
+</script>

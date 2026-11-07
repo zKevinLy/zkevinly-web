@@ -5,12 +5,18 @@ interface Props {
   note?: string;
   reveal?: boolean;
   class?: string;
+  /** FilterBar hides this section when none of its `[data-filter-item]`s match. */
+  filterGroup?: boolean;
 }
 
-const { title, note, reveal = true, class: className } = Astro.props;
+const { title, note, reveal = true, class: className, filterGroup = false } = Astro.props;
 ---
 
-<section class={className} data-reveal={reveal ? '' : undefined}>
+<section
+  class={className}
+  data-reveal={reveal ? '' : undefined}
+  data-filter-group={filterGroup ? '' : undefined}
+>
   {title && <h2 class="section-title">{title}</h2>}
   {note && <p class="section-note">{note}</p>}
   <slot />

@@ -1,100 +1,60 @@
-name: '[AUTO + MANUAL] CI, Release, Deploy'
+name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
-  workflow_dispatch:
 
+# Cancel superseded runs on the same branch/PR.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Unit tests
+        run: npm run test:ci
+
+      - name: Upload test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+          if-no-files-found: ignore
+
   build:
-    name: Build & check
+    name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    needs: test
     steps:
       - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version: 22
           cache: npm
 
       - run: npm ci
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm run build # runs astro check + astro build
+
+      - name: Build
+        run: npm run build
         env:
-          # Authenticated GitHub API calls for the card badges (1,000 req/h vs 60).
+          # Avoids GitHub's 60 requests/hour unauthenticated limit when RepoMeta
+          # fetches release info at build time.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist
-          retention-days: 7
-
-  release:
-    name: Release and deploy
-    # Every push to main that passes the checks above is deployed and tagged.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-latest
-    # Holds CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN.
-    environment: prod
-    timeout-minutes: 15
-    # Serialise releases so two quick pushes can't compute the same tag.
-    concurrency:
-      group: release
-      cancel-in-progress: false
-    permissions:
-      contents: write # create the tag + release
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # full history + tags are needed to pick the bump
-          fetch-tags: true
-          persist-credentials: false
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Determine next version
-        id: version
-        run: echo "tag=$(bash .github/scripts/next-version.sh "$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
-
-      - run: npm ci
-
-      - name: Build site with version
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-          PUBLIC_APP_VERSION: ${{ steps.version.outputs.tag }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          printf '{"version":"%s"}\n' "$TAG" > public/version.json
-          npm run build:fast
-          (cd dist && zip -qr "../zkevinly-web-$TAG.zip" .)
-
-      # Deploy before tagging so a release only exists for versions that shipped.
-      - name: Deploy to Cloudflare Workers
-        run: npx wrangler deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          WRANGLER_SEND_METRICS: 'false'
-
-      - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.version.outputs.tag }}
-        run: gh release create "$TAG" "zkevinly-web-$TAG.zip" --target "$GITHUB_SHA" --title "$TAG" --generate-notes

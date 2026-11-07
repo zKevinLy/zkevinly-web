@@ -7,8 +7,10 @@ import Steps from '../base/Steps.astro';
 import Figure from '../base/Figure.astro';
 import Node from '../base/Node.astro';
 import Workflow from './Workflow.astro';
+import EntryCard from './EntryCard.astro';
 import HubIndex from './HubIndex.astro';
 import type { TopicBlock, TopicPage } from '../../config';
+import { filterAttrs } from '../../lib/filter';
 
 interface Props {
   blocks: TopicBlock[];
@@ -26,7 +28,13 @@ const { blocks, page, path } = Astro.props;
     .map((block) => (
       <Section
         title={block.title}
-        note={block.type === 'links' || block.type === 'index' ? block.description : undefined}
+        note={
+          block.type === 'links' || block.type === 'entries' || block.type === 'index'
+            ? block.description
+            : undefined
+        }
+        filterGroup={block.type === 'links' || block.type === 'entries'}
+        reveal={block.type !== 'entries'}
       >
         {block.type === 'text' && <Prose>{block.content}</Prose>}
 
@@ -39,7 +47,16 @@ const { blocks, page, path } = Astro.props;
                 href={link.href}
                 label={link.label}
                 size="compact"
+                {...filterAttrs(link)}
               />
+            ))}
+          </Grid>
+        )}
+
+        {block.type === 'entries' && (
+          <Grid>
+            {block.items.map((entry) => (
+              <EntryCard entry={entry} />
             ))}
           </Grid>
         )}

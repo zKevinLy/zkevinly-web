@@ -24,6 +24,11 @@ interface BasePage {
   title: string;
   description: string;
   showInNav?: boolean;
+  /**
+   * Show the page's filter/search/sort bar even when the list is short
+   * (normally it needs MIN_FILTER_ITEMS items).
+   */
+  alwaysFilter?: boolean;
 }
 
 export interface DirectoryPage extends BasePage {
@@ -49,6 +54,13 @@ export type TopicBlock =
       title: string;
       description?: string;
       items: TopicLink[];
+    }
+  | {
+      /** A grid of rich cards (release tag, stars, updated date, copy commands). */
+      type: 'entries';
+      title?: string;
+      description?: string;
+      items: Entry[];
     }
   | {
       type: 'steps';

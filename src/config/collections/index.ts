@@ -1,5 +1,6 @@
 import type { TopicPage } from '../types';
 import nuvio from './nuvio';
+import androidTv from './android-tv';
 
 const collections: TopicPage = {
   type: 'topic',
@@ -20,7 +21,7 @@ const collections: TopicPage = {
     },
   ],
 
-  children: [nuvio],
+  children: [nuvio, androidTv],
 };
 
 export default collections;

@@ -5,6 +5,7 @@ const projects: DirectoryPage = {
   title: 'Projects',
   description: 'Software and things I’ve built.',
   showInNav: true,
+  alwaysFilter: true,
 
   items: [
     {

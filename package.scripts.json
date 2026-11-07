@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "test": "node --import tsx --test \"tests/**/*.test.ts\"",
+    "tests": "npm run test",
+    "test:watch": "node --import tsx --test --watch \"tests/**/*.test.ts\"",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage \"tests/**/*.test.ts\"",
+    "test:ci": "node --import tsx --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results.xml \"tests/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -7,9 +7,11 @@ import Breadcrumb from '../components/base/Breadcrumb.astro';
 import Node from '../components/base/Node.astro';
 import TopicBlocks from '../components/composite/TopicBlocks.astro';
 import HubTrail from '../components/composite/HubTrail.astro';
+import FilterBar from '../components/composite/FilterBar.astro';
 import type { TopicPage } from '../config';
 import { getBreadcrumbs, normalizePath } from '../lib/navigation';
 import { assertHub, findHub, getHubLayout, stepsFor } from '../lib/hub';
+import { buildFilterModel, filterAttrs, pageSources } from '../lib/filter';
 
 interface Props {
   page: TopicPage;
@@ -27,6 +29,9 @@ if (page.hub) assertHub(page, currentPath);
 const hubContext = findHub(currentPath);
 const hubLayout = hubContext && !page.hub ? getHubLayout(hubContext.hub) : undefined;
 const usedIn = hubContext && hubLayout ? stepsFor(hubLayout, currentPath) : [];
+
+// Page-local filter/search/sort over this page's lists (null when too short to bother).
+const filterModel = buildFilterModel(pageSources(page), { force: page.alwaysFilter });
 ---
 
 <Layout title={page.title} description={page.description}>
@@ -38,20 +43,25 @@ const usedIn = hubContext && hubLayout ? stepsFor(hubLayout, currentPath) : [];
 
   <PageHeader title={page.title} lead={page.introduction ?? page.description} spaced />
 
-  {!page.hub && page.children && page.children.length > 0 && (
-    <Section title={`Explore ${page.title}`} class="topic-section">
-      <Grid tight>
-        {page.children.map((child) => (
-          <Node
-            title={child.title}
-            description={child.description}
-            href={`${currentPath}/${child.slug}`}
-            size="compact"
-          />
-        ))}
-      </Grid>
-    </Section>
-  )}
+  <div data-filter-scope>
+    {filterModel && <FilterBar model={filterModel} />}
 
-  <TopicBlocks blocks={page.blocks} page={page} path={currentPath} />
+    {!page.hub && page.children && page.children.length > 0 && (
+      <Section title={`Explore ${page.title}`} class="topic-section" filterGroup>
+        <Grid tight>
+          {page.children.map((child) => (
+            <Node
+              title={child.title}
+              description={child.description}
+              href={`${currentPath}/${child.slug}`}
+              size="compact"
+              {...filterAttrs(child)}
+            />
+          ))}
+        </Grid>
+      </Section>
+    )}
+
+    <TopicBlocks blocks={page.blocks} page={page} path={currentPath} />
+  </div>
 </Layout>

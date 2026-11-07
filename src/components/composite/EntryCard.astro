@@ -8,7 +8,8 @@ import Tags from '../base/Tags.astro';
 import CommandList from './CommandList.astro';
 import RepoMeta from './RepoMeta.astro';
 import type { Entry } from '../../config';
-import { parseRepo } from '../../lib/github';
+import { entryRepo, fetchRepoInfo } from '../../lib/github';
+import { entrySource, filterAttrs } from '../../lib/filter';
 
 interface Props {
   entry: Entry;
@@ -16,12 +17,20 @@ interface Props {
 
 const { entry } = Astro.props;
 
-// Repo is inferred from a github.com link unless explicitly set / disabled.
-const repo = entry.repo === false ? null : (entry.repo ?? parseRepo(entry.href));
+const repo = entryRepo(entry);
+
+// Fetched once here: RepoMeta renders it, and the filter bar sorts by it.
+const info = repo ? await fetchRepoInfo(repo, import.meta.env.GITHUB_TOKEN) : null;
 ---
 
-<Node title={entry.title} description={entry.description} href={entry.href} reveal searchable>
+<Node
+  title={entry.title}
+  description={entry.description}
+  href={entry.href}
+  searchable
+  {...filterAttrs(entrySource(entry), info)}
+>
   <Tags tags={entry.tags} />
   <CommandList commands={entry.commands} />
-  <RepoMeta slot="foot" repo={repo} updated={entry.updated} />
+  <RepoMeta slot="foot" repo={repo} info={info} updated={entry.updated} />
 </Node>

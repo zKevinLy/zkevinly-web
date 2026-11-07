@@ -12,18 +12,28 @@
 import { Star, Tag } from '@lucide/astro';
 import Badge from '../base/Badge.astro';
 import Freshness from '../base/Freshness.astro';
-import { fetchRepoInfo } from '../../lib/github';
+import { fetchRepoInfo, type RepoInfo } from '../../lib/github';
+
+const versionTitle = (prerelease: boolean | undefined) =>
+  prerelease ? 'Latest pre-release' : 'Latest release';
 
 interface Props {
   /** "owner/name". */
   repo?: string | null;
   /** Manual ISO date for entries that aren't on GitHub. */
   updated?: string;
+  /** Already-fetched data (EntryCard shares it with the filter bar). Omit to fetch here. */
+  info?: RepoInfo | null;
 }
 
-const { repo, updated: manualUpdated } = Astro.props;
+const { repo, updated: manualUpdated, info: given } = Astro.props;
 
-const info = repo ? await fetchRepoInfo(repo, import.meta.env.GITHUB_TOKEN) : null;
+const info =
+  given !== undefined
+    ? given
+    : repo
+      ? await fetchRepoInfo(repo, import.meta.env.GITHUB_TOKEN)
+      : null;
 const updated = info?.pushedAt ?? manualUpdated;
 ---
 
@@ -35,7 +45,8 @@ const updated = info?.pushedAt ?? manualUpdated;
         href={info?.releaseUrl ?? undefined}
         external
         data-role="version"
-        title="Latest release"
+        data-prerelease={info?.prerelease ? '' : undefined}
+        title={versionTitle(info?.prerelease)}
         hidden={!info?.version}
       >
         <Tag size={12} aria-hidden="true" />
@@ -55,22 +66,32 @@ const updated = info?.pushedAt ?? manualUpdated;
 )}
 
 <script>
-  import { fetchRepoInfo, freshness, relativeTime, type RepoInfo } from '../../lib/github';
+  import {
+    cacheKey,
+    fetchRepoInfo,
+    freshness,
+    readCachedInfo,
+    readStaleInfo,
+    relativeTime,
+    type RepoInfo,
+  } from '../../lib/github';
+  import { FILTER_REFRESH_EVENT, writeStats } from '../../lib/filter';
 
   const TTL = 60 * 60 * 1000;
 
   async function getInfo(repo: string): Promise<RepoInfo | null> {
-    const key = `gh:${repo}`;
+    const key = cacheKey(repo);
+    let raw: string | null = null;
 
     try {
-      const raw = localStorage.getItem(key);
-      if (raw) {
-        const cached = JSON.parse(raw) as { t: number; info: RepoInfo };
-        if (Date.now() - cached.t < TTL) return cached.info;
-      }
+      raw = localStorage.getItem(key);
     } catch {
-      // Ignore unreadable cache.
+      // Storage unavailable (private mode…): just fetch.
     }
+
+    // Outdated / malformed / expired entries come back null and are refetched.
+    const fresh = readCachedInfo(raw, TTL);
+    if (fresh) return fresh;
 
     const info = await fetchRepoInfo(repo);
 
@@ -80,9 +101,11 @@ const updated = info?.pushedAt ?? manualUpdated;
       } catch {
         // Storage full/unavailable — fine, just refetch next time.
       }
+      return info;
     }
 
-    return info; // null (rate-limited/offline) => keep the build-time values.
+    // Rate-limited/offline: an old copy beats an empty footer. (null keeps the build-time values.)
+    return readStaleInfo(raw);
   }
 
   function applyInfo(foot: HTMLElement, info: RepoInfo) {
@@ -93,6 +116,8 @@ const updated = info?.pushedAt ?? manualUpdated;
       if (info.version) {
         versionText.textContent = info.version;
         if (info.releaseUrl) version.href = info.releaseUrl;
+        version.title = info.prerelease ? 'Latest pre-release' : 'Latest release';
+        version.toggleAttribute('data-prerelease', info.prerelease);
       }
     }
 
@@ -112,6 +137,12 @@ const updated = info?.pushedAt ?? manualUpdated;
       time.textContent = relativeTime(info.pushedAt);
       updated.dataset.fresh = freshness(info.pushedAt);
     }
+
+    // Keep the page's sort-by-updated / sort-by-stars honest too.
+    writeStats(foot.closest<HTMLElement>('[data-filter-item]'), {
+      pushedAt: info.pushedAt,
+      stars: info.stars,
+    });
   }
 
   document.addEventListener('astro:page-load', async () => {
@@ -122,5 +153,6 @@ const updated = info?.pushedAt ?? manualUpdated;
         if (info) applyInfo(foot, info);
       }),
     );
+    document.dispatchEvent(new CustomEvent(FILTER_REFRESH_EVENT));
   });
 </script>
