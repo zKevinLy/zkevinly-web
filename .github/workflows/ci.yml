@@ -5,30 +5,38 @@ on:
     branches: [main]
   pull_request:
 
-# Cancel superseded runs on the same branch/PR.
+# A newer push to a PR cancels the older run. Never cancel on main: a deploy that
+# is cut off half way (deployed but not tagged) is worse than waiting.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
 jobs:
-  test:
-    name: Unit tests
+  # Everything `npm run ci` does: lint, format check, unit tests, type check + build, audit.
+  verify:
+    name: Lint, test & build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
 
-      - name: Unit tests
-        run: npm run test:ci
+      - name: Run CI checks
+        run: npm run ci
+        env:
+          # Avoids GitHub's 60 requests/hour unauthenticated limit when RepoMeta
+          # fetches release info at build time.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload test report
         if: ${{ !cancelled() }}
@@ -38,23 +46,62 @@ jobs:
           path: test-results.xml
           if-no-files-found: ignore
 
-  build:
-    name: Build
+  # Only for pushes to main that passed verify. Deploy first, tag after: a failed
+  # deploy means no release and no tag.
+  deploy:
+    name: Deploy & release
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: test
+    environment: prod
+    permissions:
+      contents: write # create the tag + GitHub Release
+    # Two pushes in quick succession must not compute the same version.
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # next-version.sh reads the full history...
+          fetch-tags: true # ...and the existing v* tags
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
 
       - run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Work out the next version
+        id: version
+        run: echo "tag=$(bash .github/scripts/next-version.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Build (stamped with the version)
+        # `verify` already ran the type check; this is the build that ships.
+        run: |
+          printf '{"version":"%s","commit":"%s","builtAt":"%s"}\n' \
+            "$TAG" "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > public/version.json
+          npm run build:fast
         env:
-          # Avoids GitHub's 60 requests/hour unauthenticated limit when RepoMeta
-          # fetches release info at build time.
+          TAG: ${{ steps.version.outputs.tag }}
+          PUBLIC_APP_VERSION: ${{ steps.version.outputs.tag }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to Cloudflare Workers
+        run: npm run deploy # wrangler deploy (see wrangler.toml)
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      - name: Tag and create the GitHub Release
+        run: |
+          (cd dist && zip -qr "../site-${TAG}.zip" .)
+          gh release create "$TAG" "site-${TAG}.zip" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --generate-notes
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -3,7 +3,17 @@ import tseslint from 'typescript-eslint';
 import astro from 'eslint-plugin-astro';
 
 export default [
-  { ignores: ['dist/', '.astro/', 'node_modules/'] },
+  {
+    ignores: [
+      'dist/',
+      '.astro/',
+      'node_modules/',
+      // Local tool output: never lint generated files.
+      '.wrangler/',
+      '.lighthouseci/',
+      'coverage/',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...astro.configs['flat/recommended'],
