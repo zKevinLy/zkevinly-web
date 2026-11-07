@@ -9,7 +9,7 @@ and behaviour, but nothing about this site's data (`Entry`, `TopicBlock`, GitHub
 
 | Component    | Purpose                                                      |
 | ------------ | ------------------------------------------------------------ |
-| `Card`       | The only card. Title, description, optional link, slots      |
+| `Node`       | The only card/step. Title, number, link, check-off, slots    |
 | `Badge`      | Small pill, link or span                                     |
 | `Tags`       | Row of tag pills                                             |
 | `Freshness`  | "Updated 3 days ago" + heartbeat dot (owns the time refresh) |
@@ -31,17 +31,19 @@ May know about site data and wire primitives together.
 
 | Component                      | Built from                                                |
 | ------------------------------ | --------------------------------------------------------- |
-| `EntryCard`                    | `Card` + `Tags` + `CommandList` + `RepoMeta`              |
-| `TopicCard`, `LinkCard`        | `Card`                                                    |
+| `EntryCard`                    | `Node` + `Tags` + `CommandList` + `RepoMeta`              |
+| `Workflow`                     | `Node` (one per step) + phase rows + trace/check-off      |
+| `HubIndex`                     | `Node` + `Grid`                                           |
 | `CommandBlock` → `CommandList` | `CopyButton`                                              |
 | `RepoMeta`                     | `Badge` + `Freshness` (+ GitHub live data)                |
-| `TopicBlocks`                  | `Section`, `Prose`, `Grid`, `Steps`, `Figure`, `LinkCard` |
+| `TopicBlocks`                  | `Section`, `Prose`, `Grid`, `Steps`, `Figure`, `Node`     |
 | `Header`                       | `IconButton`, `NavLink`                                   |
 | `Search`                       | (self-contained overlay)                                  |
 
 ## Rules
 
-1. Need a new card? Compose `Card`. Do not write `<div class="card">` by hand.
+1. Need a new card, tile, or step? Use `Node` (extend its props if it can't express it). Do not
+   write a second card component or hand-write `<div class="node">`.
 2. Need new behaviour (copy, relative time, live data)? It lives in exactly one
    component, with its `<script>` next to its markup.
 3. Pages and layouts only assemble components; they don't carry their own markup

@@ -1,0 +1,148 @@
+---
+/**
+ * BASE: Node — the single card / step primitive for the whole site.
+ *
+ * Every card (directory entries, topic children, link items, workflow steps…)
+ * is this component with different props and slot content. Never hand-write a
+ * `<div class="node">` elsewhere, and never add a second card-like component:
+ * extend this one's props instead.
+ *
+ * Layout
+ *   head    [number] title ............ [badges] [label] [link icon] [checkbox]
+ *   body    description, default slot, secondary `links`
+ *   foot    pinned to the bottom (foot slot)
+ *
+ * `href` makes the whole node clickable (the title link stretches over it); the
+ * icon in the top-right cluster says where it goes: ExternalLink for other
+ * sites, ChevronRight for pages on this site. Anything inside that needs its
+ * own interaction (badges, checkbox, links, copy buttons) sits above that
+ * stretched link via z-index: 2 in CSS.
+ *
+ * Slots
+ *   default  body content, below the description
+ *   foot     pinned to the bottom of the node
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { ChevronRight, ExternalLink } from '@lucide/astro';
+
+interface NodeLink {
+  label: string;
+  href: string;
+}
+
+interface Props extends Omit<HTMLAttributes<'article'>, 'title'> {
+  title: string;
+  description?: string;
+  /** Makes the node clickable. */
+  href?: string;
+  /** Small mono label at the top right (e.g. "Official"). */
+  label?: string;
+  /** Extra mono pills beside the label (e.g. "Optional"). */
+  badges?: string[];
+  /** Step number shown before the title (e.g. "01"). */
+  number?: string;
+  /**
+   * Renders a check-off box in the top-right cluster. The value is exposed as
+   * `data-check`; the owning composite's script handles state.
+   */
+  check?: string;
+  /** Secondary links listed under the body, each with its own icon. */
+  links?: NodeLink[];
+  /** Heading level for the title (keep the page outline sensible). */
+  as?: 'h2' | 'h3' | 'h4';
+  size?: 'default' | 'compact';
+  /** Fade/slide in on page load (see Layout's GSAP script). */
+  reveal?: boolean;
+  /** Include this node as its own search result. */
+  searchable?: boolean;
+}
+
+const {
+  title,
+  description,
+  href,
+  label,
+  badges = [],
+  number,
+  check,
+  links = [],
+  as: Heading = 'h3',
+  size = 'default',
+  reveal = false,
+  searchable = false,
+  class: className,
+  ...attrs
+} = Astro.props;
+
+const isExternal = (url: string) => /^https?:\/\//.test(url);
+const external = href ? isExternal(href) : false;
+const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean(check);
+---
+
+<article
+  class:list={['node', size === 'compact' && 'node-compact', href && 'node-interactive', className]}
+  data-reveal={reveal ? '' : undefined}
+  data-pagefind-body={searchable ? '' : undefined}
+  data-search-item={searchable ? '' : undefined}
+  {...attrs}
+>
+  <div class="node-head">
+    <Heading class="node-title">
+      {number && <span class="node-number">{number}</span>}
+      {href ? (
+        <a
+          class="node-link"
+          href={href}
+          target={external ? '_blank' : undefined}
+          rel={external ? 'noopener noreferrer' : undefined}
+          aria-label={external ? `${title} (opens in a new tab)` : undefined}
+        >
+          {title}
+        </a>
+      ) : (
+        title
+      )}
+    </Heading>
+
+    {hasAside && (
+      <span class="node-aside">
+        {badges.map((badge) => <span class="node-badge">{badge}</span>)}
+        {label && <span class="node-label">{label}</span>}
+        {href && (external ? <ExternalLink size={16} aria-hidden="true" /> : <ChevronRight size={16} aria-hidden="true" />)}
+        {check && (
+          <label class="node-check">
+            <input type="checkbox" data-check={check} />
+            <span class="sr-only">Mark as done: {title}</span>
+          </label>
+        )}
+      </span>
+    )}
+  </div>
+
+  {description && <p class="node-desc">{description}</p>}
+
+  <slot />
+
+  {links.length > 0 && (
+    <ul class="node-links">
+      {links.map((link) => {
+        const linkExternal = isExternal(link.href);
+        return (
+          <li>
+            <a
+              class="node-action"
+              href={link.href}
+              target={linkExternal ? '_blank' : undefined}
+              rel={linkExternal ? 'noopener noreferrer' : undefined}
+            >
+              {link.label}
+              {linkExternal ? <ExternalLink size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  )}
+
+  <slot name="foot" />
+</article>

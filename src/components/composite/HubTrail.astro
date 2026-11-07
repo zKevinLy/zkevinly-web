@@ -1,0 +1,32 @@
+---
+/**
+ * COMPOSITE: shown on every page beneath a hub. Links back to the hub and to the
+ * exact workflow steps that use this page, so connections are visible both ways.
+ */
+import type { LaidOutNode } from '../../lib/workflow';
+
+interface Props {
+  hubTitle: string;
+  hubPath: string;
+  steps: LaidOutNode[];
+}
+
+const { hubTitle, hubPath, steps } = Astro.props;
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<aside class="hub-trail" aria-label={`Where this fits in ${hubTitle}`}>
+  <span class="hub-trail-label">Part of</span>
+  <a href={hubPath}>{hubTitle}</a>
+  {steps.length > 0 && (
+    <>
+      <span class="hub-trail-label">Used in</span>
+      {steps.map((step) => (
+        <a class="hub-chip" href={`${hubPath}#workflow-${step.id}`}>
+          <b>{pad(step.number)}</b>
+          {step.title}
+        </a>
+      ))}
+    </>
+  )}
+</aside>

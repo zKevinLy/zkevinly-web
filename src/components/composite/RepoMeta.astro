@@ -28,7 +28,7 @@ const updated = info?.pushedAt ?? manualUpdated;
 ---
 
 {(repo || updated) && (
-  <div class="card-foot" data-repo={repo ?? undefined}>
+  <div class="node-foot" data-repo={repo ?? undefined}>
     {repo && (
       <Badge
         as="a"

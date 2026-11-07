@@ -4,10 +4,12 @@ import PageHeader from '../components/base/PageHeader.astro';
 import Section from '../components/base/Section.astro';
 import Grid from '../components/base/Grid.astro';
 import Breadcrumb from '../components/base/Breadcrumb.astro';
-import TopicCard from '../components/composite/TopicCard.astro';
+import Node from '../components/base/Node.astro';
 import TopicBlocks from '../components/composite/TopicBlocks.astro';
+import HubTrail from '../components/composite/HubTrail.astro';
 import type { TopicPage } from '../config';
 import { getBreadcrumbs, normalizePath } from '../lib/navigation';
+import { assertHub, findHub, getHubLayout, stepsFor } from '../lib/hub';
 
 interface Props {
   page: TopicPage;
@@ -17,26 +19,39 @@ const { page } = Astro.props;
 
 const breadcrumbs = getBreadcrumbs(Astro.url.pathname);
 const currentPath = normalizePath(Astro.url.pathname);
+
+// Hub pages must link to every page beneath them (build fails otherwise).
+if (page.hub) assertHub(page, currentPath);
+
+// Pages beneath a hub show a trail back to the steps that use them.
+const hubContext = findHub(currentPath);
+const hubLayout = hubContext && !page.hub ? getHubLayout(hubContext.hub) : undefined;
+const usedIn = hubContext && hubLayout ? stepsFor(hubLayout, currentPath) : [];
 ---
 
 <Layout title={page.title} description={page.description}>
   <Breadcrumb items={breadcrumbs} />
 
+  {hubContext && hubLayout && (
+    <HubTrail hubTitle={hubContext.hub.title} hubPath={hubContext.hubPath} steps={usedIn} />
+  )}
+
   <PageHeader title={page.title} lead={page.introduction ?? page.description} spaced />
 
-  {page.children && page.children.length > 0 && (
+  {!page.hub && page.children && page.children.length > 0 && (
     <Section title={`Explore ${page.title}`} class="topic-section">
       <Grid tight>
         {page.children.map((child) => (
-          <TopicCard
+          <Node
             title={child.title}
             description={child.description}
             href={`${currentPath}/${child.slug}`}
+            size="compact"
           />
         ))}
       </Grid>
     </Section>
   )}
 
-  <TopicBlocks blocks={page.blocks} />
+  <TopicBlocks blocks={page.blocks} page={page} path={currentPath} />
 </Layout>

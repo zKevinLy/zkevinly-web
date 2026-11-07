@@ -1,9 +1,9 @@
 ---
 /**
- * COMPOSITE: a directory entry. Card + Tags + CommandList + RepoMeta.
+ * COMPOSITE: a directory entry. Node + Tags + CommandList + RepoMeta.
  * This is the "rich" card used on Projects / Resources.
  */
-import Card from '../base/Card.astro';
+import Node from '../base/Node.astro';
 import Tags from '../base/Tags.astro';
 import CommandList from './CommandList.astro';
 import RepoMeta from './RepoMeta.astro';
@@ -20,8 +20,8 @@ const { entry } = Astro.props;
 const repo = entry.repo === false ? null : (entry.repo ?? parseRepo(entry.href));
 ---
 
-<Card title={entry.title} description={entry.description} href={entry.href} reveal searchable>
+<Node title={entry.title} description={entry.description} href={entry.href} reveal searchable>
   <Tags tags={entry.tags} />
   <CommandList commands={entry.commands} />
   <RepoMeta slot="foot" repo={repo} updated={entry.updated} />
-</Card>
+</Node>

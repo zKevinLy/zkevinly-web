@@ -5,30 +5,50 @@ import Prose from '../base/Prose.astro';
 import Grid from '../base/Grid.astro';
 import Steps from '../base/Steps.astro';
 import Figure from '../base/Figure.astro';
-import LinkCard from './LinkCard.astro';
-import type { TopicBlock } from '../../config';
+import Node from '../base/Node.astro';
+import Workflow from './Workflow.astro';
+import HubIndex from './HubIndex.astro';
+import type { TopicBlock, TopicPage } from '../../config';
 
 interface Props {
   blocks: TopicBlock[];
+  /** Needed by `index` blocks, which render the page's own children. */
+  page?: TopicPage;
+  path?: string;
 }
 
-const { blocks } = Astro.props;
+const { blocks, page, path } = Astro.props;
 ---
 
 <div class="topic-blocks">
-  {blocks.map((block) => (
-    <Section title={block.title} note={block.type === 'links' ? block.description : undefined}>
+  {blocks.filter((block) => !(block.type === 'text' && block.title?.toLowerCase().startsWith('about '))).map((block) => (
+    <Section title={block.title} note={block.type === 'links' || block.type === 'index' ? block.description : undefined}>
       {block.type === 'text' && <Prose>{block.content}</Prose>}
 
       {block.type === 'links' && (
         <Grid tight>
           {block.items.map((link) => (
-            <LinkCard link={link} />
+            <Node
+              title={link.title}
+              description={link.description}
+              href={link.href}
+              label={link.label}
+              size="compact"
+            />
           ))}
         </Grid>
       )}
 
       {block.type === 'steps' && <Steps items={block.items} />}
+
+      {block.type === 'workflow' && (
+        <>
+          {block.description && <p class="workflow-intro">{block.description}</p>}
+          <Workflow nodes={block.nodes} phases={block.phases} />
+        </>
+      )}
+
+      {block.type === 'index' && page && path && <HubIndex page={page} path={path} />}
 
       {block.type === 'image' && <Figure src={block.src} alt={block.alt} caption={block.caption} />}
     </Section>

@@ -438,7 +438,7 @@ kbd {
   color: var(--muted);
 }
 
-/* ---------- Cards ---------- */
+/* ---------- Nodes (the one card / step primitive: base/Node.astro) ---------- */
 
 .grid {
   display: grid;
@@ -459,7 +459,7 @@ kbd {
   gap: 0.75rem;
 }
 
-.card {
+.node {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -473,65 +473,117 @@ kbd {
     transform 100ms ease;
 }
 
-.card:hover {
+.node:hover {
   border-color: color-mix(in srgb, var(--accent) 60%, transparent);
   background: var(--surface-hover);
 }
 
-.card-compact {
+.node-compact {
   padding: 1rem;
 }
 
-.card-head {
+.node-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
-.card-title {
+.node-title {
   min-width: 0;
   font-size: 1rem;
   font-weight: 500;
   transition: color 150ms ease;
 }
 
-.card:hover .card-title {
+.node:hover .node-title {
   color: var(--accent);
 }
 
-.card-desc {
+.node-desc {
   margin-top: 0.5rem;
   font-size: 0.875rem;
   color: var(--muted);
 }
 
-/* Top-right cluster in a card head: label + external-link icon. */
-.card-aside {
+/* Top-right cluster in a node head: badges, label, link icon, check-off box. */
+.node-aside {
   display: inline-flex;
   flex-shrink: 0;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
   color: var(--muted);
   transition: color 150ms ease;
 }
 
-.card:hover .card-aside {
+.node:hover .node-aside {
   color: var(--accent);
 }
 
-.card-label {
+.node-label {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--accent);
 }
 
-.card-cta {
-  display: block;
-  margin-top: 1rem;
+.node-number {
+  margin-right: 0.6rem;
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.node-badge {
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}
+
+/* Check-off box: sits in the aside, above the stretched title link. */
+.node-check {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.node-check input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Secondary links, each with its own icon. */
+.node-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.node-action {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.node-action:hover {
+  text-decoration: underline;
 }
 
 .tags {
@@ -555,38 +607,38 @@ kbd {
 /* The title link stretches over the whole card, so the card is clickable while
    badges / copy buttons (z-index 2) stay independently clickable. */
 
-.card-interactive {
+.node-interactive {
   cursor: pointer;
 }
 
-.card-interactive:hover {
+.node-interactive:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px -12px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
-.card-interactive:active {
+.node-interactive:active {
   transform: translateY(0) scale(0.995);
 }
 
-.card-link::after {
+.node-link::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: var(--radius);
 }
 
-.card-link:focus-visible {
+.node-link:focus-visible {
   outline: none;
 }
 
-.card-link:focus-visible::after {
+.node-link:focus-visible::after {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
 /* Footer: version · stars · updated */
 
-.card-foot {
+.node-foot {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1458,4 +1510,280 @@ a.badge-link:hover {
 
 .chat-send:hover {
   opacity: 0.85;
+}
+
+
+/* ---------- Dependency workflow (composes Node) ---------- */
+.workflow-intro {
+  max-width: 44rem;
+  margin: 0.75rem 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+.workflow {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 56rem);
+  margin-top: 1rem;
+}
+.workflow-edges {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: visible;
+  pointer-events: none;
+}
+.workflow-edge {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 40%, var(--border));
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 4 5;
+  transition:
+    opacity 150ms ease,
+    stroke 150ms ease,
+    stroke-width 150ms ease;
+}
+
+/* Progress + check-off */
+.workflow-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+.workflow-progress-bar {
+  flex: 1;
+  max-width: 14rem;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+.workflow-progress-bar > div {
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms ease;
+}
+.workflow-reset {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+.workflow-reset:hover {
+  text-decoration: underline;
+}
+
+/* Phases: rows read top to bottom; nodes inside a row are parallel branches. */
+.workflow-phases {
+  display: grid;
+  gap: 2.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.workflow-phase {
+  display: grid;
+  gap: 0.9rem;
+}
+.workflow-phase-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--border);
+}
+.workflow-phase-label {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.workflow-phase-head h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.workflow-phase-head p {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  gap: 1.1rem;
+}
+
+/* A workflow step is a Node; only step-specific behaviour lives here. */
+.workflow-node {
+  min-width: 0;
+  scroll-margin-top: 5rem;
+  transition:
+    opacity 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.workflow-node.node-interactive:hover {
+  transform: none; /* edges are anchored to the card, so don't lift it */
+}
+.workflow-node.is-optional {
+  border-style: dashed;
+}
+.workflow-node.is-done .node-title {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.workflow-node.is-done .node-desc,
+.workflow-node.is-done .node-number {
+  opacity: 0.6;
+}
+
+/* Trace: hover/focus a node to light up its whole chain and dim the rest. */
+.workflow[data-focus] .workflow-node:not(.is-active):not(.is-related) {
+  opacity: 0.45;
+}
+.workflow[data-focus] .workflow-edge {
+  opacity: 0.15;
+}
+.workflow[data-focus] .workflow-edge.is-related {
+  opacity: 1;
+  stroke: var(--accent);
+  stroke-width: 2.25;
+  stroke-dasharray: none;
+}
+.workflow-node.is-related {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.workflow-node.is-active,
+.workflow-node:target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.workflow-dependencies {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.workflow-dependencies + .workflow-dependencies {
+  margin-top: 0.4rem;
+}
+.workflow-dependencies > span {
+  min-width: 4.2rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.workflow-dependencies a {
+  position: relative;
+  z-index: 2; /* above the node's stretched link */
+  padding: 0.15rem 0.4rem;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.workflow-dependencies a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 640px) {
+  .workflow-phases {
+    gap: 2rem;
+  }
+  .workflow-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .workflow-edge {
+    stroke-dasharray: 3 5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workflow-node,
+  .workflow-edge {
+    transition: none;
+  }
+}
+
+/* ---------- Hub: index + trail back to the setup steps ---------- */
+.hub-trail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.hub-trail-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hub-trail a {
+  color: var(--accent);
+}
+.hub-trail a:hover,
+.hub-sub a:hover,
+.hub-chip:hover {
+  text-decoration: underline;
+}
+.hub-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+.hub-chip {
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.7rem;
+}
+.hub-chip b {
+  margin-right: 0.35rem;
+  font-family: var(--font-mono);
+}
+.hub-sub {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+}
+.hub-sub a {
+  color: var(--accent);
+}
+.hub-sub-steps {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+/* Links inside a node body must sit above the node's stretched title link. */
+.hub-chips a,
+.hub-sub a {
+  position: relative;
+  z-index: 2;
 }

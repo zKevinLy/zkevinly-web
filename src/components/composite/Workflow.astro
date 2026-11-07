@@ -1,0 +1,253 @@
+---
+/**
+ * COMPOSITE: phased, dependency-aware setup workflow.
+ *
+ * Phases are rows read top to bottom (the linear instructions); nodes inside a
+ * row are parallel branches. Edges come from `dependsOn`, and the build fails if
+ * any node other than the start has no parent (see lib/workflow.ts). Each step is
+ * a base `Node`; hovering or focusing one traces everything it requires and
+ * everything it unlocks.
+ */
+import Node from '../base/Node.astro';
+import type { WorkflowNode, WorkflowPhase } from '../../config';
+import { layoutWorkflow } from '../../lib/workflow';
+
+interface Props {
+  nodes: WorkflowNode[];
+  phases: WorkflowPhase[];
+}
+
+const { nodes, phases } = Astro.props;
+const layout = layoutWorkflow(nodes, phases);
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<div class="workflow" data-workflow data-edges={JSON.stringify(layout.edges)}>
+  <svg class="workflow-edges" aria-hidden="true" data-workflow-edges></svg>
+
+  <div class="workflow-progress" data-workflow-progress>
+    <span data-progress-text>0 of {layout.nodes.length} steps done</span>
+    <div class="workflow-progress-bar" aria-hidden="true"><div data-progress-bar></div></div>
+    <button type="button" class="workflow-reset" data-workflow-reset hidden>Reset</button>
+  </div>
+
+  <ol class="workflow-phases">
+    {layout.phases.map((group) => (
+      <li class="workflow-phase">
+        <div class="workflow-phase-head">
+          <span class="workflow-phase-label">Phase {group.index + 1}</span>
+          <h3>{group.phase.title}</h3>
+          {group.phase.description && <p>{group.phase.description}</p>}
+        </div>
+
+        <div class="workflow-grid">
+          {group.nodes.map((node) => (
+            <Node
+              class:list={['workflow-node', node.optional && 'is-optional']}
+              id={`workflow-${node.id}`}
+              data-node={node.id}
+              as="h4"
+              size="compact"
+              number={pad(node.number)}
+              title={node.title}
+              description={node.description}
+              href={node.href}
+              badges={[...(node.optional ? ['Optional'] : []), ...(node.branch ? [node.branch] : [])]}
+              check={node.id}
+              links={node.links}
+            >
+              {node.requires.length > 0 && (
+                <div class="workflow-dependencies">
+                  <span>Requires</span>
+                  {node.requires.map((id) => (
+                    <a href={`#workflow-${id}`}>
+                      {pad(layout.byId.get(id)!.number)} {layout.byId.get(id)!.title}
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {node.unlocks.length > 0 && (
+                <div class="workflow-dependencies">
+                  <span>Unlocks</span>
+                  {node.unlocks.map((id) => (
+                    <a href={`#workflow-${id}`}>
+                      {pad(layout.byId.get(id)!.number)} {layout.byId.get(id)!.title}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </Node>
+          ))}
+        </div>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<script>
+  type Edge = { from: string; to: string };
+
+  function setupWorkflow(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+
+    const svg = root.querySelector<SVGSVGElement>('[data-workflow-edges]');
+    if (!svg) return;
+
+    const edges = JSON.parse(root.dataset.edges || '[]') as Edge[];
+    const nodeEl = (id: string) =>
+      root.querySelector<HTMLElement>(`[data-node="${CSS.escape(id)}"]`);
+
+    const parents = new Map<string, string[]>();
+    const children = new Map<string, string[]>();
+    for (const { from, to } of edges) {
+      children.set(from, [...(children.get(from) ?? []), to]);
+      parents.set(to, [...(parents.get(to) ?? []), from]);
+    }
+
+    // Spread connection points along a node's edge so converging/diverging
+    // lines don't stack on one pixel.
+    const slot = (list: string[] | undefined, id: string) => {
+      const count = list?.length ?? 1;
+      const index = Math.max(0, list?.indexOf(id) ?? 0);
+      return (index + 1) / (count + 1);
+    };
+
+    const draw = () => {
+      const bounds = root.getBoundingClientRect();
+      const width = root.scrollWidth;
+      const height = root.scrollHeight;
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.setAttribute('width', String(width));
+      svg.setAttribute('height', String(height));
+      svg.replaceChildren();
+
+      for (const edge of edges) {
+        const from = nodeEl(edge.from);
+        const to = nodeEl(edge.to);
+        if (!from || !to) continue;
+        const a = from.getBoundingClientRect();
+        const b = to.getBoundingClientRect();
+        const x1 = a.left - bounds.left + a.width * slot(children.get(edge.from), edge.to);
+        const y1 = a.bottom - bounds.top;
+        const x2 = b.left - bounds.left + b.width * slot(parents.get(edge.to), edge.from);
+        const y2 = b.top - bounds.top;
+        const bend = Math.max(24, Math.abs(y2 - y1) * 0.45);
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', `M ${x1} ${y1} C ${x1} ${y1 + bend}, ${x2} ${y2 - bend}, ${x2} ${y2}`);
+        path.setAttribute('class', 'workflow-edge');
+        path.dataset.from = edge.from;
+        path.dataset.to = edge.to;
+        svg.append(path);
+      }
+      if (root.dataset.active) trace(root.dataset.active);
+    };
+
+    const reach = (start: string, map: Map<string, string[]>) => {
+      const seen = new Set<string>();
+      const stack = [start];
+      while (stack.length) {
+        for (const next of map.get(stack.pop()!) ?? []) {
+          if (!seen.has(next)) {
+            seen.add(next);
+            stack.push(next);
+          }
+        }
+      }
+      return seen;
+    };
+
+    const trace = (id: string | null) => {
+      const related = id ? new Set([...reach(id, parents), ...reach(id, children)]) : new Set<string>();
+      if (id) {
+        root.dataset.focus = 'true';
+        root.dataset.active = id;
+      } else {
+        delete root.dataset.focus;
+        delete root.dataset.active;
+      }
+      root.querySelectorAll<HTMLElement>('.workflow-node').forEach((el) => {
+        el.classList.toggle('is-active', el.dataset.node === id);
+        el.classList.toggle('is-related', related.has(el.dataset.node ?? ''));
+      });
+      const chain = id ? new Set([id, ...related]) : new Set<string>();
+      svg.querySelectorAll<SVGPathElement>('.workflow-edge').forEach((path) => {
+        path.classList.toggle(
+          'is-related',
+          chain.has(path.dataset.from ?? '') && chain.has(path.dataset.to ?? ''),
+        );
+      });
+    };
+
+    // ---- Check-off state, remembered per page in this browser only. ----
+    const storageKey = `workflow-done:${location.pathname.replace(/\/$/, '')}`;
+    const boxes = Array.from(root.querySelectorAll<HTMLInputElement>('input[data-check]'));
+    const text = root.querySelector<HTMLElement>('[data-progress-text]');
+    const bar = root.querySelector<HTMLElement>('[data-progress-bar]');
+    const reset = root.querySelector<HTMLButtonElement>('[data-workflow-reset]');
+
+    const load = (): string[] => {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) ?? '[]');
+        return Array.isArray(saved) ? saved.filter((v): v is string => typeof v === 'string') : [];
+      } catch {
+        return [];
+      }
+    };
+    const save = () => {
+      try {
+        const done = boxes.filter((b) => b.checked).map((b) => b.dataset.check!);
+        if (done.length) localStorage.setItem(storageKey, JSON.stringify(done));
+        else localStorage.removeItem(storageKey);
+      } catch {
+        // Storage blocked: checkboxes still work for this visit.
+      }
+    };
+    const refresh = () => {
+      const done = boxes.filter((b) => b.checked).length;
+      boxes.forEach((b) => nodeEl(b.dataset.check!)?.classList.toggle('is-done', b.checked));
+      if (text) text.textContent = `${done} of ${boxes.length} steps done`;
+      if (bar) bar.style.width = `${boxes.length ? (done / boxes.length) * 100 : 0}%`;
+      if (reset) reset.hidden = done === 0;
+    };
+
+    const saved = new Set(load());
+    boxes.forEach((b) => {
+      b.checked = saved.has(b.dataset.check!);
+      b.addEventListener('change', () => {
+        save();
+        refresh();
+      });
+    });
+    reset?.addEventListener('click', () => {
+      boxes.forEach((b) => (b.checked = false));
+      save();
+      refresh();
+    });
+    refresh();
+
+    root.querySelectorAll<HTMLElement>('.workflow-node').forEach((el) => {
+      const id = el.dataset.node!;
+      el.addEventListener('pointerenter', () => trace(id));
+      el.addEventListener('pointerleave', () => trace(null));
+      el.addEventListener('focusin', () => trace(id));
+      el.addEventListener('focusout', () => trace(null));
+    });
+
+    draw();
+    if ('ResizeObserver' in window) {
+      const observer = new ResizeObserver(draw);
+      observer.observe(root);
+      root.querySelectorAll('.workflow-node').forEach((node) => observer.observe(node));
+    }
+    window.addEventListener('load', draw, { once: true });
+  }
+
+  function setupWorkflows() {
+    document.querySelectorAll<HTMLElement>('[data-workflow]').forEach(setupWorkflow);
+  }
+
+  setupWorkflows();
+  document.addEventListener('astro:page-load', setupWorkflows);
+</script>

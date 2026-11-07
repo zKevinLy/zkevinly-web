@@ -1,0 +1,63 @@
+---
+/**
+ * COMPOSITE: the hub's central index. Groups every page beneath the hub and shows
+ * which workflow steps use it, so the whole guide is reachable from one place.
+ */
+import Grid from '../base/Grid.astro';
+import Node from '../base/Node.astro';
+import type { TopicPage } from '../../config';
+import { descendants, getHubLayout, stepsFor } from '../../lib/hub';
+
+interface Props {
+  page: TopicPage;
+  path: string;
+}
+
+const { page, path } = Astro.props;
+const layout = getHubLayout(page);
+const pad = (n: number) => String(n).padStart(2, '0');
+
+const groups = (page.children ?? []).map((child) => {
+  const childPath = `${path}/${child.slug}`;
+  return {
+    child,
+    childPath,
+    steps: layout ? stepsFor(layout, childPath) : [],
+    subpages: descendants(child, childPath).map((ref) => ({
+      ...ref,
+      steps: layout ? stepsFor(layout, ref.path) : [],
+    })),
+  };
+});
+---
+
+{layout && (
+  <Grid tight>
+    {groups.map(({ child, childPath, steps, subpages }) => (
+      <Node title={child.title} description={child.description} href={childPath} size="compact">
+        {steps.length > 0 && (
+          <div class="hub-chips">
+            {steps.map((step) => (
+              <a class="hub-chip" href={`#workflow-${step.id}`} title={step.title}>
+                <b>{pad(step.number)}</b>
+                {step.title}
+              </a>
+            ))}
+          </div>
+        )}
+        {subpages.length > 0 && (
+          <ul class="hub-sub">
+            {subpages.map((sub) => (
+              <li>
+                <a href={sub.path}>{sub.page.title}</a>
+                {sub.steps.length > 0 && (
+                  <span class="hub-sub-steps"> · step {sub.steps.map((s) => pad(s.number)).join(', ')}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Node>
+    ))}
+  </Grid>
+)}

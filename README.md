@@ -31,6 +31,24 @@ Central site for zkevinly.com: homepage, project directory, resources, tools, ex
 Output is fully static (`dist/`). Works as-is on Cloudflare Pages, Netlify, Vercel, or GitHub Pages
 (build command `npm run build`, output dir `dist`).
 
+## Hub pages (no floating nodes)
+
+A topic page with `hub: true` (currently Collections → Nuvio → **Getting Started**) is the only way
+into everything beneath it. Pages hang off the hub as children, and the hub's `workflow` block is the
+map that links to them. The build enforces the rules, so nothing can be left floating:
+
+- **One start node; every other node has a parent.** `dependsOn` lists a node's parents, and a node
+  with none (other than the start) fails the build.
+- **Parents sit in an earlier phase.** Phases are the rows you read top to bottom; nodes in the same
+  phase are parallel branches, so the graph always flows downward and can't loop.
+- **Every page under the hub must be linked from a step** (`href` or `links`), or the build fails.
+- The hub's `{ type: 'index' }` block auto-lists all of its pages with the steps that use them, and
+  each page under the hub shows a "Part of / Used in" trail back to those steps.
+
+To add a page to a hub, add it to the hub's `children`, then link it from the step that needs it. To
+add a step, give it a `phase` and a `dependsOn`. Hover or focus a step on the page to trace everything
+it requires and unlocks.
+
 ## Directory cards
 
 Cards that link to a GitHub repo automatically show the latest release, star count and

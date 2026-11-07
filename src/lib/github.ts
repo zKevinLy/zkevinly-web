@@ -1,5 +1,5 @@
-// GitHub helpers shared by the build (Card.astro frontmatter) and the browser
-// (Card.astro <script>). Keep this file free of Node-only APIs.
+// GitHub helpers shared by the build (RepoMeta.astro frontmatter) and the browser
+// (RepoMeta.astro <script>). Keep this file free of Node-only APIs.
 
 export interface RepoInfo {
   /** ISO timestamp of the most recent push. */
