@@ -1,0 +1,230 @@
+---
+/**
+ * COMPOSITE: a fake chat bot that only answers with emoji (or GIFs).
+ *
+ * Fixed bottom-right on every page (mounted once in Layout). Starts collapsed;
+ * the launcher toggles the panel. Privacy: nothing is saved or sent anywhere —
+ * no localStorage, no cookies, no network. The conversation lives in memory and
+ * survives client-side navigation (transition:persist) but disappears on reload.
+ *
+ * Bases: Avatar, IconButton. Content lives in config/chatbot.ts and the reply
+ * picker in lib/chatbot.ts.
+ */
+import { Minus, SendHorizontal } from '@lucide/astro';
+import Avatar from '../base/Avatar.astro';
+import IconButton from '../base/IconButton.astro';
+import { chatbot } from '../../config/chatbot';
+---
+
+<aside class="chat" aria-label={chatbot.name} data-pagefind-ignore transition:persist="chatbot">
+  <section
+    id="chat-panel"
+    class="chat-panel"
+    role="dialog"
+    aria-label={`Chat with ${chatbot.name}`}
+    hidden
+  >
+    <header class="chat-head">
+      <Avatar size={32} />
+      <div class="chat-id">
+        <strong class="chat-name">{chatbot.name}</strong>
+        <span class="chat-sub">GIFs & emoji only 🤐</span>
+      </div>
+      <IconButton id="chat-collapse" label="Collapse chat" tooltip="Collapse">
+        <Minus size={18} aria-hidden="true" />
+      </IconButton>
+    </header>
+
+    <div id="chat-log" class="chat-log" role="log" aria-live="polite"></div>
+
+    <form id="chat-form" class="chat-form" autocomplete="off">
+      <input
+        id="chat-input"
+        class="chat-input"
+        type="text"
+        maxlength="200"
+        placeholder={chatbot.placeholder}
+        aria-label="Message"
+      />
+      <button type="submit" class="chat-send" aria-label="Send">
+        <SendHorizontal size={16} aria-hidden="true" />
+      </button>
+    </form>
+
+    <p class="chat-foot">
+      Your message is used to search{' '}
+      <a href="https://klipy.com" target="_blank" rel="noopener noreferrer">
+        KLIPY
+      </a>{' '}
+      for a GIF. Nothing is stored.
+    </p>
+  </section>
+
+  <button
+    id="chat-launcher"
+    type="button"
+    class="chat-launcher"
+    aria-controls="chat-panel"
+    aria-expanded="false"
+    aria-label="Open chat"
+  >
+    <Avatar size={52} />
+  </button>
+</aside>
+
+<script>
+  import { chatbot, type BotReply } from '../../config/chatbot';
+  import { getReply, toSearchQuery } from '../../lib/chatbot';
+
+  const MAX_MESSAGES = 60;
+
+  const panel = document.querySelector<HTMLElement>('#chat-panel');
+  const launcher = document.querySelector<HTMLButtonElement>('#chat-launcher');
+  const collapse = document.querySelector<HTMLButtonElement>('#chat-collapse');
+  const log = document.querySelector<HTMLElement>('#chat-log');
+  const form = document.querySelector<HTMLFormElement>('#chat-form');
+  const input = document.querySelector<HTMLInputElement>('#chat-input');
+
+  if (panel && launcher && collapse && log && form && input) {
+    let greeted = false;
+    let lastGif = '';
+    // Set when the search endpoint is missing/unconfigured so we stop asking (in memory only).
+    let searchUnavailable = false;
+
+    const isOpen = () => !panel.hidden;
+
+    function setOpen(open: boolean) {
+      panel!.hidden = !open;
+      launcher!.setAttribute('aria-expanded', String(open));
+      launcher!.setAttribute('aria-label', open ? 'Collapse chat' : 'Open chat');
+
+      if (open) {
+        if (!greeted) {
+          greeted = true;
+          addBot(chatbot.greeting);
+        }
+        requestAnimationFrame(() => input!.focus());
+      }
+    }
+
+    function append(node: HTMLElement) {
+      log!.appendChild(node);
+      while (log!.children.length > MAX_MESSAGES) log!.firstElementChild?.remove();
+      log!.scrollTop = log!.scrollHeight;
+    }
+
+    function addUser(text: string) {
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-msg chat-msg-user';
+      bubble.textContent = text; // textContent: never interpreted as HTML
+      append(bubble);
+    }
+
+    function addBot(reply: BotReply) {
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-msg chat-msg-bot';
+
+      const showEmoji = () => {
+        const emoji = document.createElement('span');
+        emoji.className = 'chat-emoji';
+        emoji.dataset.motion = reply.motion ?? 'pop';
+        emoji.textContent = reply.emoji;
+        bubble.replaceChildren(emoji);
+      };
+
+      if (reply.gif) {
+        const img = document.createElement('img');
+        img.className = 'chat-gif';
+        img.src = reply.gif;
+        img.alt = reply.alt || reply.emoji;
+        img.referrerPolicy = 'no-referrer';
+        img.addEventListener('load', () => (log!.scrollTop = log!.scrollHeight));
+        // Dead or blocked GIF host: quietly fall back to the emoji.
+        img.addEventListener('error', showEmoji);
+        bubble.appendChild(img);
+      } else {
+        showEmoji();
+      }
+
+      append(bubble);
+    }
+
+    function showTyping(): HTMLElement {
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-msg chat-msg-bot chat-typing';
+      bubble.setAttribute('aria-label', 'Typing');
+      bubble.innerHTML = '<span></span><span></span><span></span>';
+      append(bubble);
+      return bubble;
+    }
+
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    /** Searches for a GIF matching the message; null on any failure or no results. */
+    async function findGif(text: string): Promise<{ url: string; title?: string } | null> {
+      const { endpoint, suffix, timeoutMs } = chatbot.gifSearch;
+      const query = toSearchQuery(text, suffix);
+      if (!query || searchUnavailable) return null;
+
+      try {
+        const response = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`, {
+          signal: AbortSignal.timeout(timeoutMs),
+          credentials: 'omit',
+          referrerPolicy: 'no-referrer',
+        });
+
+        if (response.status === 404 || response.status === 503) searchUnavailable = true;
+        if (!response.ok) return null;
+
+        const { gifs } = (await response.json()) as { gifs?: { url: string; title?: string }[] };
+        if (!gifs?.length) return null;
+
+        // Don't repeat the previous GIF back to back.
+        const fresh = gifs.filter((gif) => gif.url !== lastGif);
+        const pool = fresh.length ? fresh : gifs;
+        const choice = pool[Math.floor(Math.random() * pool.length)];
+        lastGif = choice.url;
+        return choice;
+      } catch {
+        return null; // offline, timeout, bad response: fall back to emoji
+      }
+    }
+
+    async function send(text: string) {
+      addUser(text);
+
+      const typing = showTyping();
+      const fallback = getReply(text, chatbot);
+
+      // Always take a beat so the reply feels like typing, even on a cache hit.
+      const [gif] = await Promise.all([findGif(text), wait(600)]);
+
+      typing.remove();
+      addBot(gif ? { ...fallback, gif: gif.url, alt: gif.title } : fallback);
+    }
+
+    launcher.addEventListener('click', () => setOpen(!isOpen()));
+
+    collapse.addEventListener('click', () => {
+      setOpen(false);
+      launcher.focus();
+    });
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      void send(text);
+    });
+
+    // Esc collapses only when the chat itself has focus (Search owns Esc otherwise).
+    panel.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation();
+        setOpen(false);
+        launcher.focus();
+      }
+    });
+  }
+</script>

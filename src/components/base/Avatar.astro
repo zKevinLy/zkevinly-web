@@ -1,0 +1,11 @@
+---
+/** BASE: Avatar — the site mark (same image as the favicon) at a given size. */
+interface Props {
+  size?: number;
+  alt?: string;
+}
+
+const { size = 32, alt = '' } = Astro.props;
+---
+
+<img class="avatar" src="/favicon.svg" width={size} height={size} {alt} />

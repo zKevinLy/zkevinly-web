@@ -65,3 +65,30 @@ When squash-merging a PR, the PR title becomes the commit message, so write it a
 The deployed build is stamped with its version (shown on the About page and in `/version.json`).
 The logic lives in `.github/scripts/next-version.sh` and can be run locally to preview the next tag:
 `bash .github/scripts/next-version.sh`.
+
+## Chat bot GIFs (KLIPY)
+
+The bottom-right chat bot answers with GIFs: each message the visitor sends is turned
+into a short search query and looked up on [KLIPY](https://klipy.com). Nothing is
+hard-coded per message. If the search is unavailable or finds nothing, the bot falls
+back to the emoji rules in `src/config/chatbot.ts`.
+
+KLIPY puts the API key in the request URL, so the browser never calls it directly.
+Instead `/api/gif` is a tiny Cloudflare Worker route (`worker/`) that holds the key and
+does the search. Visitor text is used only for that search: it isn't logged or stored,
+and no IP/cookies are forwarded. Results are cached by query for an hour.
+
+**Production:** create a free key at <https://partner.klipy.com>, then
+
+```sh
+npx wrangler secret put KLIPY_API_KEY
+npm run deploy
+```
+
+Optional: set `KLIPY_CONTENT_FILTER` (a Worker variable) to change the default `medium`.
+Consider a Cloudflare rate-limiting rule on `/api/*` so nobody can burn your quota.
+
+**Local:** copy `.env.example` to `.env`, add the key, and run `npm run dev`. Without a
+key everything still works; the bot just replies with emoji.
+
+Tuning (search bias word, timeout) lives in `gifSearch` in `src/config/chatbot.ts`.

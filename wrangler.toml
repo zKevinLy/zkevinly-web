@@ -1,10 +1,18 @@
-# Cloudflare Worker that serves the static Astro build (dist/) as assets.
-# The custom domain is attached in the Cloudflare dashboard (Workers & Pages ->
-# this Worker -> Settings -> Domains & Routes), not here.
+# Cloudflare Worker that serves the static Astro build (dist/) as assets, plus a
+# tiny /api/gif proxy for the chat bot (worker/). The custom domain is attached in
+# the Cloudflare dashboard (Workers & Pages -> this Worker -> Settings -> Domains
+# & Routes), not here.
 name = "zkevinly-web"
+main = "worker/index.js"
 compatibility_date = "2026-11-01"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
+# Only /api/* runs the Worker first; everything else is served straight from dist/.
+run_worker_first = ["/api/*"]
 # Unknown URLs get dist/404.html with a real 404 status.
 not_found_handling = "404-page"
+
+# The KLIPY key is a secret, not a var. Set it with:
+#   npx wrangler secret put KLIPY_API_KEY
