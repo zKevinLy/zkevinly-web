@@ -60,7 +60,11 @@ export function resolve(ownerRepo, ref) {
   // A floating major tag (v4): find the exact release sitting on the same commit.
   if (/^v?\d+$/.test(ref)) {
     const same = [...tags].filter(([t, s]) => s === sha && /^v?\d+\.\d+\.\d+$/.test(t));
-    if (same.length) exact = same.map(([t]) => t).sort(newer).at(-1);
+    if (same.length)
+      exact = same
+        .map(([t]) => t)
+        .sort(newer)
+        .at(-1);
   }
   const result = { sha, exact };
   cache.set(key, result);
