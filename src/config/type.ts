@@ -1,0 +1,143 @@
+export interface CopyCommand {
+  label?: string;
+  command: string;
+}
+
+export interface Entry {
+  title: string;
+  description: string;
+  href: string;
+  tags?: string[];
+  /**
+   * GitHub repo ("owner/name") used for the version badge, stars and
+   * "last updated". Inferred automatically from `href` when it points at
+   * github.com; set to `false` to opt out.
+   */
+  repo?: string | false;
+  /** Click-to-copy commands shown on the card. */
+  commands?: CopyCommand[];
+  /** Manual "last updated" (ISO date) for entries that aren't on GitHub. */
+  updated?: string;
+}
+
+interface BasePage {
+  title: string;
+  description: string;
+  showInNav?: boolean;
+}
+
+export interface DirectoryPage extends BasePage {
+  type: 'directory';
+  items: Entry[];
+}
+
+export interface TopicLink {
+  title: string;
+  description: string;
+  href: string;
+  label?: string;
+}
+
+export type TopicBlock =
+  | {
+      type: 'text';
+      title?: string;
+      content: string;
+    }
+  | {
+      type: 'links';
+      title: string;
+      description?: string;
+      items: TopicLink[];
+    }
+  | {
+      type: 'steps';
+      title: string;
+      items: string[];
+    }
+  | {
+      type: 'workflow';
+      title: string;
+      description?: string;
+      phases: WorkflowPhase[];
+      nodes: WorkflowNode[];
+    }
+  | {
+      /**
+       * Auto-generated index of every page beneath this (hub) page,
+       * grouped with the workflow steps that use each one.
+       */
+      type: 'index';
+      title: string;
+      description?: string;
+    }
+  | {
+      type: 'image';
+      title?: string;
+      src: string;
+      alt: string;
+      caption?: string;
+    };
+
+export interface WorkflowPhase {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+export type WorkflowBlock = Extract<TopicBlock, { type: 'workflow' }>;
+
+export interface WorkflowNode {
+  id: string;
+  /** Which phase (row) this step sits in. */
+  phase: string;
+  title: string;
+  description: string;
+  /** Primary destination: makes the whole step clickable. */
+  href?: string;
+  /** Extra destinations, listed on the step with link icons. */
+  links?: { label: string; href: string }[];
+  /**
+   * This node's parents. Every node except the single start node must have
+   * at least one, and each parent must sit in an earlier phase.
+   */
+  dependsOn?: string[];
+  optional?: boolean;
+  branch?: string;
+}
+
+export interface TopicPage extends BasePage {
+  type: 'topic';
+  slug: string;
+  introduction?: string;
+  /**
+   * Marks this page as the hub for everything beneath it.
+   */
+  hub?: boolean;
+  blocks: TopicBlock[];
+  children?: TopicPage[];
+}
+
+export type SitePage = DirectoryPage | TopicPage;
+
+export interface SiteConfig {
+  name: string;
+  domain: string;
+  url: string;
+  tagline: string;
+
+  home: {
+    description: string;
+  };
+
+  github: string;
+
+  about: {
+    title: string;
+    description: string;
+    intro: string;
+    paragraphs: string[];
+  };
+
+  pages: Record<string, SitePage>;
+}
