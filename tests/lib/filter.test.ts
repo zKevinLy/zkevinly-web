@@ -101,7 +101,8 @@ describe('matches', () => {
   const nuvio = item({ text: 'nuvio official android tv app', tags: ['android-tv', 'media'] });
 
   it('matches everything when there are no terms', () => assert.equal(matches(nuvio, []), true));
-  it('matches text anywhere in the item text', () => assert.equal(matches(nuvio, parseQuery('official app')), true));
+  it('matches text anywhere in the item text', () =>
+    assert.equal(matches(nuvio, parseQuery('official app')), true));
   it('requires exact tag matches for tag: terms', () => {
     assert.equal(matches(nuvio, parseQuery('tag:media')), true);
     assert.equal(matches(nuvio, parseQuery('tag:med')), false);
@@ -138,7 +139,10 @@ describe('sortOrder', () => {
   it('does not mutate its input', () => {
     const items = [item({ stars: 1 }), item({ stars: 2 })];
     sortOrder(items, 'stars');
-    assert.deepEqual(items.map((i) => i.stars), [1, 2]);
+    assert.deepEqual(
+      items.map((i) => i.stars),
+      [1, 2],
+    );
   });
 });
 
@@ -163,7 +167,10 @@ describe('filterAttrs', () => {
     const attrs = filterAttrs(source);
     assert.equal(attrs['data-filter-item'], '');
     assert.equal(attrs['data-filter-title'], 'Nuvio');
-    assert.equal(attrs['data-filter-text'], 'nuvio official app nuviomedia/nuviotv android-tv media');
+    assert.equal(
+      attrs['data-filter-text'],
+      'nuvio official app nuviomedia/nuviotv android-tv media',
+    );
     assert.equal(attrs['data-filter-tags'], 'android-tv,media');
   });
 
@@ -203,7 +210,13 @@ describe('readItem / writeStats', () => {
   });
 
   it('tolerates missing or invalid data', () => {
-    assert.deepEqual(readItem(fakeEl()), { title: '', text: '', tags: [], updated: null, stars: null });
+    assert.deepEqual(readItem(fakeEl()), {
+      title: '',
+      text: '',
+      tags: [],
+      updated: null,
+      stars: null,
+    });
     const bad = readItem(fakeEl({ filterUpdated: 'nope', filterStars: 'many' }));
     assert.equal(bad.updated, null);
     assert.equal(bad.stars, null);
@@ -291,8 +304,15 @@ describe('entrySource / pageSources', () => {
       children: [{ ...base, title: 'Child', blocks: [] }],
       blocks: [
         { type: 'text', content: 'hello' },
-        { type: 'links', title: 'L', items: [{ title: 'Link', description: 'd', href: 'x', label: 'lbl' }] },
-        { type: 'entries', items: [{ title: 'Entry', description: 'd', href: 'https://example.com' }] },
+        {
+          type: 'links',
+          title: 'L',
+          items: [{ title: 'Link', description: 'd', href: 'x', label: 'lbl' }],
+        },
+        {
+          type: 'entries',
+          items: [{ title: 'Entry', description: 'd', href: 'https://example.com' }],
+        },
         { type: 'steps', title: 'S', items: ['one'] },
       ],
     };

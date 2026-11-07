@@ -17,7 +17,9 @@ function collectEntries(page: SitePage, where = page.title): { entry: Entry; whe
   const own = page.blocks.flatMap((block) =>
     block.type === 'entries' ? block.items.map((entry) => ({ entry, where })) : [],
   );
-  const nested = (page.children ?? []).flatMap((child) => collectEntries(child, `${where} > ${child.title}`));
+  const nested = (page.children ?? []).flatMap((child) =>
+    collectEntries(child, `${where} > ${child.title}`),
+  );
   return [...own, ...nested];
 }
 
@@ -69,7 +71,9 @@ describe('site content', () => {
   });
 
   it('keeps sibling topic slugs unique', () => {
-    for (const topic of pages.filter((p): p is TopicPage => p.type === 'topic').flatMap(collectTopics)) {
+    for (const topic of pages
+      .filter((p): p is TopicPage => p.type === 'topic')
+      .flatMap(collectTopics)) {
       const slugs = (topic.children ?? []).map((child) => child.slug);
       assert.equal(new Set(slugs).size, slugs.length, `duplicate slugs under "${topic.title}"`);
     }
@@ -79,7 +83,10 @@ describe('site content', () => {
     for (const { entry } of all) {
       for (const { command } of entry.commands ?? []) {
         if (/\|\s*(iex|sh|bash)\b/i.test(command)) {
-          assert.ok(remoteScriptUrl(command), `"${command}" pipes into a shell but no script URL was detected`);
+          assert.ok(
+            remoteScriptUrl(command),
+            `"${command}" pipes into a shell but no script URL was detected`,
+          );
         }
       }
     }
@@ -92,7 +99,8 @@ describe('Android TV page', () => {
 
   it('lists GitHub-backed apps so version/stars can be shown', () => {
     assert.ok(items.length > 0);
-    for (const entry of items) assert.ok(entryRepo(entry), `${entry.title} has no resolvable GitHub repo`);
+    for (const entry of items)
+      assert.ok(entryRepo(entry), `${entry.title} has no resolvable GitHub repo`);
   });
 
   it('points Nuvio at the official repo (which only ships pre-releases)', () => {

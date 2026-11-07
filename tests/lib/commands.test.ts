@@ -19,9 +19,19 @@ describe('remoteScriptUrl', () => {
   });
 
   it('detects curl/wget piped into a shell', () => {
-    assert.equal(remoteScriptUrl('curl -fsSL https://example.com/install.sh | sh'), 'https://example.com/install.sh');
-    assert.equal(remoteScriptUrl('wget -qO- https://example.com/i.sh | bash'), 'https://example.com/i.sh');
-    assert.equal(remoteScriptUrl('curl https://example.com/i.sh | sudo bash'), null, 'sudo is not a runner');
+    assert.equal(
+      remoteScriptUrl('curl -fsSL https://example.com/install.sh | sh'),
+      'https://example.com/install.sh',
+    );
+    assert.equal(
+      remoteScriptUrl('wget -qO- https://example.com/i.sh | bash'),
+      'https://example.com/i.sh',
+    );
+    assert.equal(
+      remoteScriptUrl('curl https://example.com/i.sh | sudo bash'),
+      null,
+      'sudo is not a runner',
+    );
   });
 
   it('is case-insensitive', () => {

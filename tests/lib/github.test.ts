@@ -40,7 +40,8 @@ describe('entryRepo', () => {
   it('infers the repo from href', () => assert.equal(entryRepo({ href }), 'a/b'));
   it('prefers an explicit repo', () => assert.equal(entryRepo({ href, repo: 'c/d' }), 'c/d'));
   it('can be disabled with false', () => assert.equal(entryRepo({ href, repo: false }), null));
-  it('is null for non-GitHub links', () => assert.equal(entryRepo({ href: 'https://example.com' }), null));
+  it('is null for non-GitHub links', () =>
+    assert.equal(entryRepo({ href: 'https://example.com' }), null));
 });
 
 describe('pickRelease', () => {
@@ -104,8 +105,9 @@ describe('isRepoInfo / readCachedInfo / cacheKey', () => {
   it('ignores entries written by an older version of the site (no `prerelease` field)', () => {
     // This is the stale-cache case that kept Nuvio's tag hidden: info cached as
     // "no release" before pre-releases were supported.
-    const { prerelease: _drop, ...legacy } = info;
-    assert.equal(readCachedInfo(blob(NOW - 1000, { ...legacy, version: null, releaseUrl: null }), TTL, NOW), null);
+    const legacy: Partial<RepoInfo> = { ...info, version: null, releaseUrl: null };
+    delete legacy.prerelease;
+    assert.equal(readCachedInfo(blob(NOW - 1000, legacy), TTL, NOW), null);
   });
 
   it('ignores missing or corrupt data', () => {
@@ -186,7 +188,12 @@ describe('fetchRepoInfo', () => {
       { body: repoBody },
       {
         body: [
-          { tag_name: '1.1.0-beta.11', html_url: 'https://github.com/NuvioMedia/NuvioTV/releases/tag/1.1.0-beta.11', prerelease: true, draft: false },
+          {
+            tag_name: '1.1.0-beta.11',
+            html_url: 'https://github.com/NuvioMedia/NuvioTV/releases/tag/1.1.0-beta.11',
+            prerelease: true,
+            draft: false,
+          },
           { tag_name: '1.1.0-beta.10', html_url: 'u', prerelease: true, draft: false },
         ],
       },
@@ -203,7 +210,10 @@ describe('fetchRepoInfo', () => {
   });
 
   it('flags stable releases as not pre-release', async () => {
-    mockGitHub({ body: repoBody }, { body: [{ tag_name: 'v2.1.6', html_url: 'u', prerelease: false }] });
+    mockGitHub(
+      { body: repoBody },
+      { body: [{ tag_name: 'v2.1.6', html_url: 'u', prerelease: false }] },
+    );
     const info = await fetchRepoInfo('truefedex/tv-bro');
     assert.equal(info?.version, 'v2.1.6');
     assert.equal(info?.prerelease, false);
@@ -212,7 +222,12 @@ describe('fetchRepoInfo', () => {
   it('skips drafts', async () => {
     mockGitHub(
       { body: repoBody },
-      { body: [{ tag_name: 'draft', html_url: 'd', draft: true }, { tag_name: 'v1', html_url: 'u' }] },
+      {
+        body: [
+          { tag_name: 'draft', html_url: 'd', draft: true },
+          { tag_name: 'v1', html_url: 'u' },
+        ],
+      },
     );
     assert.equal((await fetchRepoInfo('a/b'))?.version, 'v1');
   });
@@ -257,10 +272,10 @@ describe('fetchRepoInfo', () => {
     const calls = mockGitHub({ body: repoBody }, { body: [] });
     await fetchRepoInfo('o/r', 'secret');
 
-    assert.deepEqual(
-      calls.map((c) => c.url).sort(),
-      ['https://api.github.com/repos/o/r', 'https://api.github.com/repos/o/r/releases?per_page=10'],
-    );
+    assert.deepEqual(calls.map((c) => c.url).sort(), [
+      'https://api.github.com/repos/o/r',
+      'https://api.github.com/repos/o/r/releases?per_page=10',
+    ]);
     for (const { init } of calls) {
       const headers = init?.headers as Record<string, string>;
       assert.equal(headers.Authorization, 'Bearer secret');
@@ -271,7 +286,7 @@ describe('fetchRepoInfo', () => {
   it('sends no Authorization header without a token', async () => {
     const calls = mockGitHub({ body: repoBody }, { body: [] });
     await fetchRepoInfo('o/r');
-    assert.equal((calls[0].init?.headers as Record<string, string>).Authorization, undefined);
+    assert.equal((calls[0]?.init?.headers as Record<string, string>).Authorization, undefined);
   });
 
   it('shares successful results between calls so reloads do not burn the rate limit', async () => {
@@ -290,7 +305,7 @@ describe('fetchRepoInfo', () => {
   it('does not remember failures', async () => {
     mockGitHub({ ok: false, body: {} }, { body: [] });
     assert.equal(await fetchRepoInfo('o/r'), null);
-    await new Promise((r) => setImmediate(r));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     mock.restoreAll();
     mock.method(console, 'warn', () => {});
     mockGitHub({ body: repoBody }, { body: [] });
@@ -313,6 +328,9 @@ describe('fetchRepoInfo', () => {
       json: async () => ({}),
     }));
     assert.equal(await fetchRepoInfo('o/r'), null);
-    assert.match(String(warn.mock.calls[0].arguments[0]), /o\/r: HTTP 403.*rate limit reached.*GITHUB_TOKEN/);
+    assert.match(
+      String(warn.mock.calls[0]?.arguments[0]),
+      /o\/r: HTTP 403.*rate limit reached.*GITHUB_TOKEN/,
+    );
   });
 });
