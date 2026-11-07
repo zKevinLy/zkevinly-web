@@ -15,7 +15,7 @@ const { hubTitle, hubPath, steps } = Astro.props;
 const pad = (n: number) => String(n).padStart(2, '0');
 ---
 
-<aside class="hub-trail" aria-label={`Where this fits in ${hubTitle}`}>
+<aside class="hub-trail" data-pagefind-ignore aria-label={`Where this fits in ${hubTitle}`}>
   <span class="hub-trail-label">Part of</span>
   <a href={hubPath}>{hubTitle}</a>
   {steps.length > 0 && (

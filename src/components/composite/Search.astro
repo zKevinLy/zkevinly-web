@@ -59,6 +59,8 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
     title: string;
     excerpt: string;
     content: string;
+    /** Pagefind excerpt: plain text with <mark> tags around matches. */
+    excerptHtml?: string;
   }
 
   interface PagefindResultData {
@@ -232,7 +234,55 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
       currentResults[activeIndex]?.scrollIntoView({ block: 'nearest' });
     }
 
-    function renderResults(results: SearchItem[]) {
+    /** Builds a <mark> element containing plain text. */
+    function createMark(text: string): HTMLElement {
+      const mark = document.createElement('mark');
+      mark.textContent = text;
+      return mark;
+    }
+
+    /**
+     * Pagefind returns excerpts as an HTML string whose only markup is <mark>.
+     * Rebuild it node by node so nothing but <mark> can ever reach the page.
+     */
+    function appendPagefindExcerpt(target: HTMLElement, html: string) {
+      const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+      doc.body.childNodes.forEach((node) => {
+        if (node instanceof HTMLElement && node.tagName === 'MARK') {
+          target.append(createMark(node.textContent ?? ''));
+        } else {
+          target.append(document.createTextNode(node.textContent ?? ''));
+        }
+      });
+    }
+
+    const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    /** Dev search: show a snippet around the first match and highlight every term. */
+    function appendDevExcerpt(target: HTMLElement, text: string, terms: string[]) {
+      const lower = text.toLowerCase();
+      const first = terms.map((term) => lower.indexOf(term)).filter((i) => i >= 0);
+      const at = first.length ? Math.min(...first) : 0;
+      const start = Math.max(0, at - 60);
+      const snippet = text.slice(start, start + 220);
+
+      if (start > 0) target.append('… ');
+
+      const pattern = terms.length
+        ? new RegExp(`(${terms.map(escapeRegExp).join('|')})`, 'gi')
+        : null;
+      const parts = pattern ? snippet.split(pattern) : [snippet];
+      // split() with one capture group puts the matches at the odd indexes.
+      parts.forEach((part, i) => {
+        if (!part) return;
+        if (i % 2 === 1) target.append(createMark(part));
+        else target.append(document.createTextNode(part));
+      });
+
+      if (start + 220 < text.length) target.append(' …');
+    }
+
+    function renderResults(results: SearchItem[], terms: string[]) {
       resultsContainer!.innerHTML = '';
       currentResults = [];
       activeIndex = -1;
@@ -265,7 +315,8 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
 
         const excerpt = document.createElement('p');
         excerpt.className = 'search-result-excerpt';
-        excerpt.textContent = result.excerpt;
+        if (result.excerptHtml !== undefined) appendPagefindExcerpt(excerpt, result.excerptHtml);
+        else appendDevExcerpt(excerpt, result.content, terms);
 
         link.append(row, excerpt);
         resultsContainer!.appendChild(link);
@@ -293,14 +344,13 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
 
       try {
         let results: SearchItem[];
+        const terms = query.toLowerCase().trim().split(/\s+/);
 
         if (import.meta.env.DEV) {
           // Search the live development website.
           if (!devIndex) devIndex = await buildDevIndex();
 
           if (request !== searchCounter) return;
-
-          const terms = query.toLowerCase().trim().split(/\s+/);
 
           results = devIndex
             .map((item) => {
@@ -335,8 +385,9 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
           results = data.map((result) => ({
             url: result.url,
             title: result.meta?.title || 'Untitled page',
-            excerpt: result.excerpt || '',
-            content: result.excerpt || '',
+            excerpt: '',
+            content: '',
+            excerptHtml: result.excerpt || '',
           }));
         }
 
@@ -348,7 +399,7 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
         }
 
         status!.textContent = `${results.length} results found`;
-        renderResults(results);
+        renderResults(results, terms);
       } catch (error) {
         console.error('Search error:', error);
         status!.textContent = 'Search is unavailable. Check the browser console for details.';
@@ -405,3 +456,11 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
     });
   }
 </script>
+
+<style is:global>
+  .search-result-excerpt mark {
+    background: none;
+    color: var(--accent, #34d399);
+    font-weight: 600;
+  }
+</style>

@@ -87,7 +87,11 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
 >
   <div class="node-head">
     <Heading class="node-title">
-      {number && <span class="node-number">{number}</span>}
+      {number && (
+        <span class="node-number" data-pagefind-ignore>
+          {number}
+        </span>
+      )}
       {href ? (
         <a
           class="node-link"
@@ -104,7 +108,7 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
     </Heading>
 
     {hasAside && (
-      <span class="node-aside">
+      <span class="node-aside" data-pagefind-ignore>
         {badges.map((badge) => (
           <span class="node-badge">{badge}</span>
         ))}
