@@ -1,4 +1,4 @@
-/* global process, console */
+/* global process, console, URL */
 /**
  * Pins every `uses: owner/repo@ref` in .github/workflows to a full commit SHA.
  *
