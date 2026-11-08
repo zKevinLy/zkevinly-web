@@ -18,6 +18,10 @@
  * own interaction (badges, checkbox, links, copy buttons) sits above that
  * stretched link via z-index: 2 in CSS.
  *
+ * Anchors
+ *   The title carries `id="node-<slug>"`; the search overlay links to it and
+ *   spotlights the node (see Search.astro and lib/spotlight.ts).
+ *
  * Slots
  *   default  body content, below the description
  *   foot     pinned to the bottom of the node
@@ -74,6 +78,16 @@ const {
   ...attrs
 } = Astro.props;
 
+// Every title gets a stable anchor (`#node-<slug>`) so search can link straight to
+// this node and spotlight it. Pagefind also turns headings with ids into sub-results.
+const slug = title
+  .toLowerCase()
+  .normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+const anchor = slug ? `node-${slug}` : undefined;
+
 const isExternal = (url: string) => /^https?:\/\//.test(url);
 const external = href ? isExternal(href) : false;
 const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean(check);
@@ -86,7 +100,7 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
   {...attrs}
 >
   <div class="node-head">
-    <Heading class="node-title">
+    <Heading class="node-title" id={anchor}>
       {number && (
         <span class="node-number" data-pagefind-ignore>
           {number}

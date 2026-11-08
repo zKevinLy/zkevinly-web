@@ -12,13 +12,33 @@ const resources: DirectoryPage = {
       description:
         'A community-maintained directory of free websites, tools, software, streaming, books, and digital resources.',
       href: 'https://github.com/fmhy/FMHY',
-      tags: ['resources', 'free-media', 'directory', 'github'],
+      tags: [
+        'resources',
+        'directory',
+        'free-media',
+        'streaming',
+        'movies-tv',
+        'books',
+        'games',
+        'software',
+        'community-maintained',
+        'github',
+      ],
     },
     {
       title: 'Microsoft Activation Scripts | Massgravel',
       description: 'Windows activation scripts, installation resources, and licensing guides.',
       href: 'https://github.com/massgravel/Microsoft-Activation-Scripts',
-      tags: ['windows', 'activation', 'github'],
+      tags: [
+        'windows',
+        'activation',
+        'licensing',
+        'scripts',
+        'powershell',
+        'command-line',
+        'open-source',
+        'github',
+      ],
       commands: [
         {
           label: 'PowerShell',
@@ -31,7 +51,18 @@ const resources: DirectoryPage = {
       description:
         'Windows utility for system tweaks, debloating, updates, and software installation.',
       href: 'https://github.com/ChrisTitusTech/winutil',
-      tags: ['windows', 'utility', 'github'],
+      tags: [
+        'windows',
+        'utility',
+        'debloat',
+        'tweaks',
+        'updates',
+        'software-installer',
+        'powershell',
+        'command-line',
+        'open-source',
+        'github',
+      ],
       commands: [
         {
           label: 'PowerShell',

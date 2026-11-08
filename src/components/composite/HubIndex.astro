@@ -5,6 +5,7 @@
  */
 import Grid from '../base/Grid.astro';
 import Node from '../base/Node.astro';
+import Tags from '../base/Tags.astro';
 import type { TopicPage } from '../../config';
 import { descendants, getHubLayout, stepsFor } from '../../lib/hub';
 
@@ -35,6 +36,7 @@ const groups = (page.children ?? []).map((child) => {
   <Grid tight>
     {groups.map(({ child, childPath, steps, subpages }) => (
       <Node title={child.title} description={child.description} href={childPath} size="compact">
+        <Tags tags={child.tags} />
         {steps.length > 0 && (
           <div class="hub-chips">
             {steps.map((step) => (

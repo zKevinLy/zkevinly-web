@@ -1,11 +1,12 @@
 ---
 /**
- * COMPOSITE: a directory entry. Node + Tags + CommandList + RepoMeta.
+ * COMPOSITE: a directory entry. Node + Tags + CommandList + RelatedList + RepoMeta.
  * This is the "rich" card used on Projects / Resources.
  */
 import Node from '../base/Node.astro';
 import Tags from '../base/Tags.astro';
 import CommandList from './CommandList.astro';
+import RelatedList from './RelatedList.astro';
 import RepoMeta from './RepoMeta.astro';
 import type { Entry } from '../../config';
 import { entryRepo, fetchRepoInfo } from '../../lib/github';
@@ -32,5 +33,6 @@ const info = repo ? await fetchRepoInfo(repo, import.meta.env.GITHUB_TOKEN) : nu
 >
   <Tags tags={entry.tags} />
   <CommandList commands={entry.commands} />
+  <RelatedList links={entry.related} />
   <RepoMeta slot="foot" repo={repo} info={info} updated={entry.updated} />
 </Node>

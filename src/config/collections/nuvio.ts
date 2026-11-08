@@ -9,6 +9,15 @@ const nuvio: TopicPage = {
 
   title: 'Nuvio',
   description: 'My pick for the best media app, with configuration and setup guides.',
+  tags: [
+    'media-app',
+    'setup-guide',
+    'stremio-addons',
+    'aiostreams',
+    'aiometadata',
+    'trakt',
+    'android-tv',
+  ],
 
   introduction:
     'A solid base setup: get your API keys, set up AIOStreams as the single hub for your streams and AIOMetadata for your catalogs, add both on nuvio.tv, then refresh the app. This guide is built around HTTPS addons; debrid is easy to add later through AIOStreams. This page is the hub for everything Nuvio: each step links to the pages it needs, and every one of those pages links back to the steps that use it. Hover or focus a step to trace what it requires and what it unlocks.',
@@ -61,6 +70,13 @@ const nuvio: TopicPage = {
           description:
             'Install the app for your device, create your Nuvio account, and sign in on both the app and the website. You’ll do most of the configuration on the website.',
           href: 'https://nuvio.tv/',
+          links: [
+            {
+              label: 'Android TV app',
+              href: '/collections/android-tv',
+            },
+          ],
+          tags: ['nuvio', 'account', 'install', 'android-tv'],
         },
         {
           id: 'api',
@@ -70,6 +86,7 @@ const nuvio: TopicPage = {
             'AIOMetadata requires both a TMDB and a TheTVDB API key. Create them now and keep them handy for the next steps.',
           href: `${NUVIO_HUB}/api-providers`,
           dependsOn: ['account'],
+          tags: ['api-keys', 'tmdb', 'tvdb', 'metadata'],
         },
         {
           id: 'streams',
@@ -93,6 +110,7 @@ const nuvio: TopicPage = {
             },
           ],
           dependsOn: ['account'],
+          tags: ['aiostreams', 'streams', 'https-addons', 'manifest-url'],
         },
         {
           id: 'catalog',
@@ -102,6 +120,7 @@ const nuvio: TopicPage = {
             'AIOMetadata lets you build custom catalogs and organize how your library is laid out. Enter the TMDB and TVDB keys from the previous step, configure it, and copy its manifest URL when you’re done. If your AIOStreams configuration already includes AIOMetadata, don’t install a duplicate.',
           href: `${NUVIO_HUB}/addons/aiometadata`,
           dependsOn: ['api'],
+          tags: ['aiometadata', 'catalogs', 'metadata', 'manifest-url'],
         },
         {
           id: 'connect',
@@ -111,6 +130,7 @@ const nuvio: TopicPage = {
             'Sign in at nuvio.tv and add each manifest URL there: AIOMetadata first, then AIOStreams, so metadata stays above streams. The website is much faster than the in-app menus, so skip the app for this.',
           href: 'https://nuvio.tv/',
           dependsOn: ['catalog', 'streams'],
+          tags: ['nuvio-website', 'addons', 'manifest-url'],
         },
         {
           id: 'verify',
@@ -119,6 +139,7 @@ const nuvio: TopicPage = {
           description:
             'Open Nuvio and manually refresh so it picks up your addons. This is the only step that needs the in-app UI. Then open a movie and an episode, confirm your catalogs and metadata load, and test playback.',
           dependsOn: ['connect'],
+          tags: ['nuvio-app', 'refresh', 'playback', 'testing'],
         },
         {
           id: 'trakt',
@@ -130,6 +151,7 @@ const nuvio: TopicPage = {
           dependsOn: ['verify'],
           optional: true,
           branch: 'Highly recommended',
+          tags: ['trakt', 'watch-history', 'lists', 'sync'],
         },
         {
           id: 'plugins',
@@ -140,6 +162,7 @@ const nuvio: TopicPage = {
           href: `${NUVIO_HUB}/provider-manifests`,
           dependsOn: ['verify'],
           optional: true,
+          tags: ['plugins', 'provider-manifests', 'sideload'],
         },
       ],
     },
@@ -156,6 +179,7 @@ const nuvio: TopicPage = {
       slug: 'addons',
       title: 'Addons',
       description: 'Addon configuration and resources.',
+      tags: ['addons', 'stremio-addons', 'aiostreams', 'aiometadata'],
 
       blocks: [
         {
@@ -171,6 +195,7 @@ const nuvio: TopicPage = {
           slug: 'aiostreams',
           title: 'AIOStreams',
           description: 'Stream provider configuration and addon settings.',
+          tags: ['aiostreams', 'streams', 'configuration', 'https-addons'],
 
           introduction:
             'AIOStreams is the central point every stream addon goes through. Add your HTTPS addons inside it and use its formatting, sorting, and filtering across all of them, then install it in Nuvio as your single stream addon.',
@@ -190,6 +215,7 @@ const nuvio: TopicPage = {
                   title: 'AIOStreams Configuration',
                   description: 'Configure stream providers and addon settings.',
                   href: 'https://aiostreams.elfhosted.com/stremio/configure',
+                  tags: ['aiostreams', 'configurator', 'stremio-addon', 'streams'],
                 },
                 {
                   title: 'AIOStreams in Nuvio',
@@ -197,6 +223,7 @@ const nuvio: TopicPage = {
                     'Current guide for configuring AIOStreams and installing its manifest.',
                   href: 'https://docs.elfhosted.com/nuvio/aiostreams-nuvio/',
                   label: 'Guide',
+                  tags: ['aiostreams', 'guide', 'documentation', 'elfhosted'],
                 },
                 {
                   title: 'AIOStreams configuration walkthrough',
@@ -204,6 +231,7 @@ const nuvio: TopicPage = {
                     'Community guide with ready-made configurations and stream-list explanations.',
                   href: 'https://www.reddit.com/r/nuvioaddons/comments/1xlg3c0/complete_tutorial_with_configs_for_aiostreams/',
                   label: 'Reddit',
+                  tags: ['aiostreams', 'guide', 'community', 'reddit', 'configs'],
                 },
               ],
             },
@@ -214,6 +242,7 @@ const nuvio: TopicPage = {
           slug: 'aiometadata',
           title: 'AIOMetadata',
           description: 'Custom catalogs and metadata configuration.',
+          tags: ['aiometadata', 'catalogs', 'metadata', 'configuration', 'tmdb', 'tvdb'],
 
           introduction:
             'AIOMetadata lets you build custom catalogs and organize how your library is laid out. It requires your TMDB and TVDB API keys, and should sit above AIOStreams so its metadata is prioritized.',
@@ -232,6 +261,7 @@ const nuvio: TopicPage = {
                   title: 'AIOMetadata Configuration',
                   description: 'Configure metadata providers and catalogs.',
                   href: 'https://aiometadatafortheweebs.midnightignite.me/configure/',
+                  tags: ['aiometadata', 'configurator', 'catalogs', 'metadata'],
                 },
               ],
             },
@@ -244,6 +274,7 @@ const nuvio: TopicPage = {
       slug: 'api-providers',
       title: 'API Providers',
       description: 'API credentials and provider information.',
+      tags: ['api-keys', 'tmdb', 'tvdb', 'metadata'],
 
       blocks: [
         {
@@ -260,11 +291,13 @@ const nuvio: TopicPage = {
               title: 'TMDB',
               description: 'Manage API credentials.',
               href: 'https://www.themoviedb.org/settings/api',
+              tags: ['api-keys', 'metadata', 'movies', 'tv-shows', 'required'],
             },
             {
               title: 'TheTVDB',
               description: 'API information and developer access.',
               href: 'https://thetvdb.com/api-information',
+              tags: ['api-keys', 'metadata', 'tv-shows', 'required'],
             },
           ],
         },
@@ -275,6 +308,7 @@ const nuvio: TopicPage = {
       slug: 'provider-manifests',
       title: 'Provider Manifests',
       description: 'Community provider manifests for Nuvio.',
+      tags: ['plugins', 'provider-manifests', 'community', 'sideload'],
 
       blocks: [
         {
@@ -291,11 +325,13 @@ const nuvio: TopicPage = {
               title: 'Nuvio Providers',
               description: 'Yoruix community provider manifest.',
               href: 'https://raw.githubusercontent.com/yoruix/nuvio-providers/refs/heads/main/manifest.json',
+              tags: ['plugins', 'provider-manifest', 'community', 'yoruix'],
             },
             {
               title: 'All-in-One Nuvio',
               description: 'D3adlyRocket community provider manifest.',
               href: 'https://raw.githubusercontent.com/D3adlyRocket/All-in-One-Nuvio/refs/heads/main/manifest.json',
+              tags: ['plugins', 'provider-manifest', 'community', 'd3adlyrocket'],
             },
           ],
         },

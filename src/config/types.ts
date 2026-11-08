@@ -3,6 +3,15 @@ export interface CopyCommand {
   command: string;
 }
 
+/** A button on a card that jumps to a related page on this site (or anywhere). */
+export interface RelatedLink {
+  /** Small caps label above the button, e.g. "Setup guide". */
+  label?: string;
+  /** Button text. */
+  title: string;
+  href: string;
+}
+
 export interface Entry {
   title: string;
   description: string;
@@ -16,6 +25,8 @@ export interface Entry {
   repo?: string | false;
   /** Click-to-copy commands shown on the card. */
   commands?: CopyCommand[];
+  /** Buttons that connect this card to related pages (e.g. an app → its setup guide). */
+  related?: RelatedLink[];
   /** Manual "last updated" (ISO date) for entries that aren't on GitHub. */
   updated?: string;
 }
@@ -41,6 +52,7 @@ export interface TopicLink {
   description: string;
   href: string;
   label?: string;
+  tags?: string[];
 }
 
 export type TopicBlock =
@@ -116,11 +128,14 @@ export interface WorkflowNode {
   dependsOn?: string[];
   optional?: boolean;
   branch?: string;
+  tags?: string[];
 }
 
 export interface TopicPage extends BasePage {
   type: 'topic';
   slug: string;
+  /** Shown on this page's card in its parent's "Explore" grid. */
+  tags?: string[];
   introduction?: string;
   /**
    * Marks this page as the hub for everything beneath it.

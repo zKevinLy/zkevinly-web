@@ -12,7 +12,7 @@ const projects: DirectoryPage = {
       title: 'AIOPlugins',
       description: 'Public Nuvio-related resources.',
       href: 'https://github.com/zKevinLy/aioplugins',
-      tags: ['nuvio', 'plugins'],
+      tags: ['nuvio', 'plugins', 'provider-manifests', 'resources', 'public', 'github'],
     },
   ],
 };

@@ -6,6 +6,7 @@ import Grid from '../base/Grid.astro';
 import Steps from '../base/Steps.astro';
 import Figure from '../base/Figure.astro';
 import Node from '../base/Node.astro';
+import Tags from '../base/Tags.astro';
 import Workflow from './Workflow.astro';
 import EntryCard from './EntryCard.astro';
 import HubIndex from './HubIndex.astro';
@@ -48,7 +49,9 @@ const { blocks, page, path } = Astro.props;
                 label={link.label}
                 size="compact"
                 {...filterAttrs(link)}
-              />
+              >
+                <Tags tags={link.tags} />
+              </Node>
             ))}
           </Grid>
         )}

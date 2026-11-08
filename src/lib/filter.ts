@@ -257,6 +257,7 @@ export function pageSources(page: TopicPage): FilterSource[] {
   const children = (page.children ?? []).map((child) => ({
     title: child.title,
     description: child.description,
+    tags: child.tags,
   }));
 
   const fromBlocks = page.blocks.flatMap((block): FilterSource[] => {
@@ -265,6 +266,7 @@ export function pageSources(page: TopicPage): FilterSource[] {
         title: l.title,
         description: l.description,
         label: l.label,
+        tags: l.tags,
       }));
     }
     if (block.type === 'entries') return block.items.map(entrySource);

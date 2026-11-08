@@ -5,6 +5,7 @@ import Section from '../components/base/Section.astro';
 import Grid from '../components/base/Grid.astro';
 import Breadcrumb from '../components/base/Breadcrumb.astro';
 import Node from '../components/base/Node.astro';
+import Tags from '../components/base/Tags.astro';
 import TopicBlocks from '../components/composite/TopicBlocks.astro';
 import HubTrail from '../components/composite/HubTrail.astro';
 import FilterBar from '../components/composite/FilterBar.astro';
@@ -56,7 +57,9 @@ const filterModel = buildFilterModel(pageSources(page), { force: page.alwaysFilt
               href={`${currentPath}/${child.slug}`}
               size="compact"
               {...filterAttrs(child)}
-            />
+            >
+              <Tags tags={child.tags} />
+            </Node>
           ))}
         </Grid>
       </Section>

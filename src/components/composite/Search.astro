@@ -54,9 +54,21 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
 </div>
 
 <script>
+  import {
+    SPOTLIGHT_CLASS,
+    SPOTLIGHT_KEY,
+    SPOTLIGHT_MS,
+    cleanPath,
+    encodePending,
+    pickCandidate,
+    readPending,
+  } from '../../lib/spotlight';
+
   interface SearchItem {
     url: string;
     title: string;
+    /** Title of the page this result lives on, when the result is a part of one. */
+    section?: string;
     excerpt: string;
     content: string;
     /** Pagefind excerpt: plain text with <mark> tags around matches. */
@@ -67,6 +79,8 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
     url: string;
     excerpt?: string;
     meta?: { title?: string };
+    /** Parts of the page (headings with ids). Each has its own #anchor url. */
+    sub_results?: { title?: string; url: string; excerpt?: string }[];
   }
 
   interface PagefindModule {
@@ -74,6 +88,89 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
   }
 
   const IDLE_MESSAGE = 'Start typing to search the entire website.';
+
+  /* ---------- Spotlight: glow the found component after opening a result ---------- */
+
+  const prefersReducedMotion = () =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /** The node a result points at: its #anchor if it has one, else the best match for the query. */
+  function findSpotlightTarget(hash: string, terms: string[]): HTMLElement | null {
+    if (hash) {
+      let id = hash.slice(1);
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        // Keep the raw id.
+      }
+      const anchored = document.getElementById(id);
+      if (anchored) return anchored.closest<HTMLElement>('.node, .cmd') ?? anchored;
+    }
+
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>('main .node'));
+    const index = pickCandidate(
+      nodes.map((node) => ({
+        title: node.querySelector('.node-title')?.textContent ?? '',
+        text: node.textContent ?? '',
+      })),
+      terms,
+    );
+    return index >= 0 ? nodes[index] : null;
+  }
+
+  function spotlight(target: HTMLElement) {
+    document
+      .querySelectorAll<HTMLElement>(`.${SPOTLIGHT_CLASS}`)
+      .forEach((el) => el.classList.remove(SPOTLIGHT_CLASS));
+
+    target.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'center',
+    });
+
+    // Re-add on the next frame so the animation restarts if it was already running.
+    requestAnimationFrame(() => {
+      target.classList.add(SPOTLIGHT_CLASS);
+      setTimeout(() => target.classList.remove(SPOTLIGHT_CLASS), SPOTLIGHT_MS);
+    });
+  }
+
+  function rememberSpotlight(target: URL, terms: string[]) {
+    try {
+      sessionStorage.setItem(SPOTLIGHT_KEY, encodePending(target, terms));
+    } catch {
+      // Storage blocked: the page still opens, it just won't glow.
+    }
+  }
+
+  /** Runs once the destination page is on screen; a no-op unless a result was just opened. */
+  function runPendingSpotlight(delay = 300) {
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(SPOTLIGHT_KEY);
+    } catch {
+      return;
+    }
+
+    const pending = readPending(raw);
+    if (!pending) return;
+    if (pending.path !== cleanPath(window.location.pathname)) return;
+
+    try {
+      sessionStorage.removeItem(SPOTLIGHT_KEY);
+    } catch {
+      // Nothing to clean up.
+    }
+
+    // Wait for the page's reveal animation and layout to settle.
+    setTimeout(() => {
+      const target = findSpotlightTarget(pending.hash, pending.terms);
+      if (target) spotlight(target);
+    }, delay);
+  }
+
+  // First load and every ClientRouter navigation.
+  document.addEventListener('astro:page-load', () => runPendingSpotlight());
 
   const openButton = document.querySelector<HTMLButtonElement>('#search-open');
   const closeButton = document.querySelector<HTMLButtonElement>('#search-close');
@@ -149,22 +246,34 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
             });
           }
 
-          // Index individual directory cards as independent results.
-          doc.querySelectorAll<HTMLElement>('[data-search-item]').forEach((card) => {
+          // Index each card / step as its own result, so it can be linked (and glowed) directly.
+          doc.querySelectorAll<HTMLElement>('[data-search-item], .node').forEach((card) => {
+            const heading = card.querySelector<HTMLElement>('.node-title');
+            const number = heading?.querySelector('.node-number')?.textContent ?? '';
             const cardTitle =
+              (heading?.textContent ?? '').replace(number, '').trim() ||
               card.querySelector('h3, h2')?.textContent?.trim() ||
-              card.textContent?.trim() ||
               'Untitled';
 
             const cardContent = card.textContent?.replace(/\s+/g, ' ').trim() || '';
-            const anchor = card.matches('a[href]') ? card : card.querySelector('a[href]');
-            const href = new URL(anchor?.getAttribute('href') || '/', url);
-
             if (!cardContent) return;
 
+            const anchor = card.matches('a[href]') ? card : card.querySelector('a[href]');
+            const destination = anchor ? new URL(anchor.getAttribute('href') || '/', url) : null;
+            const external = destination ? destination.origin !== window.location.origin : false;
+            const anchorId = heading?.id;
+
+            // Other sites open directly; everything else points at this node on this page.
+            const cardUrl = external
+              ? destination!.href
+              : anchorId
+                ? `${normalizedPath}#${anchorId}`
+                : (destination?.href ?? normalizedPath);
+
             index.push({
-              url: href.href,
+              url: cardUrl,
               title: cardTitle,
+              section: title,
               excerpt: cardContent.slice(0, 220),
               content: cardContent,
             });
@@ -300,7 +409,13 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
 
         const title = document.createElement('div');
         title.className = 'search-result-title';
-        title.textContent = result.title;
+        if (result.section && result.section !== result.title) {
+          const crumb = document.createElement('span');
+          crumb.className = 'search-result-crumb';
+          crumb.textContent = `${result.section} ›`;
+          title.append(crumb);
+        }
+        title.append(document.createTextNode(result.title));
 
         const arrow = document.createElement('span');
         arrow.className = 'search-result-arrow';
@@ -322,7 +437,14 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
         resultsContainer!.appendChild(link);
         currentResults.push(link);
 
-        link.addEventListener('click', closeSearch);
+        link.addEventListener('click', () => {
+          if (!isExternal) rememberSpotlight(targetUrl, terms);
+          closeSearch();
+
+          // Same page: no navigation event follows, so trigger the glow ourselves.
+          const samePage = cleanPath(targetUrl.pathname) === cleanPath(window.location.pathname);
+          if (!isExternal && samePage) setTimeout(() => runPendingSpotlight(0), 120);
+        });
       }
 
       if (currentResults.length) setActive(0);
@@ -379,16 +501,38 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
           if (request !== searchCounter) return;
 
           const data = await Promise.all(
-            response.results.slice(0, 12).map((result) => result.data()),
+            response.results.slice(0, 8).map((result) => result.data()),
           );
 
-          results = data.map((result) => ({
-            url: result.url,
-            title: result.meta?.title || 'Untitled page',
-            excerpt: '',
-            content: '',
-            excerptHtml: result.excerpt || '',
-          }));
+          // Each page, then up to two of its sections (headings with ids) so a result can
+          // land on, and glow, the exact node that matched.
+          results = data
+            .flatMap((page): SearchItem[] => {
+              const pageTitle = page.meta?.title || 'Untitled page';
+              const sections = (page.sub_results ?? [])
+                .filter((sub) => sub.url.includes('#') && sub.title && sub.title !== pageTitle)
+                .slice(0, 2)
+                .map((sub) => ({
+                  url: sub.url,
+                  title: sub.title!,
+                  section: pageTitle,
+                  excerpt: '',
+                  content: '',
+                  excerptHtml: sub.excerpt || '',
+                }));
+
+              return [
+                {
+                  url: page.url,
+                  title: pageTitle,
+                  excerpt: '',
+                  content: '',
+                  excerptHtml: page.excerpt || '',
+                },
+                ...sections,
+              ];
+            })
+            .slice(0, 12);
         }
 
         if (request !== searchCounter) return;

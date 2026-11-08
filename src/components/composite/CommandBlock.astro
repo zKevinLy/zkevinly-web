@@ -2,16 +2,12 @@
 /** COMPOSITE: one labelled shell command with a copy button (base: CopyButton). */
 import CopyButton from '../base/CopyButton.astro';
 import type { CopyCommand } from '../../config';
-import { remoteScriptUrl } from '../../lib/commands';
 
 interface Props {
   command: CopyCommand;
 }
 
 const { command } = Astro.props;
-
-// `irm … | iex` style commands run unread code, so say so and link the script.
-const scriptUrl = remoteScriptUrl(command.command);
 ---
 
 <div class="cmd">
@@ -22,13 +18,4 @@ const scriptUrl = remoteScriptUrl(command.command);
     </code>
     <CopyButton text={command.command} />
   </div>
-  {scriptUrl && (
-    <p class="cmd-note">
-      Runs a remote script as-is.{' '}
-      <a href={scriptUrl} target="_blank" rel="noopener noreferrer">
-        Read it first
-      </a>
-      . Ad blockers like uBlock Origin may warn when you copy this; that’s expected.
-    </p>
-  )}
 </div>

@@ -9,6 +9,7 @@
  * everything it unlocks.
  */
 import Node from '../base/Node.astro';
+import Tags from '../base/Tags.astro';
 import type { WorkflowNode, WorkflowPhase } from '../../config';
 import { layoutWorkflow } from '../../lib/workflow';
 
@@ -63,6 +64,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
               check={node.id}
               links={node.links}
             >
+              <Tags tags={node.tags} />
               {node.requires.length > 0 && (
                 <div class="workflow-dependencies">
                   <span>Requires</span>

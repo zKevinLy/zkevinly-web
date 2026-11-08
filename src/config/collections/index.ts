@@ -8,6 +8,7 @@ const collections: TopicPage = {
   title: 'Collections',
   description: 'My hand-picked favorites: the best things I’ve found and actually use.',
   showInNav: true,
+  tags: ['collections', 'favorites'],
 
   introduction:
     'Unlike Resources, which is a broad reference list, everything here is something I’ve personally chosen as one of the best in its category, or simply a favorite to use.',

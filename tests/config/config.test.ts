@@ -51,6 +51,10 @@ describe('site content', () => {
         for (const tag of tags) assert.equal(tag, tag.toLowerCase().trim());
       });
 
+      it('has enough tags to describe it', () => {
+        assert.ok((entry.tags ?? []).length >= 4, `only ${(entry.tags ?? []).length} tags`);
+      });
+
       it('has a valid repo override, if any', () => {
         if (typeof entry.repo === 'string') assert.match(entry.repo, /^[\w.-]+\/[\w.-]+$/);
       });
@@ -93,6 +97,75 @@ describe('site content', () => {
   });
 });
 
+describe('topic pages', () => {
+  const topics = collectTopics(collections);
+
+  it('tags every child page and link', () => {
+    for (const topic of topics) {
+      for (const child of topic.children ?? []) {
+        assert.ok((child.tags ?? []).length > 0, `${topic.title} > ${child.title} has no tags`);
+      }
+      for (const block of topic.blocks) {
+        if (block.type === 'links') {
+          for (const link of block.items) {
+            assert.ok((link.tags ?? []).length > 0, `${topic.title} > ${link.title} has no tags`);
+          }
+        }
+        if (block.type === 'workflow') {
+          for (const node of block.nodes) {
+            assert.ok((node.tags ?? []).length > 0, `step ${node.id} has no tags`);
+          }
+        }
+      }
+    }
+  });
+
+  it('keeps tags unique and lowercase on every node', () => {
+    const check = (tags: string[] = [], where: string) => {
+      assert.equal(new Set(tags).size, tags.length, `duplicate tags on ${where}`);
+      for (const tag of tags) assert.equal(tag, tag.toLowerCase().trim(), `${where}: "${tag}"`);
+    };
+    for (const topic of topics) {
+      check(topic.tags, topic.title);
+      for (const block of topic.blocks) {
+        if (block.type === 'links') block.items.forEach((l) => check(l.tags, l.title));
+        if (block.type === 'workflow') block.nodes.forEach((n) => check(n.tags, n.id));
+      }
+    }
+  });
+
+  it('points related buttons and internal links at pages that exist', () => {
+    const known = new Set<string>();
+    const walk = (page: TopicPage, path: string) => {
+      known.add(path);
+      for (const child of page.children ?? []) walk(child, `${path}/${child.slug}`);
+    };
+    walk(collections, '/collections');
+
+    const internal = (href: string) => href.replace(/[?#].*$/, '').replace(/\/$/, '');
+    for (const { entry, where } of all) {
+      for (const link of entry.related ?? []) {
+        assert.ok(link.title.trim(), `${where}: ${entry.title} has an empty related title`);
+        if (link.href.startsWith('/')) {
+          assert.ok(known.has(internal(link.href)), `${where}: ${link.href} is not a page`);
+        }
+      }
+    }
+    for (const topic of topics) {
+      for (const block of topic.blocks) {
+        if (block.type !== 'workflow') continue;
+        for (const node of block.nodes) {
+          for (const href of [node.href, ...(node.links ?? []).map((l) => l.href)]) {
+            if (href?.startsWith('/')) {
+              assert.ok(known.has(internal(href)), `step ${node.id}: ${href} is not a page`);
+            }
+          }
+        }
+      }
+    }
+  });
+});
+
 describe('Android TV page', () => {
   const apps = androidTv.blocks.find((b) => b.type === 'entries');
   const items = apps?.type === 'entries' ? apps.items : [];
@@ -101,6 +174,11 @@ describe('Android TV page', () => {
     assert.ok(items.length > 0);
     for (const entry of items)
       assert.ok(entryRepo(entry), `${entry.title} has no resolvable GitHub repo`);
+  });
+
+  it('links Nuvio to its setup guide', () => {
+    const nuvio = items.find((e) => e.title === 'Nuvio');
+    assert.ok(nuvio?.related?.some((link) => link.href === '/collections/nuvio'));
   });
 
   it('points Nuvio at the official repo (which only ships pre-releases)', () => {

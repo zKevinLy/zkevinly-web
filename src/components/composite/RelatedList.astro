@@ -1,0 +1,37 @@
+---
+/** COMPOSITE: a stack of "related page" buttons, styled to match CommandBlock. Renders nothing when empty. */
+import { ArrowRight, ExternalLink } from '@lucide/astro';
+import type { RelatedLink } from '../../config';
+
+interface Props {
+  links?: RelatedLink[];
+}
+
+const { links = [] } = Astro.props;
+const isExternal = (href: string) => /^https?:\/\//.test(href);
+---
+
+{links.length > 0 && (
+  <div class="cmds related">
+    {links.map((link) => {
+      const external = isExternal(link.href);
+      return (
+        <div class="cmd">
+          {link.label && <span class="cmd-label">{link.label}</span>}
+          <a
+            class="cmd-row related-link"
+            href={link.href}
+            target={external ? '_blank' : undefined}
+            rel={external ? 'noopener noreferrer' : undefined}
+          >
+            <span class="cmd-text related-text">{link.title}</span>
+            <span class="copy-btn related-go" aria-hidden="true">
+              {external ? <ExternalLink size={14} /> : <ArrowRight size={14} />}
+              <span class="copy-btn-text">{external ? 'Open' : 'View'}</span>
+            </span>
+          </a>
+        </div>
+      );
+    })}
+  </div>
+)}
