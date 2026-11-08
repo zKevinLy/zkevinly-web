@@ -91,8 +91,7 @@ import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
 
   /* ---------- Spotlight: glow the found component after opening a result ---------- */
 
-  const prefersReducedMotion = () =>
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /** The node a result points at: its #anchor if it has one, else the best match for the query. */
   function findSpotlightTarget(hash: string, terms: string[]): HTMLElement | null {

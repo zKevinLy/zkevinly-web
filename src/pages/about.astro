@@ -7,7 +7,6 @@ import Button from '../components/base/Button.astro';
 import { site } from '../config';
 
 const { about } = site;
-const version = import.meta.env.PUBLIC_APP_VERSION as string | undefined;
 ---
 
 <Layout title={about.title} description={about.description}>
@@ -27,5 +26,4 @@ const version = import.meta.env.PUBLIC_APP_VERSION as string | undefined;
       GitHub
     </Button>
   </div>
-
 </Layout>
