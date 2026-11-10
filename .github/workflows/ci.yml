@@ -90,8 +90,10 @@ jobs:
         run: npm run ci
         env:
           # Avoids GitHub's 60 requests/hour unauthenticated limit when RepoMeta
-          # fetches release info at build time.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # fetches release info at build time. SITE_GITHUB_TOKEN (a fine-grained PAT with
+          # read-only Contents + Metadata on the private repos) lets it see those too;
+          # the default token only reads this repo.
+          GITHUB_TOKEN: ${{ secrets.SITE_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Upload test report
         if: ${{ !cancelled() }}
@@ -145,7 +147,7 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           SHA: ${{ needs.autofix.outputs.sha || github.sha }}
           PUBLIC_APP_VERSION: ${{ steps.version.outputs.tag }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SITE_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Deploy to Cloudflare Workers
         run: npm run deploy # wrangler deploy (see wrangler.toml)
