@@ -15,13 +15,68 @@ permissions:
   contents: read
 
 jobs:
+  # Fixes what can be fixed and commits it, so nobody has to remember to run
+  # `npm run ci:fix`. Runs `lint:fix` and `format` (see package.json).
+  # Skipped for Dependabot and fork PRs, whose tokens are read-only.
+  # Commits pushed with GITHUB_TOKEN don't start new workflow runs, so this run verifies
+  # and deploys the fixed commit itself (see `needs.autofix.outputs.sha`).
+  autofix:
+    name: Auto-fix lint & formatting
+    if: >-
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the fix commit
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # A PR run would otherwise check out the merge commit, which can't be pushed to.
+          ref: ${{ github.head_ref || github.ref_name }}
+          # Unlike the other jobs, this one must keep the token so `git push` works.
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Fix lint and formatting
+        run: |
+          # Problems that can't be auto-fixed are left for the verify job to report.
+          npm run lint:fix || true
+          npm run format
+
+      - name: Commit and push the fixes
+        id: commit
+        run: |
+          if git diff --quiet; then
+            echo "Nothing to fix."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -u
+            git commit -m "style: auto-fix lint and formatting"
+            git push
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   # Everything `npm run ci` does: lint, format check, unit tests, type check + build, audit.
   verify:
     name: Lint, test & build
+    needs: autofix
+    # Run even when autofix was skipped, but not when it failed (e.g. a push race).
+    if: ${{ !cancelled() && contains(fromJSON('["success","skipped"]'), needs.autofix.result) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.autofix.outputs.sha || github.sha }} # includes the auto-fix commit
           persist-credentials: false
 
       - uses: actions/setup-node@v4
@@ -50,8 +105,9 @@ jobs:
   # deploy means no release and no tag.
   deploy:
     name: Deploy & release
-    needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [autofix, verify]
+    # Not plain success(): autofix may be skipped, which would otherwise skip the deploy.
+    if: ${{ !cancelled() && needs.verify.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     environment: prod
     permissions:
@@ -63,6 +119,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.autofix.outputs.sha || github.sha }} # includes the auto-fix commit
           fetch-depth: 0 # next-version.sh reads the full history...
           fetch-tags: true # ...and the existing v* tags
           persist-credentials: false
@@ -82,10 +139,11 @@ jobs:
         # `verify` already ran the type check; this is the build that ships.
         run: |
           printf '{"version":"%s","commit":"%s","builtAt":"%s"}\n' \
-            "$TAG" "$GITHUB_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > public/version.json
+            "$TAG" "$SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > public/version.json
           npm run build:fast
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          SHA: ${{ needs.autofix.outputs.sha || github.sha }}
           PUBLIC_APP_VERSION: ${{ steps.version.outputs.tag }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -99,9 +157,10 @@ jobs:
         run: |
           (cd dist && zip -qr "../site-${TAG}.zip" .)
           gh release create "$TAG" "site-${TAG}.zip" \
-            --target "$GITHUB_SHA" \
+            --target "$SHA" \
             --title "$TAG" \
             --generate-notes
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          SHA: ${{ needs.autofix.outputs.sha || github.sha }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
