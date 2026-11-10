@@ -32,14 +32,14 @@ jobs:
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # A PR run would otherwise check out the merge commit, which can't be pushed to.
           ref: ${{ github.head_ref || github.ref_name }}
           # Unlike the other jobs, this one must keep the token so `git push` works.
           persist-credentials: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -74,12 +74,12 @@ jobs:
     if: ${{ !cancelled() && contains(fromJSON('["success","skipped"]'), needs.autofix.result) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.autofix.outputs.sha || github.sha }} # includes the auto-fix commit
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload test report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: test-results.xml
@@ -117,14 +117,14 @@ jobs:
       group: deploy-prod
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.autofix.outputs.sha || github.sha }} # includes the auto-fix commit
           fetch-depth: 0 # next-version.sh reads the full history...
           fetch-tags: true # ...and the existing v* tags
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
