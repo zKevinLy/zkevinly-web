@@ -77,6 +77,7 @@ describe('isRepoInfo / readCachedInfo / cacheKey', () => {
     version: '1.1.0-beta.11',
     releaseUrl: 'https://github.com/NuvioMedia/NuvioTV/releases/tag/1.1.0-beta.11',
     prerelease: true,
+    private: false,
   };
   const TTL = 60 * 60 * 1000;
   const blob = (t: number, value: unknown = info) => JSON.stringify({ t, info: value });
@@ -91,6 +92,7 @@ describe('isRepoInfo / readCachedInfo / cacheKey', () => {
     assert.equal(isRepoInfo('x'), false);
     assert.equal(isRepoInfo({ ...info, stars: '1' }), false);
     assert.equal(isRepoInfo({ ...info, version: 1 }), false);
+    assert.equal(isRepoInfo({ ...info, private: undefined }), false);
   });
 
   it('returns fresh cached info', () => {
@@ -206,7 +208,15 @@ describe('fetchRepoInfo', () => {
       version: '1.1.0-beta.11',
       releaseUrl: 'https://github.com/NuvioMedia/NuvioTV/releases/tag/1.1.0-beta.11',
       prerelease: true,
+      private: false,
     });
+  });
+
+  it('flags private repos so the browser skips refreshing them', async () => {
+    mockGitHub({ body: { ...repoBody, private: true } }, { body: [] });
+    assert.equal((await fetchRepoInfo('a/private'))?.private, true);
+    mockGitHub({ body: repoBody }, { body: [] });
+    assert.equal((await fetchRepoInfo('a/public'))?.private, false);
   });
 
   it('flags stable releases as not pre-release', async () => {

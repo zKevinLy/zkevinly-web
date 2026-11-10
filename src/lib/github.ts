@@ -12,6 +12,11 @@ export interface RepoInfo {
   releaseUrl: string | null;
   /** True when `version` is a GitHub pre-release (beta, RC, nightly…). */
   prerelease: boolean;
+  /**
+   * True when GitHub says the repo is private (only visible with a build-time token).
+   * The browser has no token, so it must not try to refresh these: it would only get a 404.
+   */
+  private: boolean;
 }
 
 export interface GitHubRelease {
@@ -31,7 +36,7 @@ const API = 'https://api.github.com';
  * this, an entry cached as "no release" before pre-releases were supported
  * keeps hiding the tag until its TTL runs out.
  */
-export const CACHE_VERSION = 2;
+export const CACHE_VERSION = 3;
 
 export const cacheKey = (repo: string) => `gh:v${CACHE_VERSION}:${repo}`;
 
@@ -75,7 +80,8 @@ export function isRepoInfo(value: unknown): value is RepoInfo {
     typeof v.stars === 'number' &&
     (v.version === null || typeof v.version === 'string') &&
     (v.releaseUrl === null || typeof v.releaseUrl === 'string') &&
-    typeof v.prerelease === 'boolean'
+    typeof v.prerelease === 'boolean' &&
+    typeof v.private === 'boolean'
   );
 }
 
@@ -184,6 +190,7 @@ async function fetchRepoInfoUncached(repo: string, token?: string): Promise<Repo
       version: latest?.tag_name ?? null,
       releaseUrl: latest?.html_url ?? null,
       prerelease: latest?.prerelease === true,
+      private: data.private === true,
     };
   } catch (error) {
     console.warn(`[github] ${repo}: request failed`, error);
