@@ -29,6 +29,7 @@ export default [
         URLSearchParams: 'readonly',
         AbortSignal: 'readonly',
         fetch: 'readonly',
+        caches: 'readonly',
         process: 'readonly',
         globalThis: 'readonly',
       },

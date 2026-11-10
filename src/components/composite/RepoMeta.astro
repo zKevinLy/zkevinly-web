@@ -5,7 +5,9 @@
  *
  * Data is baked in at build time so the footer is complete without JS; the
  * browser then refreshes it (cached 1h in localStorage). Set GITHUB_TOKEN at
- * build time to avoid GitHub's 60 requests/hour unauthenticated limit.
+ * build time to avoid GitHub's 60 requests/hour unauthenticated limit and to read
+ * private repos. In the browser, private repos are refreshed through the Worker's
+ * /api/repo (which holds the token) instead of calling GitHub directly.
  *
  * Without a `repo` it falls back to a manual `updated` date, or renders nothing.
  */
@@ -73,6 +75,7 @@ const updated = info?.pushedAt ?? manualUpdated;
   import {
     cacheKey,
     fetchRepoInfo,
+    fetchRepoInfoViaProxy,
     freshness,
     readCachedInfo,
     readStaleInfo,
@@ -83,7 +86,8 @@ const updated = info?.pushedAt ?? manualUpdated;
 
   const TTL = 60 * 60 * 1000;
 
-  async function getInfo(repo: string): Promise<RepoInfo | null> {
+  // Private repos can't be read anonymously, so they go through the Worker (/api/repo).
+  async function getInfo(repo: string, viaProxy: boolean): Promise<RepoInfo | null> {
     const key = cacheKey(repo);
     let raw: string | null = null;
 
@@ -97,7 +101,7 @@ const updated = info?.pushedAt ?? manualUpdated;
     const fresh = readCachedInfo(raw, TTL);
     if (fresh) return fresh;
 
-    const info = await fetchRepoInfo(repo);
+    const info = viaProxy ? await fetchRepoInfoViaProxy(repo) : await fetchRepoInfo(repo);
 
     if (info) {
       try {
@@ -153,9 +157,7 @@ const updated = info?.pushedAt ?? manualUpdated;
     const foots = document.querySelectorAll<HTMLElement>('[data-repo]');
     await Promise.all(
       Array.from(foots).map(async (foot) => {
-        // Private repos keep their build-time data: the browser has no token and would 404.
-        if (foot.dataset.private !== undefined) return;
-        const info = await getInfo(foot.dataset.repo!);
+        const info = await getInfo(foot.dataset.repo!, foot.dataset.private !== undefined);
         if (info) applyInfo(foot, info);
       }),
     );

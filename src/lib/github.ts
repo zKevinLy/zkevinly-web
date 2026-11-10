@@ -134,6 +134,25 @@ export async function fetchRepoInfo(repo: string, token?: string): Promise<RepoI
   return promise;
 }
 
+/**
+ * Browser-side lookup for PRIVATE repos: GitHub would 404 an anonymous request, so ask the
+ * site's own Worker (/api/repo), which holds the token. Null on any failure, like
+ * `fetchRepoInfo`, so callers keep whatever they already have.
+ */
+export async function fetchRepoInfoViaProxy(repo: string): Promise<RepoInfo | null> {
+  try {
+    const res = await fetch(`/api/repo?repo=${encodeURIComponent(repo)}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const body: unknown = await res.json();
+    return isRepoInfo(body) ? body : null;
+  } catch {
+    return null;
+  }
+}
+
 const MEMO_TTL = 5 * 60 * 1000;
 const memo = new Map<string, { t: number; promise: Promise<RepoInfo | null> }>();
 
