@@ -11,7 +11,7 @@ const resources: DirectoryPage = {
       title: 'FMHY (Free Media Heck Yeah)',
       description:
         'A community-maintained directory of free websites, tools, software, streaming, books, and digital resources.',
-      href: 'https://github.com/fmhy/FMHY',
+      href: 'https://github.com/fmhy/edit',
       tags: [
         'resources',
         'directory',
