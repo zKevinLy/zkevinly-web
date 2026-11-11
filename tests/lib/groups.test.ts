@@ -60,10 +60,13 @@ describe('childSections', () => {
 
   it('skips groups that have no pages', () => {
     const sections = childSections(
-      parent([page('a', 'one')], [
-        { id: 'one', title: 'One' },
-        { id: 'two', title: 'Two' },
-      ]),
+      parent(
+        [page('a', 'one')],
+        [
+          { id: 'one', title: 'One' },
+          { id: 'two', title: 'Two' },
+        ],
+      ),
     );
     assert.deepEqual(
       sections.map((s) => s.id),
@@ -88,11 +91,14 @@ describe('childSections', () => {
   it('shows a group that only has entry cards, after its pages', () => {
     const entry = { title: 'Repo', description: 'd', href: 'https://github.com/a/b' };
     const sections = childSections(
-      parent([page('a', 'one')], [
-        { id: 'one', title: 'One', entries: [entry] },
-        { id: 'two', title: 'Two', entries: [entry] },
-        { id: 'three', title: 'Three' },
-      ]),
+      parent(
+        [page('a', 'one')],
+        [
+          { id: 'one', title: 'One', entries: [entry] },
+          { id: 'two', title: 'Two', entries: [entry] },
+          { id: 'three', title: 'Three' },
+        ],
+      ),
     );
     assert.deepEqual(
       sections.map((s) => [s.id, s.pages.length, s.entries.length]),

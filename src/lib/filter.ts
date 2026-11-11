@@ -273,9 +273,7 @@ export function pageSources(page: TopicPage): FilterSource[] {
     return [];
   });
 
-  const fromGroups = (page.groups ?? []).flatMap((group) =>
-    (group.entries ?? []).map(entrySource),
-  );
+  const fromGroups = (page.groups ?? []).flatMap((group) => (group.entries ?? []).map(entrySource));
 
   return [...children, ...fromGroups, ...fromBlocks];
 }
