@@ -1,7 +1,7 @@
 ---
 /**
- * COMPOSITE: card footer for a GitHub-backed entry — latest release, stars and
- * "updated" (bases: Badge, Freshness).
+ * COMPOSITE: card footer for a GitHub-backed entry — latest release, stars,
+ * "updated" and public/private (bases: Badge, Freshness).
  *
  * Data is baked in at build time so the footer is complete without JS; the
  * browser then refreshes it (cached 1h in localStorage). Set GITHUB_TOKEN at
@@ -47,21 +47,6 @@ const repoIsPrivate = isPrivate || !!info?.private;
   >
     {repo && (
       <Badge
-        data-role="visibility"
-        title={repoIsPrivate ? 'Private repository' : 'Public repository'}
-      >
-        <span data-icon="lock" hidden={!repoIsPrivate}>
-          <Lock size={12} aria-hidden="true" />
-        </span>
-        <span data-icon="globe" hidden={repoIsPrivate}>
-          <Globe size={12} aria-hidden="true" />
-        </span>
-        <span data-role="visibility-text">{repoIsPrivate ? 'Private' : 'Public'}</span>
-      </Badge>
-    )}
-
-    {repo && (
-      <Badge
         as="a"
         href={info?.releaseUrl ?? undefined}
         external
@@ -83,6 +68,21 @@ const repoIsPrivate = isPrivate || !!info?.private;
     )}
 
     <Freshness date={updated} />
+
+    {repo && (
+      <Badge
+        data-role="visibility"
+        title={repoIsPrivate ? 'Private repository' : 'Public repository'}
+      >
+        <span data-icon="lock" hidden={!repoIsPrivate}>
+          <Lock size={12} aria-hidden="true" />
+        </span>
+        <span data-icon="globe" hidden={repoIsPrivate}>
+          <Globe size={12} aria-hidden="true" />
+        </span>
+        <span data-role="visibility-text">{repoIsPrivate ? 'Private' : 'Public'}</span>
+      </Badge>
+    )}
   </div>
 )}
 

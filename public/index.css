@@ -153,9 +153,9 @@ svg {
   align-items: center;
   gap: 1rem;
   height: var(--topbar-h);
-  max-width: var(--bar-w);
-  margin: 0 auto;
-  padding: 0 1rem;
+  width: 100%;
+  margin: 0;
+  padding: 0 1.5rem;
 }
 
 .brand {
@@ -399,8 +399,7 @@ kbd {
 
 .page {
   width: 100%;
-  max-width: var(--content-w);
-  margin: 0 auto;
+  margin: 0;
   padding: 2.5rem 1.5rem 4rem;
 }
 
@@ -777,7 +776,7 @@ kbd {
   outline-offset: 2px;
 }
 
-/* Footer: version · stars · updated */
+/* Footer: version · stars · updated · visibility */
 
 .node-foot {
   display: flex;
