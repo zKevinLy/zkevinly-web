@@ -804,6 +804,19 @@ kbd {
   color: var(--muted);
 }
 
+/* Visibility badge: icon wrappers are spans so the [hidden] attribute works. */
+.badge [data-icon] {
+  display: inline-flex;
+}
+
+.badge [data-icon][hidden] {
+  display: none;
+}
+
+.badge[data-role='visibility'] svg {
+  flex-shrink: 0;
+}
+
 a.badge-link {
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
   background: var(--accent-soft);

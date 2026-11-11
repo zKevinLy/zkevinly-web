@@ -11,7 +11,7 @@
  *
  * Without a `repo` it falls back to a manual `updated` date, or renders nothing.
  */
-import { Star, Tag } from '@lucide/astro';
+import { Globe, Lock, Star, Tag } from '@lucide/astro';
 import Badge from '../base/Badge.astro';
 import Freshness from '../base/Freshness.astro';
 import { fetchRepoInfo, type RepoInfo } from '../../lib/github';
@@ -36,14 +36,30 @@ const token = process.env.GITHUB_TOKEN || import.meta.env.GITHUB_TOKEN;
 
 const info = given !== undefined ? given : repo ? await fetchRepoInfo(repo, token) : null;
 const updated = info?.pushedAt ?? manualUpdated;
+const repoIsPrivate = isPrivate || !!info?.private;
 ---
 
 {(repo || updated) && (
   <div
     class="node-foot"
     data-repo={repo ?? undefined}
-    data-private={isPrivate || info?.private ? '' : undefined}
+    data-private={repoIsPrivate ? '' : undefined}
   >
+    {repo && (
+      <Badge
+        data-role="visibility"
+        title={repoIsPrivate ? 'Private repository' : 'Public repository'}
+      >
+        <span data-icon="lock" hidden={!repoIsPrivate}>
+          <Lock size={12} aria-hidden="true" />
+        </span>
+        <span data-icon="globe" hidden={repoIsPrivate}>
+          <Globe size={12} aria-hidden="true" />
+        </span>
+        <span data-role="visibility-text">{repoIsPrivate ? 'Private' : 'Public'}</span>
+      </Badge>
+    )}
+
     {repo && (
       <Badge
         as="a"
@@ -120,6 +136,16 @@ const updated = info?.pushedAt ?? manualUpdated;
   }
 
   function applyInfo(foot: HTMLElement, info: RepoInfo) {
+    const visibility = foot.querySelector<HTMLElement>('[data-role="visibility"]');
+    if (visibility) {
+      visibility.title = info.private ? 'Private repository' : 'Public repository';
+      visibility.querySelector<HTMLElement>('[data-icon="lock"]')!.hidden = !info.private;
+      visibility.querySelector<HTMLElement>('[data-icon="globe"]')!.hidden = info.private;
+      const label = visibility.querySelector('[data-role="visibility-text"]');
+      if (label) label.textContent = info.private ? 'Private' : 'Public';
+      foot.toggleAttribute('data-private', info.private);
+    }
+
     const version = foot.querySelector<HTMLAnchorElement>('[data-role="version"]');
     const versionText = foot.querySelector('[data-role="version-text"]');
     if (version && versionText) {
