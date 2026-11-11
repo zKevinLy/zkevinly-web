@@ -34,12 +34,7 @@ const { repo, updated: manualUpdated, info: given, isPrivate = false } = Astro.p
 
 const token = process.env.GITHUB_TOKEN || import.meta.env.GITHUB_TOKEN;
 
-const info =
-  given !== undefined
-    ? given
-    : repo
-      ? await fetchRepoInfo(repo, token)
-      : null;
+const info = given !== undefined ? given : repo ? await fetchRepoInfo(repo, token) : null;
 const updated = info?.pushedAt ?? manualUpdated;
 ---
 
