@@ -38,7 +38,8 @@ const collections: TopicPage = {
           commands: [
             {
               label: 'Manifest URL',
-              command: 'https://raw.githubusercontent.com/zKevinLy/aiostore/refs/heads/main/store.json',
+              command:
+                'https://raw.githubusercontent.com/zKevinLy/aiostore/refs/heads/main/store.json',
             },
           ],
         },
