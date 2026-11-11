@@ -30,15 +30,15 @@ const collections: TopicPage = {
       description: 'Hand-picked lists of the apps and sources I actually use.',
       entries: [
         {
-          title: 'AIO AltStore',
+          title: 'AIO Store',
           description:
-            'A master list of AltStore and SideStore sources. Copy the manifest URL to get every source in one place.',
-          href: 'https://github.com/zKevinLy/aioaltstore',
-          tags: ['altstore', 'sidestore', 'sideloading', 'ios', 'sources', 'github'],
+            'A master list of Store and SideStore sources. Copy the manifest URL to get every source in one place.',
+          href: 'https://github.com/zKevinLy/aiostore',
+          tags: ['store', 'sidestore', 'sideloading', 'ios', 'sources', 'github'],
           commands: [
             {
               label: 'Manifest URL',
-              command: 'https://raw.githubusercontent.com/zKevinLy/aioaltstore/main/index.json',
+              command: 'https://raw.githubusercontent.com/zKevinLy/aiostore/refs/heads/main/store.json',
             },
           ],
         },

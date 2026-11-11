@@ -215,19 +215,19 @@ describe('Collections page groups', () => {
     assert.equal(nuvio.group, 'guides');
   });
 
-  it('links AIO AltStore straight to its repo, with a copyable manifest URL', () => {
-    const entry = section('collections')?.entries.find((e) => e.title === 'AIO AltStore');
-    assert.ok(entry, 'AIO AltStore card is missing');
-    assert.equal(entryRepo(entry), 'zKevinLy/aioaltstore');
+  it('links AIO Store straight to its repo, with a copyable manifest URL', () => {
+    const entry = section('collections')?.entries.find((e) => e.title === 'AIO Store');
+    assert.ok(entry, 'AIO Store card is missing');
+    assert.equal(entryRepo(entry), 'zKevinLy/aiostore');
 
     const url = new URL(entry.commands?.[0]?.command ?? '');
     assert.equal(url.protocol, 'https:');
     assert.ok(url.pathname.endsWith('.json'));
   });
 
-  it('does not give AIO AltStore a page of its own', () => {
+  it('does not give AIO Store a page of its own', () => {
     assert.equal(
-      collections.children?.some((c) => c.slug === 'aioaltstore'),
+      collections.children?.some((c) => c.slug === 'aiostore'),
       false,
     );
   });

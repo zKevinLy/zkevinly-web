@@ -58,7 +58,7 @@ does this: **Collections** (the picks themselves) and **Guides** (my own walkthr
 - Put each child in one with `group: '<id>'`. A child with a missing or unknown group fails the build
   (`src/lib/groups.ts`), so a typo can't make a page vanish.
 - A group can also hold `entries` (cards, same as the Directory cards below), shown after its pages. Collections uses
-  this for a plain link to the AIO AltStore repo with a copyable manifest URL.
+  this for a plain link to the AIO Store repo with a copyable manifest URL.
 - Parents without `groups` keep the single "Explore ..." section.
 
 ## Directory cards
