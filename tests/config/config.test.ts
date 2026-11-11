@@ -215,9 +215,9 @@ describe('Collections page groups', () => {
     assert.equal(nuvio.group, 'guides');
   });
 
-  it('links AIO Store straight to its repo, with a copyable manifest URL', () => {
-    const entry = section('collections')?.entries.find((e) => e.title === 'AIO Store');
-    assert.ok(entry, 'AIO Store card is missing');
+  it('links AIOStore straight to its repo, with a copyable manifest URL', () => {
+    const entry = section('collections')?.entries.find((e) => e.title === 'AIOStore');
+    assert.ok(entry, 'AIOStore card is missing');
     assert.equal(entryRepo(entry), 'zKevinLy/aiostore');
 
     const url = new URL(entry.commands?.[0]?.command ?? '');
@@ -225,7 +225,7 @@ describe('Collections page groups', () => {
     assert.ok(url.pathname.endsWith('.json'));
   });
 
-  it('does not give AIO Store a page of its own', () => {
+  it('does not give AIOStore a page of its own', () => {
     assert.equal(
       collections.children?.some((c) => c.slug === 'aiostore'),
       false,
