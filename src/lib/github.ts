@@ -174,10 +174,10 @@ function warn(repo: string, res: Response) {
       : res.status === 401
         ? ' (bad or expired token)'
         : res.status === 403 || res.status === 429
-      ? remaining === '0'
-        ? ' (rate limit reached; set GITHUB_TOKEN at build time, or wait up to an hour)'
-        : ' (forbidden or rate limited)'
-      : '';
+          ? remaining === '0'
+            ? ' (rate limit reached; set GITHUB_TOKEN at build time, or wait up to an hour)'
+            : ' (forbidden or rate limited)'
+          : '';
   console.warn(`[github] ${repo}: HTTP ${res.status}${hint}`);
 }
 
