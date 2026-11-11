@@ -19,6 +19,8 @@ import { entryRepo, fetchRepoInfo } from '../src/lib/github';
 /** Browsers may reuse a reply for 5 minutes; the edge cache keeps it 10 (GitHub allows 5,000/hour with a PAT). */
 const BROWSER_TTL = 300;
 const EDGE_TTL = 600;
+/** After a failure the edge remembers for a short while, so an outage or bad token can't burn the PAT's rate limit. */
+const FAIL_TTL = 30;
 
 /** lower-case "owner/name" -> "owner/name" as written in the config. */
 const ALLOWED = new Map(
@@ -57,12 +59,25 @@ export async function handleRepo(request, env, ctx) {
   const cache = typeof caches === 'undefined' ? null : caches.default;
   const cacheKey = new Request(`${url.origin}/api/repo?repo=${encodeURIComponent(repo)}`);
 
+  const failKey = new Request(`${url.origin}/api/repo?repo=${encodeURIComponent(repo)}&failed=1`);
+
   const hit = await cache?.match(cacheKey);
   if (hit) return hit;
+  if (await cache?.match(failKey)) return json({ error: 'upstream' }, 502);
 
   const info = await fetchRepoInfo(repo, env.GITHUB_TOKEN);
-  // Never cache a failure (rate limit, outage, expired token).
-  if (!info) return json({ error: 'upstream' }, 502);
+  if (!info) {
+    // Never cached for the browser (no-store), but the edge backs off briefly.
+    if (cache) {
+      const put = cache.put(
+        failKey,
+        new Response('', { headers: { 'Cache-Control': `public, max-age=${FAIL_TTL}` } }),
+      );
+      if (ctx?.waitUntil) ctx.waitUntil(put);
+      else await put;
+    }
+    return json({ error: 'upstream' }, 502);
+  }
 
   const fresh = json(info, 200, `public, max-age=${BROWSER_TTL}`);
   if (cache) {

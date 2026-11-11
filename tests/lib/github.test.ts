@@ -87,6 +87,11 @@ describe('isRepoInfo / readCachedInfo / cacheKey', () => {
     assert.equal(isRepoInfo({ ...info, version: null, releaseUrl: null, prerelease: false }), true);
   });
 
+  it('rejects release links that are not https://github.com URLs', () => {
+    assert.equal(isRepoInfo({ ...info, releaseUrl: 'javascript:alert(1)' }), false);
+    assert.equal(isRepoInfo({ ...info, releaseUrl: 'https://evil.example/x' }), false);
+  });
+
   it('rejects wrong shapes', () => {
     assert.equal(isRepoInfo(null), false);
     assert.equal(isRepoInfo('x'), false);
@@ -164,8 +169,9 @@ describe('freshness', () => {
 });
 
 describe('fetchRepoInfo', () => {
-  type Reply = { ok?: boolean; body: unknown };
-  const reply = ({ ok = true, body }: Reply) => ({ ok, json: async () => body }) as Response;
+  type Reply = { ok?: boolean; status?: number; body: unknown };
+  const reply = ({ ok = true, status, body }: Reply) =>
+    ({ ok, status, json: async () => body }) as Response;
 
   /** Routes the two GitHub calls to canned replies and records every request. */
   function mockGitHub(repo: Reply, releases: Reply) {
@@ -261,6 +267,28 @@ describe('fetchRepoInfo', () => {
     mock.restoreAll();
     mockGitHub({ ok: false, body: {} }, { body: [] });
     assert.equal(await fetchRepoInfo('a/b'), null);
+  });
+
+  it('REGRESSION: still returns stars and pushedAt when a token cannot read releases (404)', async () => {
+    mockGitHub({ body: { ...repoBody, private: true } }, { ok: false, status: 404, body: {} });
+    const info = await fetchRepoInfo('a/private', 'tok');
+    assert.equal(info?.stars, 3396);
+    assert.equal(info?.version, null);
+    assert.equal(info?.releaseUrl, null);
+    assert.equal(info?.private, true);
+  });
+
+  it('still fails when the repo itself is unreadable (404), so a bad token is not hidden', async () => {
+    mockGitHub({ ok: false, status: 404, body: {} }, { ok: false, status: 404, body: {} });
+    assert.equal(await fetchRepoInfo('a/private', 'tok'), null);
+  });
+
+  it('drops release links that are not https://github.com URLs', async () => {
+    mockGitHub(
+      { body: repoBody },
+      { body: [{ tag_name: 'v1', html_url: 'javascript:alert(1)', prerelease: false }] },
+    );
+    assert.equal((await fetchRepoInfo('a/b'))?.releaseUrl, null);
   });
 
   it('returns null on unexpected payloads', async () => {

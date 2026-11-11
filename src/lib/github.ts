@@ -71,6 +71,10 @@ export function pickRelease(releases: unknown): GitHubRelease | null {
   return found ?? null;
 }
 
+/** Release links are only ever followed when they point at github.com over https (blocks javascript: URLs from a tampered cache or reply). */
+const isGitHubUrl = (value: unknown): value is string =>
+  typeof value === 'string' && value.startsWith('https://github.com/');
+
 /** Runtime check for data read back from localStorage (it may be from an older version, or junk). */
 export function isRepoInfo(value: unknown): value is RepoInfo {
   if (!value || typeof value !== 'object') return false;
@@ -79,7 +83,7 @@ export function isRepoInfo(value: unknown): value is RepoInfo {
     typeof v.pushedAt === 'string' &&
     typeof v.stars === 'number' &&
     (v.version === null || typeof v.version === 'string') &&
-    (v.releaseUrl === null || typeof v.releaseUrl === 'string') &&
+    (v.releaseUrl === null || isGitHubUrl(v.releaseUrl)) &&
     typeof v.prerelease === 'boolean' &&
     typeof v.private === 'boolean'
   );
@@ -165,7 +169,11 @@ export function clearRepoInfoMemo() {
 function warn(repo: string, res: Response) {
   const remaining = res.headers?.get?.('x-ratelimit-remaining');
   const hint =
-    res.status === 403 || res.status === 429
+    res.status === 404
+      ? ' (not found, or the token cannot read this repo: it needs read-only Contents + Metadata)'
+      : res.status === 401
+        ? ' (bad or expired token)'
+        : res.status === 403 || res.status === 429
       ? remaining === '0'
         ? ' (rate limit reached; set GITHUB_TOKEN at build time, or wait up to an hour)'
         : ' (forbidden or rate limited)'
@@ -187,16 +195,27 @@ async function fetchRepoInfoUncached(repo: string, token?: string): Promise<Repo
       fetch(`${API}/repos/${repo}/releases?per_page=10`, init),
     ]);
 
-    // Either call failing (rate limit, outage) means we only have half the story.
+    // A 404 on the releases list (not a rate limit or outage) means the token can see the repo
+    // but not its releases, e.g. a fine-grained PAT with Metadata only, or no Contents: read.
+    // That is the usual reason private repos showed nothing: keep the stars and last push and
+    // just leave the version out, instead of failing the whole lookup.
+    const releasesHidden = !relRes.ok && relRes.status === 404 && repoRes.ok;
+    if (releasesHidden) {
+      console.warn(
+        `[github] ${repo}: releases not readable (token needs read-only Contents); showing stars and updated only`,
+      );
+    }
+
+    // Any other failure (rate limit, outage, bad token) means we only have half the story.
     // Report failure rather than a version-less result that the browser would
     // then cache for an hour.
-    if (!repoRes.ok || !relRes.ok) {
+    if (!repoRes.ok || (!relRes.ok && !releasesHidden)) {
       warn(repo, repoRes.ok ? relRes : repoRes);
       return null;
     }
 
     const data = await repoRes.json();
-    const releases: unknown = await relRes.json();
+    const releases: unknown = releasesHidden ? [] : await relRes.json();
     // A non-array body means GitHub sent something unexpected: same as a failure.
     if (!Array.isArray(releases) || typeof data?.pushed_at !== 'string') return null;
 
@@ -207,7 +226,7 @@ async function fetchRepoInfoUncached(repo: string, token?: string): Promise<Repo
       pushedAt: data.pushed_at,
       stars: data.stargazers_count ?? 0,
       version: latest?.tag_name ?? null,
-      releaseUrl: latest?.html_url ?? null,
+      releaseUrl: isGitHubUrl(latest?.html_url) ? latest.html_url : null,
       prerelease: latest?.prerelease === true,
       private: data.private === true,
     };
