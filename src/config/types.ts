@@ -23,6 +23,12 @@ export interface Entry {
    * github.com; set to `false` to opt out.
    */
   repo?: string | false;
+  /**
+   * The repo is private. The browser then reads release/star info through the Worker's
+   * /api/repo (which holds the token) and never calls api.github.com itself, even when
+   * the build couldn't read the repo (missing or wrong token).
+   */
+  repoPrivate?: boolean;
   /** Click-to-copy commands shown on the card. */
   commands?: CopyCommand[];
   /** Buttons that connect this card to related pages (e.g. an app → its setup guide). */

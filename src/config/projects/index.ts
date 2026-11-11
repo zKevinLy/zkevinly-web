@@ -16,6 +16,7 @@ const projects: DirectoryPage = {
       // when the build has a GITHUB_TOKEN that can read the private repo.
       href: 'https://aioplugins.zkevinly.com/',
       repo: 'zKevinLy/aioplugins',
+      repoPrivate: true,
       tags: ['nuvio', 'plugins', 'provider-manifests', 'resources', 'public', 'website'],
     },
     {
@@ -23,6 +24,7 @@ const projects: DirectoryPage = {
       description: 'A personal project for finding and tracking everyday perks.',
       href: 'https://perkday.zkevinly.com/',
       repo: 'zKevinLy/perkday',
+      repoPrivate: true,
       tags: ['perks', 'personal', 'astro', 'cloudflare', 'website'],
     },
   ],

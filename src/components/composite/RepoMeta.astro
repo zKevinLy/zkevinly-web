@@ -26,15 +26,19 @@ interface Props {
   updated?: string;
   /** Already-fetched data (EntryCard shares it with the filter bar). Omit to fetch here. */
   info?: RepoInfo | null;
+  /** Known-private repo: the browser goes through /api/repo, never api.github.com. */
+  isPrivate?: boolean;
 }
 
-const { repo, updated: manualUpdated, info: given } = Astro.props;
+const { repo, updated: manualUpdated, info: given, isPrivate = false } = Astro.props;
+
+const token = process.env.GITHUB_TOKEN || import.meta.env.GITHUB_TOKEN;
 
 const info =
   given !== undefined
     ? given
     : repo
-      ? await fetchRepoInfo(repo, import.meta.env.GITHUB_TOKEN)
+      ? await fetchRepoInfo(repo, token)
       : null;
 const updated = info?.pushedAt ?? manualUpdated;
 ---
@@ -43,7 +47,7 @@ const updated = info?.pushedAt ?? manualUpdated;
   <div
     class="node-foot"
     data-repo={repo ?? undefined}
-    data-private={info?.private ? '' : undefined}
+    data-private={isPrivate || info?.private ? '' : undefined}
   >
     {repo && (
       <Badge
@@ -101,7 +105,11 @@ const updated = info?.pushedAt ?? manualUpdated;
     const fresh = readCachedInfo(raw, TTL);
     if (fresh) return fresh;
 
-    const info = viaProxy ? await fetchRepoInfoViaProxy(repo) : await fetchRepoInfo(repo);
+    // Unknown repos try GitHub directly, then the Worker: a private repo whose build-time
+    // lookup failed would otherwise 404 here forever.
+    const info = viaProxy
+      ? await fetchRepoInfoViaProxy(repo)
+      : ((await fetchRepoInfo(repo)) ?? (await fetchRepoInfoViaProxy(repo)));
 
     if (info) {
       try {

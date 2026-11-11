@@ -21,7 +21,9 @@ const { entry } = Astro.props;
 const repo = entryRepo(entry);
 
 // Fetched once here: RepoMeta renders it, and the filter bar sorts by it.
-const info = repo ? await fetchRepoInfo(repo, import.meta.env.GITHUB_TOKEN) : null;
+// Shell env vars (CI) are only guaranteed on process.env; .env files land on import.meta.env.
+const token = process.env.GITHUB_TOKEN || import.meta.env.GITHUB_TOKEN;
+const info = repo ? await fetchRepoInfo(repo, token) : null;
 ---
 
 <Node
@@ -34,5 +36,11 @@ const info = repo ? await fetchRepoInfo(repo, import.meta.env.GITHUB_TOKEN) : nu
   <Tags tags={entry.tags} />
   <CommandList commands={entry.commands} />
   <RelatedList links={entry.related} />
-  <RepoMeta slot="foot" repo={repo} info={info} updated={entry.updated} />
+  <RepoMeta
+    slot="foot"
+    repo={repo}
+    info={info}
+    updated={entry.updated}
+    isPrivate={entry.repoPrivate}
+  />
 </Node>
