@@ -21,7 +21,13 @@ describe('GET /api/repo', () => {
       calls.push({ url: String(url), init });
       if (!ok) return reply({}, false);
       return String(url).includes('/releases')
-        ? reply([{ tag_name: 'v1.2.0', html_url: 'https://github.com/zKevinLy/perkday/releases/tag/v1.2.0', prerelease: false }])
+        ? reply([
+            {
+              tag_name: 'v1.2.0',
+              html_url: 'https://github.com/zKevinLy/perkday/releases/tag/v1.2.0',
+              prerelease: false,
+            },
+          ])
         : reply({ pushed_at: '2026-11-07T00:00:00Z', stargazers_count: 7, private: true });
     });
   }
