@@ -3,6 +3,7 @@ import type { TopicPage } from '../types';
 const androidTv: TopicPage = {
   type: 'topic',
   slug: 'android-tv',
+  group: 'collections',
 
   title: 'Android TV',
   description: 'GitHub repos for the Android TV apps I use.',

@@ -49,6 +49,18 @@ To add a page to a hub, add it to the hub's `children`, then link it from the st
 add a step, give it a `phase` and a `dependsOn`. Hover or focus a step on the page to trace everything
 it requires and unlocks.
 
+## Grouped child pages
+
+A topic page can split its child pages into titled sections instead of one "Explore ..." grid. Collections
+does this: **Collections** (the picks themselves) and **Guides** (my own walkthroughs).
+
+- Declare the sections on the parent with `groups: [{ id, title, description? }]`; their order is the display order.
+- Put each child in one with `group: '<id>'`. A child with a missing or unknown group fails the build
+  (`src/lib/groups.ts`), so a typo can't make a page vanish.
+- A group can also hold `entries` (cards, same as the Directory cards below), shown after its pages. Collections uses
+  this for a plain link to the AIO AltStore repo with a copyable manifest URL.
+- Parents without `groups` keep the single "Explore ..." section.
+
 ## Directory cards
 
 Cards that link to a GitHub repo automatically show the latest release, star count and

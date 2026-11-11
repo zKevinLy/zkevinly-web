@@ -6,12 +6,13 @@ const collections: TopicPage = {
   type: 'topic',
   slug: 'collections',
   title: 'Collections',
-  description: 'My hand-picked favorites: the best things I’ve found and actually use.',
+  description:
+    'My hand-picked favorites, plus the step-by-step guides I wrote for setting them up.',
   showInNav: true,
-  tags: ['collections', 'favorites'],
+  tags: ['collections', 'favorites', 'guides'],
 
   introduction:
-    'Unlike Resources, which is a broad reference list, everything here is something I’ve personally chosen as one of the best in its category, or simply a favorite to use.',
+    'Unlike Resources, which is a broad reference list, everything here is something I’ve personally chosen as one of the best in its category, or simply a favorite to use. Collections are the picks themselves; Guides are my own walkthroughs for getting them working.',
 
   blocks: [
     {
@@ -22,7 +23,35 @@ const collections: TopicPage = {
     },
   ],
 
-  children: [nuvio, androidTv],
+  groups: [
+    {
+      id: 'collections',
+      title: 'Collections',
+      description: 'Hand-picked lists of the apps and sources I actually use.',
+      entries: [
+        {
+          title: 'AIO AltStore',
+          description:
+            'A master list of AltStore and SideStore sources. Copy the manifest URL to get every source in one place.',
+          href: 'https://github.com/zKevinLy/aioaltstore',
+          tags: ['altstore', 'sidestore', 'sideloading', 'ios', 'sources', 'github'],
+          commands: [
+            {
+              label: 'Manifest URL',
+              command: 'https://raw.githubusercontent.com/zKevinLy/aioaltstore/main/index.json',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'guides',
+      title: 'Guides',
+      description: 'Step-by-step setup walkthroughs, written by me.',
+    },
+  ],
+
+  children: [androidTv, nuvio],
 };
 
 export default collections;

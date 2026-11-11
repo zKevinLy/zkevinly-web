@@ -137,9 +137,26 @@ export interface WorkflowNode {
   tags?: string[];
 }
 
+/** A titled section on a topic page that its child pages are listed under. */
+export interface TopicGroup {
+  id: string;
+  title: string;
+  description?: string;
+  /** Cards shown in this section after its child pages (e.g. a link straight to a repo). */
+  entries?: Entry[];
+}
+
 export interface TopicPage extends BasePage {
   type: 'topic';
   slug: string;
+  /**
+   * Splits this page's child pages into titled sections (e.g. Collections / Guides).
+   * Every child must then name one of these ids in `group`. Without `groups`, the
+   * children share a single "Explore …" section.
+   */
+  groups?: TopicGroup[];
+  /** Which of the parent's `groups` this page is listed under. */
+  group?: string;
   /** Shown on this page's card in its parent's "Explore" grid. */
   tags?: string[];
   introduction?: string;

@@ -5,6 +5,7 @@ const NUVIO_HUB = '/collections/nuvio';
 const nuvio: TopicPage = {
   type: 'topic',
   slug: 'nuvio',
+  group: 'guides',
   hub: true,
 
   title: 'Nuvio',

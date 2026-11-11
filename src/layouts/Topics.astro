@@ -6,6 +6,7 @@ import Grid from '../components/base/Grid.astro';
 import Breadcrumb from '../components/base/Breadcrumb.astro';
 import Node from '../components/base/Node.astro';
 import Tags from '../components/base/Tags.astro';
+import EntryCard from '../components/composite/EntryCard.astro';
 import TopicBlocks from '../components/composite/TopicBlocks.astro';
 import HubTrail from '../components/composite/HubTrail.astro';
 import FilterBar from '../components/composite/FilterBar.astro';
@@ -13,6 +14,7 @@ import type { TopicPage } from '../config';
 import { getBreadcrumbs, normalizePath } from '../lib/navigation';
 import { assertHub, findHub, getHubLayout, stepsFor } from '../lib/hub';
 import { buildFilterModel, filterAttrs, pageSources } from '../lib/filter';
+import { childSections } from '../lib/groups';
 
 interface Props {
   page: TopicPage;
@@ -33,6 +35,9 @@ const usedIn = hubContext && hubLayout ? stepsFor(hubLayout, currentPath) : [];
 
 // Page-local filter/search/sort over this page's lists (null when too short to bother).
 const filterModel = buildFilterModel(pageSources(page), { force: page.alwaysFilter });
+
+// Child pages, in the sections they're listed under (hubs list theirs in the workflow).
+const sections = page.hub ? [] : childSections(page);
 ---
 
 <Layout title={page.title} description={page.description}>
@@ -47,10 +52,10 @@ const filterModel = buildFilterModel(pageSources(page), { force: page.alwaysFilt
   <div data-filter-scope>
     {filterModel && <FilterBar model={filterModel} />}
 
-    {!page.hub && page.children && page.children.length > 0 && (
-      <Section title={`Explore ${page.title}`} class="topic-section" filterGroup>
+    {sections.map((section) => (
+      <Section title={section.title} note={section.note} class="topic-section" filterGroup>
         <Grid tight>
-          {page.children.map((child) => (
+          {section.pages.map((child) => (
             <Node
               title={child.title}
               description={child.description}
@@ -62,8 +67,15 @@ const filterModel = buildFilterModel(pageSources(page), { force: page.alwaysFilt
             </Node>
           ))}
         </Grid>
+        {section.entries.length > 0 && (
+          <Grid>
+            {section.entries.map((entry) => (
+              <EntryCard entry={entry} />
+            ))}
+          </Grid>
+        )}
       </Section>
-    )}
+    ))}
 
     <TopicBlocks blocks={page.blocks} page={page} path={currentPath} />
   </div>

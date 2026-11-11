@@ -4,6 +4,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import collections from '../../src/config/collections';
 import androidTv from '../../src/config/collections/android-tv';
+import nuvio from '../../src/config/collections/nuvio';
+import { childSections } from '../../src/lib/groups';
 import projects from '../../src/config/projects';
 import resources from '../../src/config/resources';
 import { entryRepo } from '../../src/lib/github';
@@ -17,10 +19,13 @@ function collectEntries(page: SitePage, where = page.title): { entry: Entry; whe
   const own = page.blocks.flatMap((block) =>
     block.type === 'entries' ? block.items.map((entry) => ({ entry, where })) : [],
   );
+  const grouped = (page.groups ?? []).flatMap((group) =>
+    (group.entries ?? []).map((entry) => ({ entry, where: `${where} > ${group.title}` })),
+  );
   const nested = (page.children ?? []).flatMap((child) =>
     collectEntries(child, `${where} > ${child.title}`),
   );
-  return [...own, ...nested];
+  return [...own, ...grouped, ...nested];
 }
 
 function collectTopics(page: TopicPage): TopicPage[] {
@@ -184,5 +189,46 @@ describe('Android TV page', () => {
   it('points Nuvio at the official repo (which only ships pre-releases)', () => {
     const nuvio = items.find((e) => e.title === 'Nuvio');
     assert.equal(entryRepo(nuvio!), 'NuvioMedia/NuvioTV');
+  });
+});
+
+describe('Collections page groups', () => {
+  const sections = childSections(collections);
+  const section = (id: string) => sections.find((s) => s.id === id);
+
+  it('splits into Collections and Guides', () => {
+    assert.deepEqual(
+      sections.map((s) => s.title),
+      ['Collections', 'Guides'],
+    );
+  });
+
+  it('lists Android TV under Collections and Nuvio under Guides', () => {
+    assert.deepEqual(
+      section('collections')?.pages.map((p) => p.slug),
+      ['android-tv'],
+    );
+    assert.deepEqual(
+      section('guides')?.pages.map((p) => p.slug),
+      ['nuvio'],
+    );
+    assert.equal(nuvio.group, 'guides');
+  });
+
+  it('links AIO AltStore straight to its repo, with a copyable manifest URL', () => {
+    const entry = section('collections')?.entries.find((e) => e.title === 'AIO AltStore');
+    assert.ok(entry, 'AIO AltStore card is missing');
+    assert.equal(entryRepo(entry), 'zKevinLy/aioaltstore');
+
+    const url = new URL(entry.commands?.[0]?.command ?? '');
+    assert.equal(url.protocol, 'https:');
+    assert.ok(url.pathname.endsWith('.json'));
+  });
+
+  it('does not give AIO AltStore a page of its own', () => {
+    assert.equal(
+      collections.children?.some((c) => c.slug === 'aioaltstore'),
+      false,
+    );
   });
 });
