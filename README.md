@@ -63,13 +63,14 @@ does this: **Collections** (the picks themselves) and **Guides** (my own walkthr
 
 ## Directory cards
 
-Cards that link to a GitHub repo automatically show the latest release, star count and
+Cards that link to a GitHub or GitLab (gitlab.com) repo automatically show the latest release, star count and
 a relative "Updated ..." time (the heartbeat dot pulses if pushed in the last 14 days).
 Data is fetched at build time and refreshed in the browser (cached 1 hour).
 
-- Opt out / override the repo: `repo: false` or `repo: 'owner/name'` on the entry.
+- Opt out / override the repo: `repo: false`, `repo: 'owner/name'` (GitHub) or
+  `repo: 'gitlab:group/project'` (GitLab) on the entry. GitLab is read anonymously, so public projects only.
 - Click-to-copy commands: `commands: [{ label: 'PowerShell', command: '...' }]`.
-- Non-GitHub entries can set `updated: '2026-01-31'` for a manual "last updated".
+- Entries on other hosts can set `updated: '2026-01-31'` for a manual "last updated".
 - Set `GITHUB_TOKEN` in the build environment to avoid GitHub's 60 requests/hour
   unauthenticated limit (in GitHub Actions: `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`).
 

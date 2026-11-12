@@ -1,5 +1,5 @@
 import projects from '../src/config/projects';
-import { entryRepo, fetchRepoInfo } from '../src/lib/github';
+import { entryRepo, fetchRepoInfo, repoHost } from '../src/lib/github';
 
 /**
  * GET /api/repo?repo=owner/name  ->  { pushedAt, stars, version, releaseUrl, prerelease, private }
@@ -26,7 +26,8 @@ const FAIL_TTL = 30;
 const ALLOWED = new Map(
   projects.items
     .map((entry) => entryRepo(entry))
-    .filter((repo) => typeof repo === 'string')
+    // GitHub only: the token is a GitHub token, and GitLab repos are read anonymously.
+    .filter((repo) => typeof repo === 'string' && repoHost(repo) === 'github')
     .map((repo) => [repo.toLowerCase(), repo]),
 );
 

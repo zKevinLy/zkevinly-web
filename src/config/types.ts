@@ -18,9 +18,10 @@ export interface Entry {
   href: string;
   tags?: string[];
   /**
-   * GitHub repo ("owner/name") used for the version badge, stars and
-   * "last updated". Inferred automatically from `href` when it points at
-   * github.com; set to `false` to opt out.
+   * Repo used for the version badge, stars and "last updated": GitHub as
+   * "owner/name", GitLab (gitlab.com, public projects) as "gitlab:group/project".
+   * Inferred automatically from `href` when it points at github.com or
+   * gitlab.com; set to `false` to opt out.
    */
   repo?: string | false;
   /**

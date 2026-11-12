@@ -1,6 +1,6 @@
 ---
 /**
- * COMPOSITE: card footer for a GitHub-backed entry — latest release, stars,
+ * COMPOSITE: card footer for a GitHub- or GitLab-backed entry — latest release, stars,
  * "updated" and public/private (bases: Badge, Freshness).
  *
  * Data is baked in at build time so the footer is complete without JS; the
@@ -14,7 +14,7 @@
 import { Globe, Lock, Star, Tag } from '@lucide/astro';
 import Badge from '../base/Badge.astro';
 import Freshness from '../base/Freshness.astro';
-import { fetchRepoInfo, type RepoInfo } from '../../lib/github';
+import { fetchRepoInfo, repoHost, type RepoInfo } from '../../lib/github';
 
 const versionTitle = (prerelease: boolean | undefined) =>
   prerelease ? 'Latest pre-release' : 'Latest release';
@@ -37,6 +37,7 @@ const token = process.env.GITHUB_TOKEN || import.meta.env.GITHUB_TOKEN;
 const info = given !== undefined ? given : repo ? await fetchRepoInfo(repo, token) : null;
 const updated = info?.pushedAt ?? manualUpdated;
 const repoIsPrivate = isPrivate || !!info?.private;
+const hostName = repo && repoHost(repo) === 'gitlab' ? 'GitLab' : 'GitHub';
 ---
 
 {(repo || updated) && (
@@ -61,7 +62,7 @@ const repoIsPrivate = isPrivate || !!info?.private;
     )}
 
     {repo && (
-      <Badge data-role="stars" title="GitHub stars" hidden={!info}>
+      <Badge data-role="stars" title={`${hostName} stars`} hidden={!info}>
         <Star size={12} aria-hidden="true" />
         <span data-role="stars-text">{info?.stars.toLocaleString('en-US')}</span>
       </Badge>
@@ -95,6 +96,7 @@ const repoIsPrivate = isPrivate || !!info?.private;
     readCachedInfo,
     readStaleInfo,
     relativeTime,
+    repoHost,
     type RepoInfo,
   } from '../../lib/github';
   import { FILTER_REFRESH_EVENT, writeStats } from '../../lib/filter';
@@ -116,11 +118,12 @@ const repoIsPrivate = isPrivate || !!info?.private;
     const fresh = readCachedInfo(raw, TTL);
     if (fresh) return fresh;
 
-    // Unknown repos try GitHub directly, then the Worker: a private repo whose build-time
-    // lookup failed would otherwise 404 here forever.
+    // Unknown GitHub repos try GitHub directly, then the Worker: a private repo whose build-time
+    // lookup failed would otherwise 404 here forever. GitLab repos are public-only: no Worker.
     const info = viaProxy
       ? await fetchRepoInfoViaProxy(repo)
-      : ((await fetchRepoInfo(repo)) ?? (await fetchRepoInfoViaProxy(repo)));
+      : ((await fetchRepoInfo(repo)) ??
+        (repoHost(repo) === 'github' ? await fetchRepoInfoViaProxy(repo) : null));
 
     if (info) {
       try {

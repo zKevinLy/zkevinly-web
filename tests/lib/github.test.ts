@@ -9,10 +9,13 @@ import {
   freshness,
   isRepoInfo,
   parseRepo,
+  pickGitLabRelease,
   pickRelease,
   readCachedInfo,
   readStaleInfo,
   relativeTime,
+  repoHost,
+  repoPath,
   type RepoInfo,
 } from '../../src/lib/github';
 
@@ -27,8 +30,26 @@ describe('parseRepo', () => {
     assert.equal(parseRepo('https://github.com/owner/repo.git'), 'owner/repo');
   });
 
+  it('extracts gitlab:path from gitlab.com URLs, including nested groups and the /-/ marker', () => {
+    assert.equal(
+      parseRepo('https://gitlab.com/AuroraOSS/AuroraStore'),
+      'gitlab:AuroraOSS/AuroraStore',
+    );
+    assert.equal(
+      parseRepo('https://gitlab.com/AuroraOSS/AuroraStore/-/releases'),
+      'gitlab:AuroraOSS/AuroraStore',
+    );
+    assert.equal(
+      parseRepo('https://gitlab.com/group/sub/project/-/issues/3'),
+      'gitlab:group/sub/project',
+    );
+    assert.equal(parseRepo('https://gitlab.com/owner/repo.git'), 'gitlab:owner/repo');
+  });
+
   it('rejects other hosts, incomplete paths and garbage', () => {
-    assert.equal(parseRepo('https://gitlab.com/owner/repo'), null);
+    assert.equal(parseRepo('https://gitlab.com/owner'), null);
+    assert.equal(parseRepo('https://gitlab.com/'), null);
+    assert.equal(parseRepo('https://bitbucket.org/owner/repo'), null);
     assert.equal(parseRepo('https://github.com/owner'), null);
     assert.equal(parseRepo('https://github.com/'), null);
     assert.equal(parseRepo('not a url'), null);
@@ -40,8 +61,58 @@ describe('entryRepo', () => {
   it('infers the repo from href', () => assert.equal(entryRepo({ href }), 'a/b'));
   it('prefers an explicit repo', () => assert.equal(entryRepo({ href, repo: 'c/d' }), 'c/d'));
   it('can be disabled with false', () => assert.equal(entryRepo({ href, repo: false }), null));
-  it('is null for non-GitHub links', () =>
+  it('infers GitLab repos from gitlab.com links', () =>
+    assert.equal(
+      entryRepo({ href: 'https://gitlab.com/AuroraOSS/AuroraStore/-/releases' }),
+      'gitlab:AuroraOSS/AuroraStore',
+    ));
+  it('lets another site link to a GitLab repo via an explicit repo', () =>
+    assert.equal(
+      entryRepo({ href: 'https://auroraoss.com/files', repo: 'gitlab:AuroraOSS/AuroraStore' }),
+      'gitlab:AuroraOSS/AuroraStore',
+    ));
+  it('is null for links on other hosts', () =>
     assert.equal(entryRepo({ href: 'https://example.com' }), null));
+});
+
+describe('repoHost / repoPath', () => {
+  it('treats bare owner/name as GitHub and gitlab: as GitLab', () => {
+    assert.equal(repoHost('a/b'), 'github');
+    assert.equal(repoHost('gitlab:a/b'), 'gitlab');
+    assert.equal(repoPath('a/b'), 'a/b');
+    assert.equal(repoPath('gitlab:g/s/p'), 'g/s/p');
+  });
+});
+
+describe('pickGitLabRelease', () => {
+  const rel = (tag: string, extra: object = {}) => ({
+    tag_name: tag,
+    _links: { self: `https://gitlab.com/g/p/-/releases/${tag}` },
+    ...extra,
+  });
+
+  it('takes the first (newest) published release and its page', () => {
+    assert.deepEqual(pickGitLabRelease([rel('v2'), rel('v1')]), {
+      tag: 'v2',
+      url: 'https://gitlab.com/g/p/-/releases/v2',
+    });
+  });
+
+  it('skips upcoming releases and entries without a tag', () => {
+    assert.equal(pickGitLabRelease([rel('v3', { upcoming_release: true }), rel('v2')])?.tag, 'v2');
+    assert.equal(pickGitLabRelease([{ _links: {} }, null, rel('v1')])?.tag, 'v1');
+  });
+
+  it('drops release links that are not on github.com or gitlab.com', () => {
+    const evil = { tag_name: 'v1', _links: { self: 'javascript:alert(1)' } };
+    assert.deepEqual(pickGitLabRelease([evil]), { tag: 'v1', url: null });
+  });
+
+  it('returns null when there is nothing to show', () => {
+    assert.equal(pickGitLabRelease([]), null);
+    assert.equal(pickGitLabRelease({ message: '404 Not found' }), null);
+    assert.equal(pickGitLabRelease(undefined), null);
+  });
 });
 
 describe('pickRelease', () => {
@@ -87,7 +158,17 @@ describe('isRepoInfo / readCachedInfo / cacheKey', () => {
     assert.equal(isRepoInfo({ ...info, version: null, releaseUrl: null, prerelease: false }), true);
   });
 
-  it('rejects release links that are not https://github.com URLs', () => {
+  it('accepts GitLab release links too', () => {
+    assert.equal(
+      isRepoInfo({
+        ...info,
+        releaseUrl: 'https://gitlab.com/AuroraOSS/AuroraStore/-/releases/4.8.3',
+      }),
+      true,
+    );
+  });
+
+  it('rejects release links that are not https://github.com or https://gitlab.com URLs', () => {
     assert.equal(isRepoInfo({ ...info, releaseUrl: 'javascript:alert(1)' }), false);
     assert.equal(isRepoInfo({ ...info, releaseUrl: 'https://evil.example/x' }), false);
   });
@@ -370,5 +451,107 @@ describe('fetchRepoInfo', () => {
       String(warn.mock.calls[0]?.arguments[0]),
       /o\/r: HTTP 403.*rate limit reached.*GITHUB_TOKEN/,
     );
+  });
+
+  describe('GitLab repos', () => {
+    const projectBody = {
+      last_activity_at: '2026-11-07T00:00:00Z',
+      star_count: 4321,
+      visibility: 'public',
+      web_url: 'https://gitlab.com/AuroraOSS/AuroraStore',
+    };
+    const release = (tag: string, extra: object = {}) => ({
+      tag_name: tag,
+      _links: { self: `https://gitlab.com/AuroraOSS/AuroraStore/-/releases/${tag}` },
+      ...extra,
+    });
+    const REPO = 'gitlab:AuroraOSS/AuroraStore';
+
+    it('reads stars, last activity and the newest release', async () => {
+      mockGitHub({ body: projectBody }, { body: [release('4.8.3'), release('4.8.2')] });
+      assert.deepEqual(await fetchRepoInfo(REPO), {
+        pushedAt: '2026-11-07T00:00:00Z',
+        stars: 4321,
+        version: '4.8.3',
+        releaseUrl: 'https://gitlab.com/AuroraOSS/AuroraStore/-/releases/4.8.3',
+        prerelease: false,
+        private: false,
+      });
+    });
+
+    it('queries the GitLab API with the URL-encoded project path', async () => {
+      const calls = mockGitHub({ body: projectBody }, { body: [] });
+      await fetchRepoInfo(REPO);
+      assert.deepEqual(calls.map((c) => c.url).sort(), [
+        'https://gitlab.com/api/v4/projects/AuroraOSS%2FAuroraStore',
+        'https://gitlab.com/api/v4/projects/AuroraOSS%2FAuroraStore/releases?per_page=10',
+      ]);
+    });
+
+    it('NEVER sends a token to GitLab (it is a GitHub token)', async () => {
+      const calls = mockGitHub({ body: projectBody }, { body: [] });
+      await fetchRepoInfo(REPO, 'github-secret');
+      assert.equal(calls.length, 2);
+      for (const { init } of calls) {
+        const headers = init?.headers as Record<string, string>;
+        assert.equal(headers.Authorization, undefined);
+        assert.equal(headers['PRIVATE-TOKEN'], undefined);
+      }
+    });
+
+    it('skips upcoming releases', async () => {
+      mockGitHub(
+        { body: projectBody },
+        { body: [release('5.0.0', { upcoming_release: true }), release('4.8.3')] },
+      );
+      assert.equal((await fetchRepoInfo(REPO))?.version, '4.8.3');
+    });
+
+    it('builds the release link from the project URL when the release has none', async () => {
+      mockGitHub({ body: projectBody }, { body: [{ tag_name: 'v1' }] });
+      assert.equal(
+        (await fetchRepoInfo(REPO))?.releaseUrl,
+        'https://gitlab.com/AuroraOSS/AuroraStore/-/releases/v1',
+      );
+    });
+
+    it('returns version: null for a project with no releases', async () => {
+      mockGitHub({ body: projectBody }, { body: [] });
+      const info = await fetchRepoInfo(REPO);
+      assert.equal(info?.version, null);
+      assert.equal(info?.releaseUrl, null);
+    });
+
+    it('still returns stars and activity when the releases list is hidden (404)', async () => {
+      mockGitHub({ body: projectBody }, { ok: false, status: 404, body: {} });
+      const info = await fetchRepoInfo(REPO);
+      assert.equal(info?.stars, 4321);
+      assert.equal(info?.version, null);
+    });
+
+    it('returns null when the project is not found, with a GitLab-specific warning', async () => {
+      const warn = mock.method(console, 'warn', () => {});
+      mockGitHub({ ok: false, status: 404, body: {} }, { ok: false, status: 404, body: {} });
+      assert.equal(await fetchRepoInfo(REPO), null);
+      assert.match(
+        String(warn.mock.calls[0]?.arguments[0]),
+        /^\[gitlab\] gitlab:AuroraOSS\/AuroraStore: HTTP 404/,
+      );
+    });
+
+    it('returns null on unexpected payloads', async () => {
+      mockGitHub({ body: projectBody }, { body: { message: 'weird' } });
+      assert.equal(await fetchRepoInfo(REPO), null);
+      mock.restoreAll();
+      mockGitHub({ body: {} }, { body: [] });
+      assert.equal(await fetchRepoInfo(REPO), null, 'missing last_activity_at');
+    });
+
+    it('shares results whether or not a token was passed (it is ignored)', async () => {
+      const calls = mockGitHub({ body: projectBody }, { body: [] });
+      await fetchRepoInfo(REPO);
+      await fetchRepoInfo(REPO, 'tok');
+      assert.equal(calls.length, 2);
+    });
   });
 });

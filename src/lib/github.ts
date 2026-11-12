@@ -1,5 +1,8 @@
-// GitHub helpers shared by the build (RepoMeta.astro frontmatter) and the browser
+// GitHub + GitLab helpers shared by the build (RepoMeta.astro frontmatter) and the browser
 // (RepoMeta.astro <script>). Keep this file free of Node-only APIs.
+//
+// A repo reference is a plain string: bare "owner/name" is GitHub, "gitlab:group/project"
+// is GitLab (gitlab.com; the project path may sit in nested groups).
 
 import type { Entry } from '../config/types';
 
@@ -10,10 +13,10 @@ export interface RepoInfo {
   /** Tag of the newest published (non-draft) release, pre-releases included, if any. */
   version: string | null;
   releaseUrl: string | null;
-  /** True when `version` is a GitHub pre-release (beta, RC, nightly…). */
+  /** True when `version` is a GitHub pre-release (beta, RC, nightly…). GitLab has no such flag, so it is always false there. */
   prerelease: boolean;
   /**
-   * True when GitHub says the repo is private (only visible with a build-time token).
+   * True when the host says the repo is private (GitHub: only visible with a build-time token).
    * The browser has no token, so it must not try to refresh these: it would only get a 404.
    */
   private: boolean;
@@ -29,6 +32,19 @@ export interface GitHubRelease {
 export type Freshness = 'hot' | 'warm' | 'cold';
 
 const API = 'https://api.github.com';
+const GITLAB_API = 'https://gitlab.com/api/v4';
+
+export type RepoHost = 'github' | 'gitlab';
+
+const GITLAB_PREFIX = 'gitlab:';
+
+/** Which service a repo reference points at. */
+export const repoHost = (repo: string): RepoHost =>
+  repo.startsWith(GITLAB_PREFIX) ? 'gitlab' : 'github';
+
+/** The reference without its host prefix: "gitlab:g/p" -> "g/p". */
+export const repoPath = (repo: string): string =>
+  repo.startsWith(GITLAB_PREFIX) ? repo.slice(GITLAB_PREFIX.length) : repo;
 
 /**
  * Bump whenever the shape of `RepoInfo` (or how it's computed) changes, so the
@@ -40,19 +56,36 @@ export const CACHE_VERSION = 3;
 
 export const cacheKey = (repo: string) => `gh:v${CACHE_VERSION}:${repo}`;
 
-/** "https://github.com/owner/repo/anything" -> "owner/repo" (github.com only). */
+/**
+ * "https://github.com/owner/repo/anything" -> "owner/repo"
+ * "https://gitlab.com/group/project/-/releases" -> "gitlab:group/project"
+ * Any other host gives null. GitLab project paths end where its "/-/" marker starts.
+ */
 export function parseRepo(href: string): string | null {
   try {
     const url = new URL(href);
-    if (url.hostname !== 'github.com') return null;
-    const [owner, name] = url.pathname.split('/').filter(Boolean);
-    return owner && name ? `${owner}/${name.replace(/\.git$/, '')}` : null;
+    const segments = url.pathname.split('/').filter(Boolean);
+
+    if (url.hostname === 'github.com') {
+      const [owner, name] = segments;
+      return owner && name ? `${owner}/${name.replace(/\.git$/, '')}` : null;
+    }
+
+    if (url.hostname === 'gitlab.com') {
+      const dash = segments.indexOf('-');
+      const path = (dash === -1 ? segments : segments.slice(0, dash))
+        .join('/')
+        .replace(/\.git$/, '');
+      return path.includes('/') ? `${GITLAB_PREFIX}${path}` : null;
+    }
+
+    return null;
   } catch {
     return null;
   }
 }
 
-/** The repo behind an entry: inferred from a github.com link unless set or disabled (`false`). */
+/** The repo behind an entry: inferred from a github.com or gitlab.com link unless set or disabled (`false`). */
 export function entryRepo(entry: Pick<Entry, 'repo' | 'href'>): string | null {
   return entry.repo === false ? null : (entry.repo ?? parseRepo(entry.href));
 }
@@ -71,9 +104,29 @@ export function pickRelease(releases: unknown): GitHubRelease | null {
   return found ?? null;
 }
 
-/** Release links are only ever followed when they point at github.com over https (blocks javascript: URLs from a tampered cache or reply). */
-const isGitHubUrl = (value: unknown): value is string =>
-  typeof value === 'string' && value.startsWith('https://github.com/');
+/** Release links are only ever followed when they point at github.com or gitlab.com over https (blocks javascript: URLs from a tampered cache or reply). */
+const isReleaseUrl = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  (value.startsWith('https://github.com/') || value.startsWith('https://gitlab.com/'));
+
+/**
+ * The newest GitLab release that is actually published. GitLab lists newest-first and has no
+ * drafts or pre-release flag; releases dated in the future (`upcoming_release`) are skipped.
+ */
+export function pickGitLabRelease(releases: unknown): { tag: string; url: string | null } | null {
+  if (!Array.isArray(releases)) return null;
+  for (const release of releases) {
+    if (!release || typeof release !== 'object') continue;
+    const r = release as {
+      tag_name?: unknown;
+      upcoming_release?: unknown;
+      _links?: { self?: unknown };
+    };
+    if (typeof r.tag_name !== 'string' || !r.tag_name || r.upcoming_release === true) continue;
+    return { tag: r.tag_name, url: isReleaseUrl(r._links?.self) ? r._links.self : null };
+  }
+  return null;
+}
 
 /** Runtime check for data read back from localStorage (it may be from an older version, or junk). */
 export function isRepoInfo(value: unknown): value is RepoInfo {
@@ -83,7 +136,7 @@ export function isRepoInfo(value: unknown): value is RepoInfo {
     typeof v.pushedAt === 'string' &&
     typeof v.stars === 'number' &&
     (v.version === null || typeof v.version === 'string') &&
-    (v.releaseUrl === null || isGitHubUrl(v.releaseUrl)) &&
+    (v.releaseUrl === null || isReleaseUrl(v.releaseUrl)) &&
     typeof v.prerelease === 'boolean' &&
     typeof v.private === 'boolean'
   );
@@ -119,13 +172,16 @@ export function readStaleInfo(raw: string | null): RepoInfo | null {
  * Fetches repo + latest release. Returns null on any failure (rate limit,
  * offline, repo gone) so callers can keep whatever they already have.
  *
+ * `token` is a GitHub token and is only ever sent to GitHub. GitLab repos are read
+ * anonymously (public projects only), so a token can never leak to another host.
+ *
  * Uses the releases *list* rather than /releases/latest so a repo with no
  * releases answers 200 [] instead of a 404 (which spams the browser console).
  */
 export async function fetchRepoInfo(repo: string, token?: string): Promise<RepoInfo | null> {
   // Dev servers re-render on every reload, and unauthenticated GitHub calls are capped
   // at 60/hour, so successful results (and in-flight requests) are shared for a few minutes.
-  const key = `${repo}|${token ? 'auth' : 'anon'}`;
+  const key = `${repo}|${token && repoHost(repo) === 'github' ? 'auth' : 'anon'}`;
   const hit = memo.get(key);
   if (hit && Date.now() - hit.t < MEMO_TTL) return hit.promise;
 
@@ -167,6 +223,16 @@ export function clearRepoInfoMemo() {
 
 /** Says *why* GitHub refused, since a silent blank footer is miserable to debug. */
 function warn(repo: string, res: Response) {
+  if (repoHost(repo) === 'gitlab') {
+    const hint =
+      res.status === 404
+        ? ' (not found, or not a public project)'
+        : res.status === 403 || res.status === 429
+          ? ' (rate limited or forbidden; try again in a minute)'
+          : '';
+    console.warn(`[gitlab] ${repo}: HTTP ${res.status}${hint}`);
+    return;
+  }
   const remaining = res.headers?.get?.('x-ratelimit-remaining');
   const hint =
     res.status === 404
@@ -181,7 +247,55 @@ function warn(repo: string, res: Response) {
   console.warn(`[github] ${repo}: HTTP ${res.status}${hint}`);
 }
 
-async function fetchRepoInfoUncached(repo: string, token?: string): Promise<RepoInfo | null> {
+function fetchRepoInfoUncached(repo: string, token?: string): Promise<RepoInfo | null> {
+  return repoHost(repo) === 'gitlab' ? fetchGitLabInfo(repo) : fetchGitHubInfo(repo, token);
+}
+
+/** GitLab: project (stars, last activity) + releases list, anonymous. */
+async function fetchGitLabInfo(repo: string): Promise<RepoInfo | null> {
+  const id = encodeURIComponent(repoPath(repo));
+  const init = { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(8000) };
+
+  try {
+    const [projectRes, relRes] = await Promise.all([
+      fetch(`${GITLAB_API}/projects/${id}`, init),
+      fetch(`${GITLAB_API}/projects/${id}/releases?per_page=10`, init),
+    ]);
+
+    // Same rule as GitHub: a missing releases list on a readable project just hides the version.
+    const releasesHidden = !relRes.ok && relRes.status === 404 && projectRes.ok;
+    if (!projectRes.ok || (!relRes.ok && !releasesHidden)) {
+      warn(repo, projectRes.ok ? relRes : projectRes);
+      return null;
+    }
+
+    const data = await projectRes.json();
+    const releases: unknown = releasesHidden ? [] : await relRes.json();
+    if (!Array.isArray(releases) || typeof data?.last_activity_at !== 'string') return null;
+
+    const latest = pickGitLabRelease(releases);
+    const fallbackUrl =
+      latest && typeof data.web_url === 'string'
+        ? `${data.web_url}/-/releases/${encodeURIComponent(latest.tag)}`
+        : null;
+    const releaseUrl = latest?.url ?? fallbackUrl;
+
+    return {
+      // GitLab's closest field to "last push" is last activity (commits, issues, merge requests).
+      pushedAt: data.last_activity_at,
+      stars: data.star_count ?? 0,
+      version: latest?.tag ?? null,
+      releaseUrl: isReleaseUrl(releaseUrl) ? releaseUrl : null,
+      prerelease: false,
+      private: data.visibility === 'private',
+    };
+  } catch (error) {
+    console.warn(`[gitlab] ${repo}: request failed`, error);
+    return null;
+  }
+}
+
+async function fetchGitHubInfo(repo: string, token?: string): Promise<RepoInfo | null> {
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github+json',
   };
@@ -226,7 +340,7 @@ async function fetchRepoInfoUncached(repo: string, token?: string): Promise<Repo
       pushedAt: data.pushed_at,
       stars: data.stargazers_count ?? 0,
       version: latest?.tag_name ?? null,
-      releaseUrl: isGitHubUrl(latest?.html_url) ? latest.html_url : null,
+      releaseUrl: isReleaseUrl(latest?.html_url) ? latest.html_url : null,
       prerelease: latest?.prerelease === true,
       private: data.private === true,
     };

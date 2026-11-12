@@ -63,7 +63,8 @@ describe('site content', () => {
       });
 
       it('has a valid repo override, if any', () => {
-        if (typeof entry.repo === 'string') assert.match(entry.repo, /^[\w.-]+\/[\w.-]+$/);
+        if (typeof entry.repo === 'string')
+          assert.match(entry.repo, /^(?:[\w.-]+\/[\w.-]+|gitlab:[\w.-]+(?:\/[\w.-]+)+)$/);
       });
 
       it('has well-formed commands, if any', () => {
@@ -192,18 +193,18 @@ describe('Android TV page', () => {
   const apps = androidTv.blocks.find((b) => b.type === 'entries');
   const items = apps?.type === 'entries' ? apps.items : [];
 
-  it('lists GitHub-hosted apps with a resolvable repo so version/stars can be shown', () => {
+  it('lists GitHub/GitLab-hosted apps with a resolvable repo so version/stars can be shown', () => {
     assert.ok(items.length > 0);
     for (const entry of items) {
-      if (new URL(entry.href).hostname === 'github.com')
-        assert.ok(entryRepo(entry), `${entry.title} has no resolvable GitHub repo`);
+      if (['github.com', 'gitlab.com'].includes(new URL(entry.href).hostname))
+        assert.ok(entryRepo(entry), `${entry.title} has no resolvable repo`);
     }
   });
 
-  it('lists Aurora Store, which is not hosted on GitHub', () => {
+  it('links Aurora Store straight to its GitLab project', () => {
     const aurora = items.find((e) => e.title === 'Aurora Store');
-    assert.equal(aurora?.href, 'https://auroraoss.com/files');
-    assert.equal(entryRepo(aurora!), null);
+    assert.equal(aurora?.href, 'https://gitlab.com/AuroraOSS/AuroraStore/-/releases');
+    assert.equal(entryRepo(aurora!), 'gitlab:AuroraOSS/AuroraStore');
   });
 
   it('ships a copyable ADB quickstart script with placeholder APK links', () => {
@@ -214,6 +215,11 @@ describe('Android TV page', () => {
     assert.match(script, /\[apk link/);
     assert.match(script, /adb install -r/);
     assert.ok(!/https?:\/\//.test(script), 'script should not hard-code any links');
+  });
+
+  it('lists F-Droid, backed by its GitLab client repo', () => {
+    const fdroid = items.find((e) => e.title === 'F-Droid');
+    assert.equal(entryRepo(fdroid!), 'gitlab:fdroid/fdroidclient');
   });
 
   it('links Nuvio to its setup guide', () => {

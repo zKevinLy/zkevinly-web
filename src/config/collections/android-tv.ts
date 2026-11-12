@@ -95,7 +95,7 @@ const androidTv: TopicPage = {
           title: 'Aurora Store',
           description:
             'Open-source Google Play client. Browse, install, and update apps without the Play Store, and sign in anonymously if you’d rather not use a Google account.',
-          href: 'https://auroraoss.com/files',
+          href: 'https://gitlab.com/AuroraOSS/AuroraStore/-/releases',
           tags: [
             'android-tv',
             'app',
@@ -104,6 +104,23 @@ const androidTv: TopicPage = {
             'updates',
             'anonymous-login',
             'open-source',
+            'gitlab',
+          ],
+        },
+        {
+          title: 'F-Droid',
+          description:
+            'Open-source app store for free and open-source Android apps, with its own update checks.',
+          href: 'https://f-droid.org/',
+          repo: 'gitlab:fdroid/fdroidclient',
+          tags: [
+            'android-tv',
+            'app',
+            'app-store',
+            'f-droid',
+            'updates',
+            'open-source',
+            'gitlab',
           ],
         },
       ],
