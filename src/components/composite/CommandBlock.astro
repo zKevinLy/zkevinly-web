@@ -15,7 +15,9 @@ const multiline = command.command.includes('\n');
 <div class="cmd">
   {command.label && <span class="cmd-label">{command.label}</span>}
   <div class="cmd-row" data-copy-root>
-    <code class="cmd-text" data-copy-source data-multiline={multiline ? '' : undefined}>{command.command}</code>
+    <code class="cmd-text" data-copy-source data-multiline={multiline ? '' : undefined}>
+      {command.command}
+    </code>
     <CopyButton
       text={command.command}
       ariaLabel={multiline ? `Copy ${command.label ?? 'script'}` : undefined}
