@@ -1,0 +1,28 @@
+---
+/**
+ * COMPOSITE: a file download button, styled to match CommandBlock / RelatedList.
+ * Same-origin files only: browsers ignore the `download` attribute on other sites.
+ */
+import { Download } from '@lucide/astro';
+
+interface Props {
+  href: string;
+  /** File name the browser saves the file as. */
+  filename: string;
+  label?: string;
+}
+
+const { href, filename, label = 'Download' } = Astro.props;
+---
+
+<div class="cmds related">
+  <div class="cmd">
+    <a class="cmd-row related-link" href={href} download={filename}>
+      <span class="cmd-text related-text">{filename}</span>
+      <span class="copy-btn related-go" aria-hidden="true">
+        <Download size={14} />
+        <span class="copy-btn-text">{label}</span>
+      </span>
+    </a>
+  </div>
+</div>

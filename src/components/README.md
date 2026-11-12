@@ -36,6 +36,7 @@ May know about site data and wire primitives together.
 | `HubIndex`                     | `Node` + `Grid`                                       |
 | `CommandBlock` → `CommandList` | `CopyButton`                                          |
 | `RepoMeta`                     | `Badge` + `Freshness` (+ GitHub live data)            |
+| `DownloadButton`               | (classes shared with `CommandBlock` / related links)  |
 | `TopicBlocks`                  | `Section`, `Prose`, `Grid`, `Steps`, `Figure`, `Node` |
 | `Header`                       | `IconButton`, `NavLink`                               |
 | `FilterBar`                    | (self-contained; acts on `data-filter-*` cards)       |

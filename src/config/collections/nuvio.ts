@@ -260,6 +260,7 @@ const nuvio: TopicPage = {
                   description:
                     'Download and import it in the configurator. Add your own PenguPlay manifest URLs afterwards.',
                   href: '/templates/aiostreams-template.json',
+                  download: 'aiostreams-template.json',
                   label: 'Template',
                   tags: ['aiostreams', 'template', 'import', 'configuration'],
                 },
@@ -316,6 +317,7 @@ const nuvio: TopicPage = {
                   description:
                     'Download and import it in the configurator, then add your own TMDB and TVDB keys.',
                   href: '/templates/aiometadata-template.json',
+                  download: 'aiometadata-template.json',
                   label: 'Template',
                   tags: ['aiometadata', 'template', 'import', 'configuration'],
                 },

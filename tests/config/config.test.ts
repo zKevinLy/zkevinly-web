@@ -2,6 +2,8 @@
 // shipping a broken card.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import collections from '../../src/config/collections';
 import androidTv from '../../src/config/collections/android-tv';
 import nuvio from '../../src/config/collections/nuvio';
@@ -135,6 +137,21 @@ describe('topic pages', () => {
       for (const block of topic.blocks) {
         if (block.type === 'links') block.items.forEach((l) => check(l.tags, l.title));
         if (block.type === 'workflow') block.nodes.forEach((n) => check(n.tags, n.id));
+      }
+    }
+  });
+
+  it('only marks files that ship in public/ as downloads', () => {
+    for (const topic of topics) {
+      for (const block of topic.blocks) {
+        if (block.type !== 'links') continue;
+        for (const link of block.items.filter((l) => l.download)) {
+          assert.ok(link.href.startsWith('/'), `${link.title}: downloads must be same-site files`);
+          assert.ok(
+            existsSync(join(process.cwd(), 'public', link.href)),
+            `${link.title}: public${link.href} does not exist`,
+          );
+        }
       }
     }
   });

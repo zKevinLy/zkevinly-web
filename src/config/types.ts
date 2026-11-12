@@ -56,9 +56,15 @@ export interface DirectoryPage extends BasePage {
 export interface TopicLink {
   title: string;
   description: string;
+  /** For a `download` link this is a file on this site, e.g. "/templates/x.json". */
   href: string;
   label?: string;
   tags?: string[];
+  /**
+   * Turns the card into a download: it shows a Download button (instead of making the
+   * whole card a link) that saves `href` under this file name.
+   */
+  download?: string;
 }
 
 export type TopicBlock =
