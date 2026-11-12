@@ -86,6 +86,16 @@ const nuvio: TopicPage = {
           description:
             'AIOMetadata requires both a TMDB and a TheTVDB API key. Create them now and keep them handy for the next steps.',
           href: `${NUVIO_HUB}/api-providers`,
+          links: [
+            {
+              label: 'Get your TMDB API key',
+              href: 'https://www.themoviedb.org/settings/api',
+            },
+            {
+              label: 'Get your TheTVDB API key',
+              href: 'https://thetvdb.com/api-information',
+            },
+          ],
           dependsOn: ['account'],
           tags: ['api-keys', 'tmdb', 'tvdb', 'metadata'],
         },
@@ -94,7 +104,7 @@ const nuvio: TopicPage = {
           phase: 'prepare',
           title: 'Set up AIOStreams as your stream hub',
           description:
-            'AIOStreams is the one place every stream addon goes through, so its formatting, sorting, and filtering apply to all of your sources. Configure it, add your HTTPS addons inside it (such as PenguPlay), and copy its manifest URL when you’re done.',
+            'AIOStreams is the one place every stream addon goes through, so its formatting, sorting, and filtering apply to all of your sources. Create two PenguPlay accounts first, then open the AIOStreams configurator, import the template, add both PenguPlay manifests inside it, and copy its manifest URL when you’re done.',
           href: `${NUVIO_HUB}/addons/aiostreams`,
           links: [
             {
@@ -102,7 +112,11 @@ const nuvio: TopicPage = {
               href: `${NUVIO_HUB}/addons`,
             },
             {
-              label: 'HTTPS addon · PenguPlay',
+              label: 'AIOStreams configurator',
+              href: 'https://aiostreamsfortheweebsstable.midnightignite.me/stremio/configure',
+            },
+            {
+              label: 'Create PenguPlay accounts (make 2)',
               href: 'https://pengu.uk/',
             },
             {
@@ -118,8 +132,14 @@ const nuvio: TopicPage = {
           phase: 'metadata',
           title: 'Set up AIOMetadata for your catalogs',
           description:
-            'AIOMetadata lets you build custom catalogs and organize how your library is laid out. Enter the TMDB and TVDB keys from the previous step, configure it, and copy its manifest URL when you’re done. If your AIOStreams configuration already includes AIOMetadata, don’t install a duplicate.',
+            'AIOMetadata lets you build custom catalogs and organize how your library is laid out. Open the configurator, import the template, enter the TMDB and TVDB keys from the previous step, and copy its manifest URL when you’re done. If your AIOStreams configuration already includes AIOMetadata, don’t install a duplicate.',
           href: `${NUVIO_HUB}/addons/aiometadata`,
+          links: [
+            {
+              label: 'AIOMetadata configurator',
+              href: 'https://aiometadatafortheweebs.midnightignite.me/configure/',
+            },
+          ],
           dependsOn: ['api'],
           tags: ['aiometadata', 'catalogs', 'metadata', 'manifest-url'],
         },
@@ -206,7 +226,17 @@ const nuvio: TopicPage = {
               type: 'text',
               title: 'About AIOStreams',
               content:
-                'Add your HTTPS addons, then configure formatting, sorting, and filtering so every source is presented the way you want.',
+                'Add your HTTPS addons, then configure formatting, sorting, and filtering so every source is presented the way you want. The template below is preconfigured for two PenguPlay accounts, so you only need to paste in your own manifest URLs.',
+            },
+            {
+              type: 'steps',
+              title: 'Set it up',
+              items: [
+                'Create two PenguPlay accounts at pengu.uk (use a different login for each) and copy the manifest URL from each one.',
+                'Open the AIOStreams configurator on midnightignite and import the AIOStreams template from the downloads below.',
+                'In the addons list, open PenguPlay - 1 and paste in the manifest URL from your first account, then do the same for PenguPlay - 2 with your second account.',
+                'Save the configuration, install it, and copy the manifest URL AIOStreams gives you. You’ll add it on nuvio.tv later.',
+              ],
             },
             {
               type: 'links',
@@ -215,16 +245,23 @@ const nuvio: TopicPage = {
                 {
                   title: 'AIOStreams Configuration',
                   description: 'Configure stream providers and addon settings.',
-                  href: 'https://aiostreams.elfhosted.com/stremio/configure',
+                  href: 'https://aiostreamsfortheweebsstable.midnightignite.me/stremio/configure',
                   tags: ['aiostreams', 'configurator', 'stremio-addon', 'streams'],
                 },
                 {
-                  title: 'AIOStreams in Nuvio',
+                  title: 'PenguPlay Accounts',
+                  description: 'Create two accounts and copy each manifest URL into AIOStreams.',
+                  href: 'https://pengu.uk/',
+                  label: 'Make 2',
+                  tags: ['penguplay', 'https-addons', 'accounts', 'streams'],
+                },
+                {
+                  title: 'AIOStreams Template',
                   description:
-                    'Current guide for configuring AIOStreams and installing its manifest.',
-                  href: 'https://docs.elfhosted.com/nuvio/aiostreams-nuvio/',
-                  label: 'Guide',
-                  tags: ['aiostreams', 'guide', 'documentation', 'elfhosted'],
+                    'Download and import it in the configurator. Add your own PenguPlay manifest URLs afterwards.',
+                  href: '/templates/aiostreams-template.json',
+                  label: 'Template',
+                  tags: ['aiostreams', 'template', 'import', 'configuration'],
                 },
                 {
                   title: 'AIOStreams configuration walkthrough',
@@ -255,6 +292,16 @@ const nuvio: TopicPage = {
               content: 'Build custom catalogs and configure metadata for your Nuvio setup.',
             },
             {
+              type: 'steps',
+              title: 'Set it up',
+              items: [
+                'Get your TMDB and TheTVDB API keys from the API Providers page.',
+                'Open the AIOMetadata configurator on midnightignite and import the AIOMetadata template from the downloads below.',
+                'Enter your TMDB and TheTVDB keys (the template doesn’t include any keys), then save the configuration.',
+                'Install it and copy the manifest URL AIOMetadata gives you. You’ll add it on nuvio.tv before AIOStreams.',
+              ],
+            },
+            {
               type: 'links',
               title: 'Configuration',
               items: [
@@ -263,6 +310,14 @@ const nuvio: TopicPage = {
                   description: 'Configure metadata providers and catalogs.',
                   href: 'https://aiometadatafortheweebs.midnightignite.me/configure/',
                   tags: ['aiometadata', 'configurator', 'catalogs', 'metadata'],
+                },
+                {
+                  title: 'AIOMetadata Template',
+                  description:
+                    'Download and import it in the configurator, then add your own TMDB and TVDB keys.',
+                  href: '/templates/aiometadata-template.json',
+                  label: 'Template',
+                  tags: ['aiometadata', 'template', 'import', 'configuration'],
                 },
               ],
             },
@@ -282,7 +337,7 @@ const nuvio: TopicPage = {
           type: 'text',
           title: 'About API Providers',
           content:
-            'AIOMetadata requires both a TMDB and a TheTVDB API key. Create them here before configuring it.',
+            'AIOMetadata requires both a TMDB and a TheTVDB API key. Create them here before configuring it. Sign in to each site first, then follow the link to request your key.',
         },
         {
           type: 'links',
@@ -290,13 +345,13 @@ const nuvio: TopicPage = {
           items: [
             {
               title: 'TMDB',
-              description: 'Manage API credentials.',
+              description: 'Sign in, then request your free API key from your settings.',
               href: 'https://www.themoviedb.org/settings/api',
               tags: ['api-keys', 'metadata', 'movies', 'tv-shows', 'required'],
             },
             {
               title: 'TheTVDB',
-              description: 'API information and developer access.',
+              description: 'Sign in, then request your free API key on the API information page.',
               href: 'https://thetvdb.com/api-information',
               tags: ['api-keys', 'metadata', 'tv-shows', 'required'],
             },
