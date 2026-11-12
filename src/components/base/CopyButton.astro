@@ -15,10 +15,12 @@ import { Check, Copy } from '@lucide/astro';
 interface Props {
   text: string;
   label?: string;
+  /** Overrides the default "Copy: <text>" label (useful when `text` is a long script). */
+  ariaLabel?: string;
   class?: string;
 }
 
-const { text, label = 'Copy', class: className } = Astro.props;
+const { text, label = 'Copy', ariaLabel, class: className } = Astro.props;
 ---
 
 <button
@@ -26,7 +28,7 @@ const { text, label = 'Copy', class: className } = Astro.props;
   class:list={['copy-btn', className]}
   data-copy={text}
   data-copy-label={label}
-  aria-label={`${label}: ${text}`}
+  aria-label={ariaLabel ?? `${label}: ${text}`}
 >
   <Copy class="copy-btn-icon-copy" size={14} aria-hidden="true" />
   <Check class="copy-btn-icon-done" size={14} aria-hidden="true" />

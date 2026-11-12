@@ -8,14 +8,17 @@ interface Props {
 }
 
 const { command } = Astro.props;
+// Multi-line scripts keep their line breaks and drop the single-line "> " prompt.
+const multiline = command.command.includes('\n');
 ---
 
 <div class="cmd">
   {command.label && <span class="cmd-label">{command.label}</span>}
   <div class="cmd-row" data-copy-root>
-    <code class="cmd-text" data-copy-source>
-      {command.command}
-    </code>
-    <CopyButton text={command.command} />
+    <code class="cmd-text" data-copy-source data-multiline={multiline ? '' : undefined}>{command.command}</code>
+    <CopyButton
+      text={command.command}
+      ariaLabel={multiline ? `Copy ${command.label ?? 'script'}` : undefined}
+    />
   </div>
 </div>

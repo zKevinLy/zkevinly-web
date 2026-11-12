@@ -972,6 +972,15 @@ a.badge-link:hover {
   user-select: none;
 }
 
+.cmd-text[data-multiline] {
+  white-space: pre;
+  line-height: 1.5;
+}
+
+.cmd-text[data-multiline]::before {
+  content: none;
+}
+
 .copy-btn {
   display: inline-flex;
   align-items: center;

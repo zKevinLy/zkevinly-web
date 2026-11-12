@@ -192,10 +192,28 @@ describe('Android TV page', () => {
   const apps = androidTv.blocks.find((b) => b.type === 'entries');
   const items = apps?.type === 'entries' ? apps.items : [];
 
-  it('lists GitHub-backed apps so version/stars can be shown', () => {
+  it('lists GitHub-hosted apps with a resolvable repo so version/stars can be shown', () => {
     assert.ok(items.length > 0);
-    for (const entry of items)
-      assert.ok(entryRepo(entry), `${entry.title} has no resolvable GitHub repo`);
+    for (const entry of items) {
+      if (new URL(entry.href).hostname === 'github.com')
+        assert.ok(entryRepo(entry), `${entry.title} has no resolvable GitHub repo`);
+    }
+  });
+
+  it('lists Aurora Store, which is not hosted on GitHub', () => {
+    const aurora = items.find((e) => e.title === 'Aurora Store');
+    assert.equal(aurora?.href, 'https://auroraoss.com/files');
+    assert.equal(entryRepo(aurora!), null);
+  });
+
+  it('ships a copyable ADB quickstart script with placeholder APK links', () => {
+    const adb = androidTv.blocks
+      .flatMap((b) => (b.type === 'entries' ? b.items : []))
+      .find((e) => e.title === 'Batch install APKs');
+    const script = adb?.commands?.[0]?.command ?? '';
+    assert.match(script, /\[apk link/);
+    assert.match(script, /adb install -r/);
+    assert.ok(!/https?:\/\//.test(script), 'script should not hard-code any links');
   });
 
   it('links Nuvio to its setup guide', () => {
