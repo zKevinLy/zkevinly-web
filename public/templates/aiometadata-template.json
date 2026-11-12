@@ -94,9 +94,7 @@
         "enabled": true,
         "showInHome": true,
         "source": "tmdb",
-        "tags": [
-          "Custom Catalog"
-        ],
+        "tags": ["Custom Catalog"],
         "metadata": {
           "discover": {
             "version": 2,
@@ -183,15 +181,9 @@
               "watchRegion": "",
               "watchProviders": [],
               "providerJoinMode": "or",
-              "voteAverageRange": [
-                5,
-                10
-              ],
+              "voteAverageRange": [5, 10],
               "voteCountMin": 0,
-              "runtimeRange": [
-                0,
-                400
-              ],
+              "runtimeRange": [0, 400],
               "primaryReleaseFrom": "2025-09-10",
               "primaryReleaseTo": "2026-09-10",
               "movieDatePreset": "last_year",
@@ -216,9 +208,7 @@
         "enabled": true,
         "showInHome": true,
         "source": "tmdb",
-        "tags": [
-          "Custom Catalog"
-        ],
+        "tags": ["Custom Catalog"],
         "metadata": {
           "discover": {
             "version": 2,
@@ -305,15 +295,9 @@
               "watchRegion": "",
               "watchProviders": [],
               "providerJoinMode": "or",
-              "voteAverageRange": [
-                5,
-                10
-              ],
+              "voteAverageRange": [5, 10],
               "voteCountMin": 0,
-              "runtimeRange": [
-                0,
-                400
-              ],
+              "runtimeRange": [0, 400],
               "primaryReleaseFrom": "2025-09-10",
               "primaryReleaseTo": "2026-09-10",
               "movieDatePreset": "last_year",
@@ -338,9 +322,7 @@
         "enabled": true,
         "showInHome": true,
         "source": "tmdb",
-        "tags": [
-          "Custom Catalog"
-        ],
+        "tags": ["Custom Catalog"],
         "metadata": {
           "discover": {
             "version": 2,
@@ -427,15 +409,9 @@
               "watchRegion": "",
               "watchProviders": [],
               "providerJoinMode": "or",
-              "voteAverageRange": [
-                5,
-                10
-              ],
+              "voteAverageRange": [5, 10],
               "voteCountMin": 0,
-              "runtimeRange": [
-                0,
-                400
-              ],
+              "runtimeRange": [0, 400],
               "primaryReleaseFrom": "2025-09-10",
               "primaryReleaseTo": "2026-09-10",
               "movieDatePreset": "last_year",
@@ -460,9 +436,7 @@
         "enabled": true,
         "showInHome": true,
         "source": "tmdb",
-        "tags": [
-          "Custom Catalog"
-        ],
+        "tags": ["Custom Catalog"],
         "metadata": {
           "discover": {
             "version": 2,
@@ -549,15 +523,9 @@
               "watchRegion": "",
               "watchProviders": [],
               "providerJoinMode": "or",
-              "voteAverageRange": [
-                5,
-                10
-              ],
+              "voteAverageRange": [5, 10],
               "voteCountMin": 0,
-              "runtimeRange": [
-                0,
-                400
-              ],
+              "runtimeRange": [0, 400],
               "primaryReleaseFrom": "2025-09-10",
               "primaryReleaseTo": "2026-09-10",
               "movieDatePreset": "last_year",
@@ -582,9 +550,7 @@
         "enabled": true,
         "showInHome": true,
         "source": "tmdb",
-        "tags": [
-          "Custom Catalog"
-        ],
+        "tags": ["Custom Catalog"],
         "metadata": {
           "description": "TMDB Discover (tv)",
           "url": "https://www.themoviedb.org/discover/tv?sort_by=popularity.desc&include_adult=true&with_genres=16&without_genres=99%7C37%7C10752%7C10768%7C10767%7C10766%7C10764%7C10763%7C10762&with_original_language=zh&vote_average.gte=5&air_date.gte=2025-10-17&air_date.lte=2026-10-17",
@@ -676,15 +642,9 @@
               "watchProviders": [],
               "withoutWatchProviders": [],
               "providerJoinMode": "or",
-              "voteAverageRange": [
-                5,
-                10
-              ],
+              "voteAverageRange": [5, 10],
               "voteCountMin": 0,
-              "runtimeRange": [
-                0,
-                400
-              ],
+              "runtimeRange": [0, 400],
               "primaryReleaseFrom": "2025-10-17",
               "primaryReleaseTo": "2026-10-17",
               "movieDatePreset": "last_year",
