@@ -18,6 +18,11 @@
  * own interaction (badges, checkbox, links, copy buttons) sits above that
  * stretched link via z-index: 2 in CSS.
  *
+ * Selectable nodes (`check` + `href`)
+ *   Clicking anywhere on the node toggles its checkbox (the check label stretches
+ *   over the node instead of the title link). Only the link icon in the top-right
+ *   cluster opens `href`, so a stray tap or remote press never leaves the page.
+ *
  * Anchors
  *   The title carries `id="node-<slug>"`; the search overlay links to it and
  *   spotlights the node (see Search.astro and lib/spotlight.ts).
@@ -93,11 +98,19 @@ const anchor = slug ? `node-${slug}` : undefined;
 
 const isExternal = (url: string) => /^https?:\/\//.test(url);
 const external = href ? isExternal(href) : false;
+// A node with a check box toggles it on click; its link is only the icon.
+const selectable = Boolean(check);
 const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean(check);
 ---
 
 <article
-  class:list={['node', size === 'compact' && 'node-compact', href && 'node-interactive', className]}
+  class:list={[
+    'node',
+    size === 'compact' && 'node-compact',
+    href && 'node-interactive',
+    selectable && 'node-selectable',
+    className,
+  ]}
   data-reveal={reveal ? '' : undefined}
   data-search-item={searchable ? '' : undefined}
   {...attrs}
@@ -109,7 +122,7 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
           {number}
         </span>
       )}
-      {href ? (
+      {href && !selectable ? (
         <a
           class="node-link"
           href={href}
@@ -130,7 +143,23 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
           <span class="node-badge">{badge}</span>
         ))}
         {label && <span class="node-label">{label}</span>}
+        {href && selectable && (
+          <a
+            class="node-open"
+            href={href}
+            target={external ? '_blank' : undefined}
+            rel={external ? 'noopener noreferrer' : undefined}
+            aria-label={`Open ${title}${external ? ' (opens in a new tab)' : ''}`}
+          >
+            {external ? (
+              <ExternalLink size={16} aria-hidden="true" />
+            ) : (
+              <ChevronRight size={16} aria-hidden="true" />
+            )}
+          </a>
+        )}
         {href &&
+          !selectable &&
           (external ? (
             <ExternalLink size={16} aria-hidden="true" />
           ) : (
@@ -138,7 +167,8 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
           ))}
         {check && (
           <label class="node-check">
-            <input type="checkbox" data-check={check} />
+            {/* autocomplete=off: stop the browser restoring ticks after a refresh. */}
+            <input type="checkbox" data-check={check} autocomplete="off" />
             <span class="sr-only">
               {checkLabel}: {title}
             </span>

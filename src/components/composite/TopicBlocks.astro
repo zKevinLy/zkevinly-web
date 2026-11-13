@@ -11,6 +11,7 @@ import Workflow from './Workflow.astro';
 import EntryCard from './EntryCard.astro';
 import HubIndex from './HubIndex.astro';
 import Installer from './Installer.astro';
+import InstallSelectBar from './InstallSelectBar.astro';
 import DownloadButton from './DownloadButton.astro';
 import type { TopicBlock, TopicPage } from '../../config';
 import { filterAttrs } from '../../lib/filter';
@@ -66,6 +67,10 @@ const installApps = blocks.some((block) => block.type === 'installer')
               </Node>
             ))}
           </Grid>
+        )}
+
+        {block.type === 'entries' && installApps.length > 0 && block.items.some((e) => e.install) && (
+          <InstallSelectBar />
         )}
 
         {block.type === 'entries' && (

@@ -60,7 +60,9 @@ describe('site content', () => {
       });
 
       it('has enough tags to describe it', () => {
-        assert.ok((entry.tags ?? []).length >= 4, `only ${(entry.tags ?? []).length} tags`);
+        // Android TV cards share one small tag set (tested below), so they carry fewer.
+        const min = where.includes('Android TV') ? 1 : 4;
+        assert.ok((entry.tags ?? []).length >= min, `only ${(entry.tags ?? []).length} tags`);
       });
 
       it('has a valid repo override, if any', () => {
@@ -239,6 +241,17 @@ describe('Android TV page', () => {
     for (const entry of items) {
       if (['github.com', 'gitlab.com'].includes(new URL(entry.href).hostname))
         assert.ok(entryRepo(entry), `${entry.title} has no resolvable repo`);
+    }
+  });
+
+  it('shares one small tag set (8 at most) across every card, so filtering groups them', () => {
+    const everyEntry = androidTv.blocks.flatMap((b) => (b.type === 'entries' ? b.items : []));
+    const vocabulary = new Set(everyEntry.flatMap((e) => e.tags ?? []));
+    assert.ok(vocabulary.size <= 8, `${vocabulary.size} distinct tags: ${[...vocabulary]}`);
+    for (const tag of vocabulary) {
+      const uses = everyEntry.filter((e) => e.tags?.includes(tag)).length;
+      // adb is the quickstart's own tag; every other tag has to group at least two cards.
+      if (tag !== 'adb') assert.ok(uses >= 2, `tag "${tag}" is only on ${uses} card`);
     }
   });
 

@@ -1,0 +1,14 @@
+---
+/**
+ * COMPOSITE: the "Select all / Clear" bar that sits above the installable app cards.
+ *
+ * It is only markup. Installer.astro's script finds these controls by their data
+ * attributes and wires them to the cards' checkboxes, so the bar can live next to the
+ * cards while the rest of the installer (CPU, download links, script) sits below them.
+ */
+---
+
+<div class="install-select" data-pagefind-ignore>
+  <button type="button" class="installer-btn" data-installer-toggle>Select all</button>
+  <p class="installer-status" data-installer-status aria-live="polite">No apps selected</p>
+</div>

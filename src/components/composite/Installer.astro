@@ -1,19 +1,22 @@
 ---
 /**
- * COMPOSITE: builds a batch-install PowerShell script from the apps ticked on this
- * page's entry cards.
+ * COMPOSITE: turns the apps ticked on this page's entry cards into download links
+ * and a batch-install PowerShell script.
  *
- * The cards own the checkboxes (EntryCard `selectable` + an entry's `install`); this
- * block owns the device dropdown, the Select all / Clear buttons and the generated
- * script. It reuses CommandBlock for the script box, so the existing copy button
- * (base: CopyButton) works unchanged: the script below just rewrites the box's text and
- * the button's `data-copy` whenever the selection or device changes.
+ * The cards own the checkboxes (EntryCard `selectable` + an entry's `install`) and the
+ * Select all / Clear button (InstallSelectBar) sits above them. This block holds what
+ * comes after the selection, in the order a person uses it:
  *
- * Two ways to use the selection: copy the PowerShell script (PC + adb), or press
- * "Get download links" to look up the newest APKs right here in the browser and download
- * them directly, which is what you want when you open this page on the Android device itself.
+ *   1. Device CPU
+ *   2. Get download links (look up the newest APKs in the browser; best on the TV itself)
+ *   3. PowerShell script (PC + adb), collapsed and last because it is long
  *
- * Selection and device are remembered per page in this browser only.
+ * The script reuses CommandBlock, so the existing copy button (base: CopyButton) works
+ * unchanged: the script below just rewrites the box's text and the button's `data-copy`
+ * whenever the selection or device changes.
+ *
+ * Nothing about the selection is remembered: every visit or refresh starts with all
+ * boxes clear. Only the CPU choice is kept, per page, in this browser.
  */
 import CommandBlock from './CommandBlock.astro';
 import { DEVICES, EMPTY_SCRIPT, type InstallApp } from '../../lib/installer';
@@ -26,39 +29,22 @@ const { apps } = Astro.props;
 ---
 
 <div class="installer" data-installer data-apps={JSON.stringify(apps)} data-pagefind-ignore>
-  <div class="installer-controls">
-    <label class="installer-field">
-      <span class="installer-label">Device CPU</span>
-      <select class="installer-select" data-installer-device>
-        {DEVICES.map((device) => (
-          <option value={device.id}>{device.label}</option>
-        ))}
-      </select>
-    </label>
-
-    <div class="installer-actions">
-      <button type="button" class="installer-btn" data-installer-all>
-        Select all
-      </button>
-      <button type="button" class="installer-btn" data-installer-none>
-        Clear
-      </button>
-    </div>
-  </div>
-
+  <label class="installer-field">
+    <span class="installer-label">Your device&rsquo;s CPU</span>
+    <select class="installer-select" data-installer-device>
+      {DEVICES.map((device) => (
+        <option value={device.id}>{device.label}</option>
+      ))}
+    </select>
+  </label>
   <p class="installer-hint" data-installer-hint>
     {DEVICES[0].hint}
   </p>
-  <p class="installer-status" data-installer-status aria-live="polite">
-    No apps selected
-  </p>
-
-  <CommandBlock command={{ label: 'PowerShell', command: `${EMPTY_SCRIPT}\n` }} />
 
   <div class="installer-direct">
     <p class="installer-hint">
-      Opened this page on the Android device itself? Skip the script and download the selected APKs
-      here. Pick your CPU above first (Not sure assumes 64-bit ARM).
+      Opened this page on the Android device itself? Get the download links for the selected apps
+      and install them right here. Not sure assumes 64-bit ARM.
     </p>
     <div class="installer-actions">
       <button type="button" class="installer-btn" data-installer-links disabled>
@@ -71,6 +57,17 @@ const { apps } = Astro.props;
     <p class="installer-status" data-installer-links-status aria-live="polite" hidden></p>
     <ul class="installer-links" data-installer-links-list></ul>
   </div>
+
+  <details class="installer-script">
+    <summary>PowerShell script (for a PC with adb)</summary>
+    <div class="installer-script-body">
+      <p class="installer-hint">
+        Finds each app&rsquo;s newest release itself, so there are no links to fill in. Run it with
+        the TV connected over ADB.
+      </p>
+      <CommandBlock command={{ label: 'PowerShell', command: `${EMPTY_SCRIPT}\n` }} />
+    </div>
+  </details>
 </div>
 
 <script>
@@ -90,53 +87,51 @@ const { apps } = Astro.props;
     const apps = JSON.parse(root.dataset.apps || '[]') as InstallApp[];
     const device = root.querySelector<HTMLSelectElement>('[data-installer-device]');
     const hint = root.querySelector<HTMLElement>('[data-installer-hint]');
-    const status = root.querySelector<HTMLElement>('[data-installer-status]');
     const code = root.querySelector<HTMLElement>('[data-copy-source]');
     const copy = root.querySelector<HTMLElement>('[data-copy]');
-    const selectAll = root.querySelector<HTMLButtonElement>('[data-installer-all]');
-    const selectNone = root.querySelector<HTMLButtonElement>('[data-installer-none]');
     const getLinks = root.querySelector<HTMLButtonElement>('[data-installer-links]');
     const downloadAll = root.querySelector<HTMLButtonElement>('[data-installer-dl-all]');
     const linksStatus = root.querySelector<HTMLElement>('[data-installer-links-status]');
     const linksList = root.querySelector<HTMLUListElement>('[data-installer-links-list]');
-    if (!device || !hint || !status || !code || !copy || !selectAll || !selectNone) return;
+    if (!device || !hint || !code || !copy) return;
     if (!getLinks || !downloadAll || !linksStatus || !linksList) return;
 
-    // The checkboxes live on the app cards elsewhere on the page.
+    // The checkboxes and the Select all / Clear bar live with the app cards above.
     const boxes = Array.from(
       document.querySelectorAll<HTMLInputElement>('[data-install-card] input[data-check]'),
     );
+    const toggle = document.querySelector<HTMLButtonElement>('[data-installer-toggle]');
+    const status = document.querySelector<HTMLElement>('[data-installer-status]');
 
-    // ---- Remembered per page, in this browser only. ----
+    // ---- Only the CPU is remembered. The app selection always starts empty. ----
     const storageKey = `installer:${location.pathname.replace(/\/$/, '')}`;
-    const save = () => {
+    const saveDevice = () => {
       try {
-        const picked = boxes.filter((b) => b.checked).map((b) => b.dataset.check!);
-        localStorage.setItem(storageKey, JSON.stringify({ apps: picked, device: device.value }));
+        localStorage.setItem(storageKey, JSON.stringify({ device: device.value }));
       } catch {
         // Storage blocked: everything still works for this visit.
       }
     };
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
-      if (saved && typeof saved === 'object') {
-        const picked = new Set(Array.isArray(saved.apps) ? saved.apps : []);
-        boxes.forEach((b) => (b.checked = picked.has(b.dataset.check)));
-        if (typeof saved.device === 'string' && isDeviceId(saved.device)) {
-          device.value = saved.device;
-        }
+      if (saved && typeof saved.device === 'string' && isDeviceId(saved.device)) {
+        device.value = saved.device;
       }
     } catch {
-      // Unreadable or blocked storage: start empty.
+      // Unreadable or blocked storage: keep the default.
     }
+
+    const chosenApps = () => {
+      const picked = new Set(boxes.filter((b) => b.checked).map((b) => b.dataset.check));
+      return apps.filter((app) => picked.has(app.id));
+    };
 
     const refresh = () => {
       boxes.forEach((b) =>
         b.closest('[data-install-card]')?.classList.toggle('is-selected', b.checked),
       );
 
-      const picked = new Set(boxes.filter((b) => b.checked).map((b) => b.dataset.check));
-      const chosen = apps.filter((app) => picked.has(app.id));
+      const chosen = chosenApps();
       const deviceId = isDeviceId(device.value) ? device.value : 'auto';
       const script = buildInstallScript(chosen, deviceId);
 
@@ -144,20 +139,18 @@ const { apps } = Astro.props;
       code.dataset.multiline = '';
       copy.dataset.copy = script;
       hint.textContent = DEVICES.find((d) => d.id === deviceId)?.hint ?? '';
-      status.textContent =
-        chosen.length === 0
-          ? 'No apps selected'
-          : `${chosen.length} of ${apps.length} apps selected`;
-      selectNone.disabled = chosen.length === 0;
+      if (status) {
+        status.textContent =
+          chosen.length === 0
+            ? 'No apps selected'
+            : `${chosen.length} of ${apps.length} apps selected`;
+      }
+      // One button: "Clear" once everything is ticked, otherwise "Select all".
+      if (toggle) toggle.textContent = chosen.length === boxes.length ? 'Clear' : 'Select all';
       getLinks.disabled = chosen.length === 0;
     };
 
     // ---- Direct downloads: look up each app's newest APK and list it as a plain link. ----
-    const chosenApps = () => {
-      const picked = new Set(boxes.filter((b) => b.checked).map((b) => b.dataset.check));
-      return apps.filter((app) => picked.has(app.id));
-    };
-
     const clearLinks = () => {
       linksList.replaceChildren();
       downloadAll.hidden = true;
@@ -232,29 +225,29 @@ const { apps } = Astro.props;
       downloadAll.disabled = false;
     });
 
-    const setAll = (checked: boolean) => {
-      boxes.forEach((b) => (b.checked = checked));
-      save();
+    const changed = () => {
       refresh();
       clearLinks();
     };
 
-    boxes.forEach((b) =>
-      b.addEventListener('change', () => {
-        save();
-        refresh();
-        clearLinks();
-      }),
-    );
-    device.addEventListener('change', () => {
-      save();
-      refresh();
-      clearLinks();
-    });
-    selectAll.addEventListener('click', () => setAll(true));
-    selectNone.addEventListener('click', () => setAll(false));
+    const setAll = (checked: boolean) => {
+      boxes.forEach((b) => (b.checked = checked));
+      changed();
+    };
 
-    refresh();
+    boxes.forEach((b) => b.addEventListener('change', changed));
+    device.addEventListener('change', () => {
+      saveDevice();
+      changed();
+    });
+    toggle?.addEventListener('click', () => setAll(!boxes.every((b) => b.checked)));
+
+    // Start every visit empty. Browsers restore ticked boxes on refresh and when coming
+    // back from history, so clear them here and again when a page is restored from cache.
+    setAll(false);
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) setAll(false);
+    });
   }
 
   function setupInstallers() {

@@ -460,6 +460,8 @@ kbd {
 
 .grid {
   display: grid;
+  /* minmax(0, ...) so wide content (scripts) can't stretch the column and the page. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   margin-top: 1.25rem;
 }
@@ -577,6 +579,62 @@ kbd {
   margin: 0;
   accent-color: var(--accent);
   cursor: pointer;
+}
+
+/* Selectable nodes: the whole card is the check label, so clicking anywhere ticks the
+   box. The label drops its own positioning so its ::after fills the node, and the
+   input and link icon sit above it. Only the link icon (.node-open) opens the page. */
+.node-selectable .node-check {
+  position: static;
+  z-index: auto;
+}
+
+.node-selectable .node-check::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.node-selectable .node-check input {
+  position: relative;
+  z-index: 2;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.node-selectable .node-check input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.node-selectable:has(.node-check input:focus-visible) {
+  border-color: var(--accent);
+}
+
+.node-open {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: -0.4rem;
+  padding: 0.4rem;
+  border-radius: 6px;
+  color: var(--muted);
+  transition: color 150ms ease;
+}
+
+.node-open:hover,
+.node-open:focus-visible {
+  color: var(--accent);
+}
+
+.node-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* Secondary links, each with its own icon. */
@@ -929,6 +987,7 @@ a.badge-link:hover {
 .cmd {
   position: relative;
   z-index: 2;
+  min-width: 0;
   cursor: default;
 }
 
@@ -2049,7 +2108,22 @@ a.badge-link:hover {
 
 .installer {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
+}
+
+/* Select all / Clear bar above the app cards. */
+.install-select {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  margin-top: 1rem;
+}
+
+.install-select .installer-status {
+  order: 2;
 }
 
 .installer-controls {
@@ -2095,6 +2169,7 @@ a.badge-link:hover {
 
 .installer-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
@@ -2138,9 +2213,48 @@ a.badge-link:hover {
 /* Direct APK downloads (for opening the page on the Android device itself). */
 .installer-direct {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border);
+}
+
+/* The PowerShell script is last and collapsed: it is long, and on a TV it's the part
+   nobody scrolls through. The summary is a normal focusable control. */
+.installer-script {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.installer-script > summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  padding: 0 0.9rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.installer-script > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.installer-script[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.installer-script-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+/* Keep the script box from growing the page: it scrolls inside itself. */
+.installer-script .cmd-text[data-multiline] {
+  max-height: 16rem;
+  overflow: auto;
 }
 
 .installer-links {

@@ -1,4 +1,5 @@
 import type { TopicPage } from '../types';
+import aioPlugins from '../shared/aioplugins';
 
 const NUVIO_HUB = '/collections/nuvio';
 
@@ -392,6 +393,12 @@ const nuvio: TopicPage = {
               tags: ['plugins', 'provider-manifest', 'community', 'd3adlyrocket'],
             },
           ],
+        },
+        {
+          type: 'entries',
+          title: 'Also from me',
+          // Same object as the card on Projects: edit it in config/shared/aioplugins.ts.
+          items: [aioPlugins],
         },
       ],
     },
