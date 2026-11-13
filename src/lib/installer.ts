@@ -260,6 +260,15 @@ function findBlock(app: InstallApp): string {
   return [fn, ps(source.path), ...(app.match ? [ps(app.match)] : [])].join(' ');
 }
 
+/** Where a person can download the app by hand if the script can't (shown on failure). */
+function pageUrl(app: InstallApp): string {
+  const { source } = app;
+  if (source.host === 'url') return source.url;
+  return source.host === 'github'
+    ? `https://github.com/${source.path}/releases`
+    : `https://gitlab.com/${source.path}/-/releases`;
+}
+
 const AUTO_DETECT = `# Ask the connected device which CPU it has
 $abi = "$(adb shell getprop ro.product.cpu.abi)".Trim()
 if (-not $abi) { throw 'No device found. Connect first, e.g. adb connect <tv-ip>' }
@@ -286,9 +295,32 @@ function Select-Apk($assets, $match) {
         Select-Object -First 1
 }`;
 
+// GitHub allows 60 anonymous API calls an hour per IP; GitLab has a similar limit. On a
+// 403/429 this throws a plain-English message (with the reset time when the server
+// sends one) instead of a raw HTTP error, and the install loop carries on with the rest.
+const API_HELPER = `# Call a release API; turn a rate limit into a readable message
+function Invoke-Api($url) {
+    try { Invoke-RestMethod $url -Headers $headers -ErrorAction Stop }
+    catch {
+        $resp = $_.Exception.Response
+        $code = if ($resp) { [int]$resp.StatusCode } else { 0 }
+        if ($code -eq 403 -or $code -eq 429) {
+            $when = ''
+            foreach ($name in 'X-RateLimit-Reset', 'RateLimit-Reset') {
+                try {
+                    $reset = if ($resp.Headers -is [Net.WebHeaderCollection]) { $resp.Headers[$name] } else { $resp.Headers.GetValues($name) | Select-Object -First 1 }
+                    if ($reset) { $when = " Try again after $([DateTimeOffset]::FromUnixTimeSeconds([long]$reset).LocalDateTime.ToString('t'))."; break }
+                } catch { }
+            }
+            throw "rate limit reached on $(([uri]$url).Host).$when"
+        }
+        throw
+    }
+}`;
+
 const GITHUB = `# Newest release (pre-releases included) that has a matching APK
 function Get-GitHubApk($repo, $match) {
-    $releases = Invoke-RestMethod "https://api.github.com/repos/$repo/releases?per_page=30" -Headers $headers -ErrorAction Stop
+    $releases = Invoke-Api "https://api.github.com/repos/$repo/releases?per_page=30"
     foreach ($release in $releases) {
         $assets = $release.assets | ForEach-Object { [pscustomobject]@{ Name = $_.name; Url = $_.browser_download_url } }
         $apk = Select-Apk $assets $match
@@ -298,7 +330,7 @@ function Get-GitHubApk($repo, $match) {
 
 const GITLAB = `function Get-GitLabApk($project, $match) {
     $id = [uri]::EscapeDataString($project)
-    $releases = Invoke-RestMethod "https://gitlab.com/api/v4/projects/$id/releases" -Headers $headers -ErrorAction Stop
+    $releases = Invoke-Api "https://gitlab.com/api/v4/projects/$id/releases"
     foreach ($release in $releases) {
         $urls = @()
         foreach ($l in $release.assets.links) {
@@ -321,6 +353,7 @@ const GITLAB = `function Get-GitLabApk($project, $match) {
 }`;
 
 const INSTALL_LOOP = `$failed = @()
+$rateLimited = $false
 foreach ($app in $apps) {
     $apk = $null
     try {
@@ -335,14 +368,19 @@ foreach ($app in $apps) {
     }
     catch {
         Write-Warning "$($app.Name): $_"
-        $failed += $app.Name
+        if ("$_" -match 'rate limit') { $rateLimited = $true }
+        $failed += $(if ($app.Page) { "$($app.Name) ($($app.Page))" } else { $app.Name })
     }
     finally {
         if ($apk) { Remove-Item $apk.Name -ErrorAction SilentlyContinue }
     }
 }
 
-if ($failed) { Write-Host "Finished, but these need a manual install: $($failed -join ', ')" }
+if ($failed) {
+    Write-Host 'Finished, but these need a manual install:'
+    $failed | ForEach-Object { Write-Host "  $_" }
+    if ($rateLimited) { Write-Host 'GitHub or GitLab is rate limiting this connection. Wait a bit and run the script again, or grab the APKs from the pages above.' }
+}
 else { Write-Host 'All apps installed.' }`;
 
 export const EMPTY_SCRIPT = '# Tick at least one app above and your script will appear here.';
@@ -371,12 +409,13 @@ export function buildInstallScript(apps: InstallApp[], device: DeviceId = 'auto'
       : `# Device CPU: ${DEVICES.find((d) => d.id === device)?.label ?? device}\n$abiKeys = ${psArray(ABI_KEYS[device])}`;
 
   const table = `$apps = @(\n${apps
-    .map((app) => `    @{ Name = ${ps(app.name)}; Find = { ${findBlock(app)} } }`)
+    .map((app) => `    @{ Name = ${ps(app.name)}; Find = { ${findBlock(app)} }; Page = ${ps(pageUrl(app))} }`)
     .join(',\n')}\n)`;
 
   return [
     prelude,
     abi,
+    needsLookup ? API_HELPER : null,
     needsLookup ? SELECT_APK : null,
     needs('github') ? GITHUB : null,
     needs('gitlab') ? GITLAB : null,

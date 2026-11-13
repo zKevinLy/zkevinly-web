@@ -129,6 +129,28 @@ describe('buildInstallScript', () => {
     assert.doesNotMatch(script, /Select-Apk|abiKeys|getprop|\$headers/);
   });
 
+  it('turns a 403/429 rate limit into a readable message and keeps going', () => {
+    const script = buildInstallScript([github, gitlab], 'arm64');
+    assert.match(script, /function Invoke-Api/);
+    assert.match(script, /\$code -eq 403 -or \$code -eq 429/);
+    assert.match(script, /X-RateLimit-Reset/);
+    assert.match(script, /rate limit reached on/);
+    // Both lookups go through the helper, never straight to Invoke-RestMethod.
+    assert.match(script, /Get-GitHubApk[\s\S]*Invoke-Api "https:\/\/api\.github\.com/);
+    assert.match(script, /Get-GitLabApk[\s\S]*Invoke-Api "https:\/\/gitlab\.com/);
+    assert.equal(script.match(/Invoke-RestMethod/g)?.length, 1);
+    // The per-app try/catch carries on and tells the person what to do.
+    assert.match(script, /\$rateLimited = \$true/);
+    assert.match(script, /run the script again/);
+  });
+
+  it('lists a manual download page for every app that fails', () => {
+    const script = buildInstallScript([github, gitlab, direct], 'arm64');
+    assert.match(script, /Page = 'https:\/\/github\.com\/truefedex\/tv-bro\/releases'/);
+    assert.match(script, /Page = 'https:\/\/gitlab\.com\/AuroraOSS\/AuroraStore\/-\/releases'/);
+    assert.match(script, /Page = 'https:\/\/f-droid\.org\/F-Droid\.apk'/);
+  });
+
   it('passes the asset filter to the lookup', () => {
     const script = buildInstallScript([{ ...github, match: 'stable' }], 'arm32');
     assert.match(script, /Get-GitHubApk 'truefedex\/tv-bro' 'stable'/);
