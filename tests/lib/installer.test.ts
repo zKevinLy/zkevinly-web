@@ -147,7 +147,7 @@ describe('buildInstallScript', () => {
 
   it('GitLab file names keep their letters (the \\s escape must survive the template)', () => {
     const script = buildInstallScript([gitlab], 'arm64');
-    assert.ok(script.includes('|\\s]+\', \'_\''));
+    assert.ok(script.includes("|\\s]+', '_'"));
     assert.doesNotMatch(script, /\|s\]\+/);
   });
 
@@ -171,7 +171,10 @@ describe('selectApk', () => {
 
   it('prefers this CPU, then universal, then an older compatible build', () => {
     const pick = (names: string[]) => selectApk(names.map(asset), arm64)?.name;
-    assert.equal(pick(['app-universal.apk', 'app-arm64-v8a.apk', 'app-armeabi-v7a.apk']), 'app-arm64-v8a.apk');
+    assert.equal(
+      pick(['app-universal.apk', 'app-arm64-v8a.apk', 'app-armeabi-v7a.apk']),
+      'app-arm64-v8a.apk',
+    );
     assert.equal(pick(['app-x86.apk', 'app.apk', 'app-armeabi-v7a.apk']), 'app.apk');
     assert.equal(pick(['app-x86.apk', 'app-armeabi-v7a.apk']), 'app-armeabi-v7a.apk');
     assert.equal(pick(['app-x86.apk']), undefined);

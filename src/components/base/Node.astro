@@ -139,7 +139,9 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
         {check && (
           <label class="node-check">
             <input type="checkbox" data-check={check} />
-            <span class="sr-only">{checkLabel}: {title}</span>
+            <span class="sr-only">
+              {checkLabel}: {title}
+            </span>
           </label>
         )}
       </span>

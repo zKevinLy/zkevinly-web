@@ -37,26 +37,36 @@ const { apps } = Astro.props;
     </label>
 
     <div class="installer-actions">
-      <button type="button" class="installer-btn" data-installer-all>Select all</button>
-      <button type="button" class="installer-btn" data-installer-none>Clear</button>
+      <button type="button" class="installer-btn" data-installer-all>
+        Select all
+      </button>
+      <button type="button" class="installer-btn" data-installer-none>
+        Clear
+      </button>
     </div>
   </div>
 
-  <p class="installer-hint" data-installer-hint>{DEVICES[0].hint}</p>
-  <p class="installer-status" data-installer-status aria-live="polite">No apps selected</p>
+  <p class="installer-hint" data-installer-hint>
+    {DEVICES[0].hint}
+  </p>
+  <p class="installer-status" data-installer-status aria-live="polite">
+    No apps selected
+  </p>
 
   <CommandBlock command={{ label: 'PowerShell', command: `${EMPTY_SCRIPT}\n` }} />
 
   <div class="installer-direct">
     <p class="installer-hint">
-      Opened this page on the Android device itself? Skip the script and download the selected
-      APKs here. Pick your CPU above first (Not sure assumes 64-bit ARM).
+      Opened this page on the Android device itself? Skip the script and download the selected APKs
+      here. Pick your CPU above first (Not sure assumes 64-bit ARM).
     </p>
     <div class="installer-actions">
       <button type="button" class="installer-btn" data-installer-links disabled>
         Get download links
       </button>
-      <button type="button" class="installer-btn" data-installer-dl-all hidden>Download all</button>
+      <button type="button" class="installer-btn" data-installer-dl-all hidden>
+        Download all
+      </button>
     </div>
     <p class="installer-status" data-installer-links-status aria-live="polite" hidden></p>
     <ul class="installer-links" data-installer-links-list></ul>
