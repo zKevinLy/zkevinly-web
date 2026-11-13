@@ -409,7 +409,10 @@ export function buildInstallScript(apps: InstallApp[], device: DeviceId = 'auto'
       : `# Device CPU: ${DEVICES.find((d) => d.id === device)?.label ?? device}\n$abiKeys = ${psArray(ABI_KEYS[device])}`;
 
   const table = `$apps = @(\n${apps
-    .map((app) => `    @{ Name = ${ps(app.name)}; Find = { ${findBlock(app)} }; Page = ${ps(pageUrl(app))} }`)
+    .map(
+      (app) =>
+        `    @{ Name = ${ps(app.name)}; Find = { ${findBlock(app)} }; Page = ${ps(pageUrl(app))} }`,
+    )
     .join(',\n')}\n)`;
 
   return [
