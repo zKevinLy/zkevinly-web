@@ -29,7 +29,6 @@ const { blocks, page, path } = Astro.props;
 const installApps = blocks.some((block) => block.type === 'installer')
   ? installableApps(blocks)
   : [];
-
 ---
 
 <div class="topic-blocks">

@@ -67,8 +67,7 @@ const ANY_ARCH = '[-_.](arm|aarch|x86|x64|mips|v7a|v8a)';
 /* ---------- Apps ---------- */
 
 export type InstallSource =
-  | { host: 'github' | 'gitlab'; path: string }
-  | { host: 'url'; url: string };
+  { host: 'github' | 'gitlab'; path: string } | { host: 'url'; url: string };
 
 export interface InstallApp {
   id: string;
@@ -103,9 +102,7 @@ export function resolveInstallApp(entry: Entry): InstallApp | null {
 /** Every installable app in a page's entry blocks, in page order. */
 export function installableApps(blocks: TopicBlock[]): InstallApp[] {
   return blocks.flatMap((block) =>
-    block.type === 'entries'
-      ? block.items.flatMap((entry) => resolveInstallApp(entry) ?? [])
-      : [],
+    block.type === 'entries' ? block.items.flatMap((entry) => resolveInstallApp(entry) ?? []) : [],
   );
 }
 
@@ -177,7 +174,8 @@ export function gitlabReleaseAssets(release: unknown, project: string): ApkAsset
   }
 
   const notes = typeof r.description === 'string' ? r.description : '';
-  const uploads = /(?:https:\/\/gitlab\.com)?\/[^\s()[\]]*uploads\/[0-9a-f]{32}\/[^\s()[\]]+\.apk/gi;
+  const uploads =
+    /(?:https:\/\/gitlab\.com)?\/[^\s()[\]]*uploads\/[0-9a-f]{32}\/[^\s()[\]]+\.apk/gi;
   for (const [found] of notes.matchAll(uploads)) {
     if (found.startsWith('https')) urls.push(found);
     else if (found.startsWith('/uploads/')) urls.push(`https://gitlab.com/${project}${found}`);

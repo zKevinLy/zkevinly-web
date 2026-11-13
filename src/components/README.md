@@ -29,19 +29,19 @@ and behaviour, but nothing about this site's data (`Entry`, `TopicBlock`, GitHub
 
 May know about site data and wire primitives together.
 
-| Component                      | Built from                                            |
-| ------------------------------ | ----------------------------------------------------- |
-| `EntryCard`                    | `Node` + `Tags` + `CommandList` + `RepoMeta`          |
-| `Workflow`                     | `Node` (one per step) + phase rows + trace/check-off  |
+| Component                      | Built from                                                     |
+| ------------------------------ | -------------------------------------------------------------- |
+| `EntryCard`                    | `Node` + `Tags` + `CommandList` + `RepoMeta`                   |
+| `Workflow`                     | `Node` (one per step) + phase rows + trace/check-off           |
 | `Installer`                    | `CommandBlock` + device dropdown; reads `EntryCard` checkboxes |
-| `HubIndex`                     | `Node` + `Grid`                                       |
-| `CommandBlock` → `CommandList` | `CopyButton`                                          |
-| `RepoMeta`                     | `Badge` + `Freshness` (+ GitHub live data)            |
-| `DownloadButton`               | (classes shared with `CommandBlock` / related links)  |
-| `TopicBlocks`                  | `Section`, `Prose`, `Grid`, `Steps`, `Figure`, `Node` |
-| `Header`                       | `IconButton`, `NavLink`                               |
-| `FilterBar`                    | (self-contained; acts on `data-filter-*` cards)       |
-| `Search`                       | (self-contained overlay)                              |
+| `HubIndex`                     | `Node` + `Grid`                                                |
+| `CommandBlock` → `CommandList` | `CopyButton`                                                   |
+| `RepoMeta`                     | `Badge` + `Freshness` (+ GitHub live data)                     |
+| `DownloadButton`               | (classes shared with `CommandBlock` / related links)           |
+| `TopicBlocks`                  | `Section`, `Prose`, `Grid`, `Steps`, `Figure`, `Node`          |
+| `Header`                       | `IconButton`, `NavLink`                                        |
+| `FilterBar`                    | (self-contained; acts on `data-filter-*` cards)                |
+| `Search`                       | (self-contained overlay)                                       |
 
 ## Rules
 
