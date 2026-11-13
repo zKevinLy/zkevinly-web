@@ -122,6 +122,17 @@ describe('buildInstallScript', () => {
     assert.match(both, /Get-GitLabApk 'AuroraOSS\/AuroraStore'/);
   });
 
+  it('downloads in the background and installs one at a time', () => {
+    const script = buildInstallScript([github, gitlab], 'arm64');
+    assert.match(script, /DownloadFileTaskAsync/);
+    assert.doesNotMatch(script, /Invoke-WebRequest/);
+    // Every download is started before the first install runs.
+    assert.ok(script.indexOf('DownloadFileTaskAsync') < script.indexOf('adb install -r'));
+    // Installs are sequential: no jobs or parallel loops.
+    assert.doesNotMatch(script, /Start-Job|ForEach-Object -Parallel/);
+    assert.equal(script.match(/adb install -r/g)?.length, 1);
+  });
+
   it('needs no lookup or CPU for fixed links', () => {
     const script = buildInstallScript([direct], 'auto');
     assert.match(script, /Url = 'https:\/\/f-droid\.org\/F-Droid\.apk'/);
@@ -140,7 +151,7 @@ describe('buildInstallScript', () => {
     assert.match(script, /Get-GitLabApk[\s\S]*Invoke-Api "https:\/\/gitlab\.com/);
     assert.equal(script.match(/Invoke-RestMethod/g)?.length, 1);
     // The per-app try/catch carries on and tells the person what to do.
-    assert.match(script, /\$rateLimited = \$true/);
+    assert.match(script, /\$script:rateLimited = \$true/);
     assert.match(script, /run the script again/);
   });
 

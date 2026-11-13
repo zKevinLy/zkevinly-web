@@ -352,27 +352,47 @@ const GITLAB = `function Get-GitLabApk($project, $match) {
     }
 }`;
 
+// Two phases so the slow part (downloading) overlaps with everything else. Phase 1 looks each
+// app up and starts its download in the background; phase 2 walks the list in order, waits for
+// each file, and installs it. Installs stay one at a time: adb queues them on the device anyway,
+// and parallel installs on a TV tend to fail with low storage or memory. WebClient (not
+// Invoke-WebRequest, ForEach-Object -Parallel or jobs) keeps this working on Windows PowerShell
+// 5.1 and 7 without moving the helper functions into other processes.
 const INSTALL_LOOP = `$failed = @()
 $rateLimited = $false
+function Add-Failure($app, $err) {
+    Write-Warning "$($app.Name): $err"
+    if ("$err" -match 'rate limit') { $script:rateLimited = $true }
+    $script:failed += $(if ($app.Page) { "$($app.Name) ($($app.Page))" } else { $app.Name })
+}
+
+# Phase 1: look each app up and start its download in the background
+$downloads = @()
 foreach ($app in $apps) {
-    $apk = $null
     try {
         Write-Host "Looking up $($app.Name)..."
         $apk = & $app.Find
         if (-not $apk) { throw 'no matching APK found in the latest releases' }
         Write-Host "Downloading $($apk.Name)..."
-        Invoke-WebRequest -Uri $apk.Url -OutFile $apk.Name -UseBasicParsing -ErrorAction Stop
-        Write-Host "Installing $($apk.Name)..."
-        adb install -r $apk.Name
+        $path = Join-Path (Get-Location).Path $apk.Name
+        $client = New-Object Net.WebClient
+        $downloads += [pscustomobject]@{ App = $app; Apk = $apk; Path = $path; Client = $client; Task = $client.DownloadFileTaskAsync($apk.Url, $path) }
+    }
+    catch { Add-Failure $app $_ }
+}
+
+# Phase 2: install in order as each download finishes (one at a time: adb queues them anyway)
+foreach ($d in $downloads) {
+    try {
+        $d.Task.GetAwaiter().GetResult()
+        Write-Host "Installing $($d.Apk.Name)..."
+        adb install -r $d.Path
         if ($LASTEXITCODE -ne 0) { throw 'adb install failed' }
     }
-    catch {
-        Write-Warning "$($app.Name): $_"
-        if ("$_" -match 'rate limit') { $rateLimited = $true }
-        $failed += $(if ($app.Page) { "$($app.Name) ($($app.Page))" } else { $app.Name })
-    }
+    catch { Add-Failure $d.App $_ }
     finally {
-        if ($apk) { Remove-Item $apk.Name -ErrorAction SilentlyContinue }
+        $d.Client.Dispose()
+        Remove-Item $d.Path -ErrorAction SilentlyContinue
     }
 }
 
