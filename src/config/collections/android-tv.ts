@@ -29,7 +29,7 @@ const androidTv: TopicPage = {
           href: 'https://github.com/truefedex/tv-bro',
           // Its own update feed ships geckoIncluded builds per CPU (arm64-v8a, armeabi-v7a, x86_64).
           install: { match: '^(?!.*geckoIncluded)' },
-          tags: ['browser', 'remote', 'open-source'],
+          tags: ['interface', 'remote', 'open-source'],
         },
         {
           title: 'Projectivy Launcher',
@@ -38,7 +38,7 @@ const androidTv: TopicPage = {
           href: 'https://github.com/spocky/miproja1',
           // One universal APK per release: ProjectivyLauncher-<ver>-c<build>-xda-release.apk
           install: { match: 'xda-release' },
-          tags: ['launcher', 'ad-free'],
+          tags: ['interface', 'ad-free'],
         },
         {
           title: 'Nuvio',
