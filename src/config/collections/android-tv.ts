@@ -23,7 +23,7 @@ const androidTv: TopicPage = {
             'Web browser built for TV remotes, with tabs, bookmarks, voice search, and a built-in download manager.',
           href: 'https://github.com/truefedex/tv-bro',
           // Its own update feed ships geckoIncluded builds per CPU (arm64-v8a, armeabi-v7a, x86_64).
-          install: { match: 'geckoIncluded' },
+          install: { match: '^(?!.*geckoIncluded)' },
           tags: [
             'android-tv',
             'app',
