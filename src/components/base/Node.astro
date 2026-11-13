@@ -50,6 +50,8 @@ interface Props extends Omit<HTMLAttributes<'article'>, 'title'> {
    * `data-check`; the owning composite's script handles state.
    */
   check?: string;
+  /** Screen-reader verb for the check box. Defaults to "Mark as done". */
+  checkLabel?: string;
   /** Secondary links listed under the body, each with its own icon. */
   links?: NodeLink[];
   /** Heading level for the title (keep the page outline sensible). */
@@ -69,6 +71,7 @@ const {
   badges = [],
   number,
   check,
+  checkLabel = 'Mark as done',
   links = [],
   as: Heading = 'h3',
   size = 'default',
@@ -136,7 +139,7 @@ const hasAside = badges.length > 0 || Boolean(label) || Boolean(href) || Boolean
         {check && (
           <label class="node-check">
             <input type="checkbox" data-check={check} />
-            <span class="sr-only">Mark as done: {title}</span>
+            <span class="sr-only">{checkLabel}: {title}</span>
           </label>
         )}
       </span>

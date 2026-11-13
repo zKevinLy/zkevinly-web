@@ -10,9 +10,11 @@ import Tags from '../base/Tags.astro';
 import Workflow from './Workflow.astro';
 import EntryCard from './EntryCard.astro';
 import HubIndex from './HubIndex.astro';
+import Installer from './Installer.astro';
 import DownloadButton from './DownloadButton.astro';
 import type { TopicBlock, TopicPage } from '../../config';
 import { filterAttrs } from '../../lib/filter';
+import { installableApps } from '../../lib/installer';
 
 interface Props {
   blocks: TopicBlock[];
@@ -22,6 +24,12 @@ interface Props {
 }
 
 const { blocks, page, path } = Astro.props;
+
+// Entry cards only get their checkbox when this page has an installer to feed.
+const installApps = blocks.some((block) => block.type === 'installer')
+  ? installableApps(blocks)
+  : [];
+
 ---
 
 <div class="topic-blocks">
@@ -31,7 +39,10 @@ const { blocks, page, path } = Astro.props;
       <Section
         title={block.title}
         note={
-          block.type === 'links' || block.type === 'entries' || block.type === 'index'
+          block.type === 'links' ||
+          block.type === 'entries' ||
+          block.type === 'index' ||
+          block.type === 'installer'
             ? block.description
             : undefined
         }
@@ -61,10 +72,12 @@ const { blocks, page, path } = Astro.props;
         {block.type === 'entries' && (
           <Grid>
             {block.items.map((entry) => (
-              <EntryCard entry={entry} />
+              <EntryCard entry={entry} selectable={installApps.length > 0} />
             ))}
           </Grid>
         )}
+
+        {block.type === 'installer' && <Installer apps={installApps} />}
 
         {block.type === 'steps' && <Steps items={block.items} />}
 

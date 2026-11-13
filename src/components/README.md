@@ -33,6 +33,7 @@ May know about site data and wire primitives together.
 | ------------------------------ | ----------------------------------------------------- |
 | `EntryCard`                    | `Node` + `Tags` + `CommandList` + `RepoMeta`          |
 | `Workflow`                     | `Node` (one per step) + phase rows + trace/check-off  |
+| `Installer`                    | `CommandBlock` + device dropdown; reads `EntryCard` checkboxes |
 | `HubIndex`                     | `Node` + `Grid`                                       |
 | `CommandBlock` → `CommandList` | `CopyButton`                                          |
 | `RepoMeta`                     | `Badge` + `Freshness` (+ GitHub live data)            |

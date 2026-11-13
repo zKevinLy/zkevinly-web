@@ -22,6 +22,8 @@ const androidTv: TopicPage = {
           description:
             'Web browser built for TV remotes, with tabs, bookmarks, voice search, and a built-in download manager.',
           href: 'https://github.com/truefedex/tv-bro',
+          // Its own update feed ships geckoIncluded builds per CPU (arm64-v8a, armeabi-v7a, x86_64).
+          install: { match: 'geckoIncluded' },
           tags: [
             'android-tv',
             'app',
@@ -40,6 +42,8 @@ const androidTv: TopicPage = {
           description:
             'Customizable, ad-free Android TV launcher with wallpapers, icon packs, and plugins. This repo hosts the APKs and the issue tracker.',
           href: 'https://github.com/spocky/miproja1',
+          // One universal APK per release: ProjectivyLauncher-<ver>-c<build>-xda-release.apk
+          install: { match: 'xda-release' },
           tags: [
             'android-tv',
             'app',
@@ -58,6 +62,7 @@ const androidTv: TopicPage = {
           title: 'Nuvio',
           description: 'Official Nuvio Android TV app, powered by the Stremio addon ecosystem.',
           href: 'https://github.com/NuvioMedia/NuvioTV',
+          install: {},
           tags: [
             'android-tv',
             'app',
@@ -80,6 +85,8 @@ const androidTv: TopicPage = {
           title: 'SmartTube',
           description: 'Ad-free YouTube client for Android TV.',
           href: 'https://github.com/yuliskov/SmartTube',
+          // Betas are published alongside stable (and are often newer), so only take stable.
+          install: { match: 'stable' },
           tags: [
             'android-tv',
             'app',
@@ -96,6 +103,8 @@ const androidTv: TopicPage = {
           description:
             'Open-source Google Play client. Browse, install, and update apps without the Play Store, and sign in anonymously if you’d rather not use a Google account.',
           href: 'https://gitlab.com/AuroraOSS/AuroraStore/-/releases',
+          // Each release also has -hw (Huawei) and -preload (system image) builds: skip those.
+          install: { match: '^(?!.*(hw|preload))' },
           tags: [
             'android-tv',
             'app',
@@ -112,10 +121,35 @@ const androidTv: TopicPage = {
           description:
             'Open-source app store for free and open-source Android apps, with its own update checks.',
           href: 'https://f-droid.org/',
+          install: { url: 'https://f-droid.org/F-Droid.apk' },
           repo: 'gitlab:fdroid/fdroidclient',
           tags: ['android-tv', 'app', 'app-store', 'f-droid', 'updates', 'open-source', 'gitlab'],
         },
+        {
+          title: 'Key Mapper',
+          description:
+            'Open-source key remapper for Android. Remap remote and keyboard buttons to actions, shortcuts, and macros.',
+          href: 'https://github.com/keymapperorg/KeyMapper',
+          install: {},
+          tags: [
+            'android-tv',
+            'app',
+            'remapping',
+            'remote-friendly',
+            'buttons',
+            'macros',
+            'accessibility',
+            'open-source',
+            'github',
+          ],
+        },
       ],
+    },
+    {
+      type: 'installer',
+      title: 'Build your install script',
+      description:
+        'Tick the apps you want above, pick your device’s CPU, and copy the PowerShell script. It finds each app’s newest release itself, so there are no links to fill in. Run it with the TV connected over ADB.',
     },
     {
       type: 'entries',

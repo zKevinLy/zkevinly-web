@@ -1,0 +1,256 @@
+---
+/**
+ * COMPOSITE: builds a batch-install PowerShell script from the apps ticked on this
+ * page's entry cards.
+ *
+ * The cards own the checkboxes (EntryCard `selectable` + an entry's `install`); this
+ * block owns the device dropdown, the Select all / Clear buttons and the generated
+ * script. It reuses CommandBlock for the script box, so the existing copy button
+ * (base: CopyButton) works unchanged: the script below just rewrites the box's text and
+ * the button's `data-copy` whenever the selection or device changes.
+ *
+ * Two ways to use the selection: copy the PowerShell script (PC + adb), or press
+ * "Get download links" to look up the newest APKs right here in the browser and download
+ * them directly, which is what you want when you open this page on the Android device itself.
+ *
+ * Selection and device are remembered per page in this browser only.
+ */
+import CommandBlock from './CommandBlock.astro';
+import { DEVICES, EMPTY_SCRIPT, type InstallApp } from '../../lib/installer';
+
+interface Props {
+  apps: InstallApp[];
+}
+
+const { apps } = Astro.props;
+---
+
+<div class="installer" data-installer data-apps={JSON.stringify(apps)} data-pagefind-ignore>
+  <div class="installer-controls">
+    <label class="installer-field">
+      <span class="installer-label">Device CPU</span>
+      <select class="installer-select" data-installer-device>
+        {DEVICES.map((device) => (
+          <option value={device.id}>{device.label}</option>
+        ))}
+      </select>
+    </label>
+
+    <div class="installer-actions">
+      <button type="button" class="installer-btn" data-installer-all>Select all</button>
+      <button type="button" class="installer-btn" data-installer-none>Clear</button>
+    </div>
+  </div>
+
+  <p class="installer-hint" data-installer-hint>{DEVICES[0].hint}</p>
+  <p class="installer-status" data-installer-status aria-live="polite">No apps selected</p>
+
+  <CommandBlock command={{ label: 'PowerShell', command: `${EMPTY_SCRIPT}\n` }} />
+
+  <div class="installer-direct">
+    <p class="installer-hint">
+      Opened this page on the Android device itself? Skip the script and download the selected
+      APKs here. Pick your CPU above first (Not sure assumes 64-bit ARM).
+    </p>
+    <div class="installer-actions">
+      <button type="button" class="installer-btn" data-installer-links disabled>
+        Get download links
+      </button>
+      <button type="button" class="installer-btn" data-installer-dl-all hidden>Download all</button>
+    </div>
+    <p class="installer-status" data-installer-links-status aria-live="polite" hidden></p>
+    <ul class="installer-links" data-installer-links-list></ul>
+  </div>
+</div>
+
+<script>
+  import {
+    DEVICES,
+    buildInstallScript,
+    isDeviceId,
+    resolveApkLink,
+    type ApkLink,
+    type InstallApp,
+  } from '../../lib/installer';
+
+  function setupInstaller(root: HTMLElement) {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+
+    const apps = JSON.parse(root.dataset.apps || '[]') as InstallApp[];
+    const device = root.querySelector<HTMLSelectElement>('[data-installer-device]');
+    const hint = root.querySelector<HTMLElement>('[data-installer-hint]');
+    const status = root.querySelector<HTMLElement>('[data-installer-status]');
+    const code = root.querySelector<HTMLElement>('[data-copy-source]');
+    const copy = root.querySelector<HTMLElement>('[data-copy]');
+    const selectAll = root.querySelector<HTMLButtonElement>('[data-installer-all]');
+    const selectNone = root.querySelector<HTMLButtonElement>('[data-installer-none]');
+    const getLinks = root.querySelector<HTMLButtonElement>('[data-installer-links]');
+    const downloadAll = root.querySelector<HTMLButtonElement>('[data-installer-dl-all]');
+    const linksStatus = root.querySelector<HTMLElement>('[data-installer-links-status]');
+    const linksList = root.querySelector<HTMLUListElement>('[data-installer-links-list]');
+    if (!device || !hint || !status || !code || !copy || !selectAll || !selectNone) return;
+    if (!getLinks || !downloadAll || !linksStatus || !linksList) return;
+
+    // The checkboxes live on the app cards elsewhere on the page.
+    const boxes = Array.from(
+      document.querySelectorAll<HTMLInputElement>('[data-install-card] input[data-check]'),
+    );
+
+    // ---- Remembered per page, in this browser only. ----
+    const storageKey = `installer:${location.pathname.replace(/\/$/, '')}`;
+    const save = () => {
+      try {
+        const picked = boxes.filter((b) => b.checked).map((b) => b.dataset.check!);
+        localStorage.setItem(storageKey, JSON.stringify({ apps: picked, device: device.value }));
+      } catch {
+        // Storage blocked: everything still works for this visit.
+      }
+    };
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) ?? 'null');
+      if (saved && typeof saved === 'object') {
+        const picked = new Set(Array.isArray(saved.apps) ? saved.apps : []);
+        boxes.forEach((b) => (b.checked = picked.has(b.dataset.check)));
+        if (typeof saved.device === 'string' && isDeviceId(saved.device)) {
+          device.value = saved.device;
+        }
+      }
+    } catch {
+      // Unreadable or blocked storage: start empty.
+    }
+
+    const refresh = () => {
+      boxes.forEach((b) =>
+        b.closest('[data-install-card]')?.classList.toggle('is-selected', b.checked),
+      );
+
+      const picked = new Set(boxes.filter((b) => b.checked).map((b) => b.dataset.check));
+      const chosen = apps.filter((app) => picked.has(app.id));
+      const deviceId = isDeviceId(device.value) ? device.value : 'auto';
+      const script = buildInstallScript(chosen, deviceId);
+
+      code.textContent = script;
+      code.dataset.multiline = '';
+      copy.dataset.copy = script;
+      hint.textContent = DEVICES.find((d) => d.id === deviceId)?.hint ?? '';
+      status.textContent =
+        chosen.length === 0
+          ? 'No apps selected'
+          : `${chosen.length} of ${apps.length} apps selected`;
+      selectNone.disabled = chosen.length === 0;
+      getLinks.disabled = chosen.length === 0;
+    };
+
+    // ---- Direct downloads: look up each app's newest APK and list it as a plain link. ----
+    const chosenApps = () => {
+      const picked = new Set(boxes.filter((b) => b.checked).map((b) => b.dataset.check));
+      return apps.filter((app) => picked.has(app.id));
+    };
+
+    const clearLinks = () => {
+      linksList.replaceChildren();
+      downloadAll.hidden = true;
+      linksStatus.hidden = true;
+    };
+
+    const row = (app: InstallApp, link: ApkLink | null, error?: string) => {
+      const li = document.createElement('li');
+      li.className = 'installer-link';
+
+      const name = document.createElement('span');
+      name.className = 'installer-link-name';
+      name.textContent = app.name;
+      li.append(name);
+
+      if (link) {
+        const a = document.createElement('a');
+        a.className = 'installer-btn installer-dl';
+        a.href = link.url;
+        a.rel = 'noopener noreferrer';
+        a.setAttribute('download', link.name);
+        a.textContent = `Download ${link.name}`;
+        li.append(a);
+      } else {
+        const note = document.createElement('span');
+        note.className = 'installer-link-error';
+        note.textContent = error ?? 'No matching APK found in the latest releases';
+        li.append(note);
+      }
+      return li;
+    };
+
+    let lookup = 0;
+    getLinks.addEventListener('click', async () => {
+      const chosen = chosenApps();
+      if (chosen.length === 0) return;
+
+      const run = ++lookup;
+      const deviceId = isDeviceId(device.value) ? device.value : 'auto';
+      clearLinks();
+      getLinks.disabled = true;
+      linksStatus.hidden = false;
+      linksStatus.textContent = `Looking up ${chosen.length} app${chosen.length === 1 ? '' : 's'}...`;
+
+      const results = await Promise.all(
+        chosen.map(async (app) => {
+          try {
+            return { app, link: await resolveApkLink(app, deviceId), error: undefined };
+          } catch (error) {
+            const reason = error instanceof Error ? error.message : 'lookup failed';
+            return { app, link: null, error: `Lookup failed: ${reason}` };
+          }
+        }),
+      );
+      if (run !== lookup) return; // a newer lookup took over
+
+      results.forEach(({ app, link, error }) => linksList.append(row(app, link, error)));
+      const found = results.filter((r) => r.link).length;
+      linksStatus.textContent = `${found} of ${results.length} APKs ready. Tap Download on each, or Download all.`;
+      downloadAll.hidden = found === 0;
+      getLinks.disabled = false;
+    });
+
+    // Browsers only allow a download per user gesture or a short stagger, so space them out.
+    downloadAll.addEventListener('click', async () => {
+      const anchors = Array.from(linksList.querySelectorAll<HTMLAnchorElement>('a.installer-dl'));
+      downloadAll.disabled = true;
+      for (const a of anchors) {
+        a.click();
+        await new Promise((resolve) => setTimeout(resolve, 900));
+      }
+      downloadAll.disabled = false;
+    });
+
+    const setAll = (checked: boolean) => {
+      boxes.forEach((b) => (b.checked = checked));
+      save();
+      refresh();
+      clearLinks();
+    };
+
+    boxes.forEach((b) =>
+      b.addEventListener('change', () => {
+        save();
+        refresh();
+        clearLinks();
+      }),
+    );
+    device.addEventListener('change', () => {
+      save();
+      refresh();
+      clearLinks();
+    });
+    selectAll.addEventListener('click', () => setAll(true));
+    selectNone.addEventListener('click', () => setAll(false));
+
+    refresh();
+  }
+
+  function setupInstallers() {
+    document.querySelectorAll<HTMLElement>('[data-installer]').forEach(setupInstaller);
+  }
+
+  setupInstallers();
+  document.addEventListener('astro:page-load', setupInstallers);
+</script>

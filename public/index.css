@@ -2044,3 +2044,144 @@ a.badge-link:hover {
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 70%, transparent);
   }
 }
+
+/* ---------- Install script builder (composite/Installer.astro) ---------- */
+
+.installer {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.installer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.installer-field {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.installer-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.installer-select {
+  min-height: 2.75rem;
+  max-width: 100%;
+  padding: 0 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.installer-select:focus-visible,
+.installer-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.installer-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.installer-btn {
+  min-height: 2.75rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.installer-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: var(--surface-hover);
+}
+
+.installer-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.installer-hint,
+.installer-status {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.installer-status {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+/* Direct APK downloads (for opening the page on the Android device itself). */
+.installer-direct {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.installer-links {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.installer-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.installer-link-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.installer-link-error {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.installer-dl {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.installer-direct [hidden] {
+  display: none;
+}
+
+/* An app card ticked for the install script. */
+.node.is-selected {
+  border-color: var(--accent);
+}

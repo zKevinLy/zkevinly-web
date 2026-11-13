@@ -12,6 +12,18 @@ export interface RelatedLink {
   href: string;
 }
 
+/**
+ * Makes an entry installable: its card gets a checkbox that adds it to the page's
+ * `installer` block. The APK is looked up in the newest release of the entry's repo
+ * (see `repo` / `href`) when the generated script runs, so links never go stale.
+ */
+export interface EntryInstall {
+  /** A fixed direct APK link, for apps that don't publish APKs on GitHub/GitLab releases. */
+  url?: string;
+  /** Case-insensitive regex narrowing which release asset to take, e.g. "stable". */
+  match?: string;
+}
+
 export interface Entry {
   title: string;
   description: string;
@@ -36,6 +48,8 @@ export interface Entry {
   related?: RelatedLink[];
   /** Manual "last updated" (ISO date) for entries that aren't on GitHub. */
   updated?: string;
+  /** Adds a checkbox to the card so it can go into the page's `installer` script. */
+  install?: EntryInstall;
 }
 
 interface BasePage {
@@ -91,6 +105,15 @@ export type TopicBlock =
       type: 'steps';
       title: string;
       items: string[];
+    }
+  | {
+      /**
+       * Builds a batch-install PowerShell script from the apps ticked on this page's
+       * entry cards (those with `install`), for the device CPU picked in a dropdown.
+       */
+      type: 'installer';
+      title: string;
+      description?: string;
     }
   | {
       type: 'workflow';

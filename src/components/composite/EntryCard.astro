@@ -11,12 +11,16 @@ import RepoMeta from './RepoMeta.astro';
 import type { Entry } from '../../config';
 import { entryRepo, fetchRepoInfo } from '../../lib/github';
 import { entrySource, filterAttrs } from '../../lib/filter';
+import { installId } from '../../lib/installer';
 
 interface Props {
   entry: Entry;
+  /** Show the "include in install script" checkbox (only when the page has an installer block). */
+  selectable?: boolean;
 }
 
-const { entry } = Astro.props;
+const { entry, selectable = false } = Astro.props;
+const checkId = selectable && entry.install ? installId(entry) : undefined;
 
 const repo = entryRepo(entry);
 
@@ -31,6 +35,9 @@ const info = repo ? await fetchRepoInfo(repo, token) : null;
   description={entry.description}
   href={entry.href}
   searchable
+  check={checkId}
+  checkLabel="Include in install script"
+  data-install-card={checkId}
   {...filterAttrs(entrySource(entry), info)}
 >
   <Tags tags={entry.tags} />

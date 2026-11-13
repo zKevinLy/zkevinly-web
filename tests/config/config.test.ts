@@ -12,6 +12,7 @@ import projects from '../../src/config/projects';
 import resources from '../../src/config/resources';
 import { entryRepo } from '../../src/lib/github';
 import { remoteScriptUrl } from '../../src/lib/commands';
+import { installableApps, resolveInstallApp } from '../../src/lib/installer';
 import type { Entry, SitePage, TopicPage } from '../../src/config/types';
 
 /** Every entry reachable from a page, with where it lives (for readable failures). */
@@ -101,6 +102,46 @@ describe('site content', () => {
           );
         }
       }
+    }
+  });
+});
+
+describe('install scripts', () => {
+  it('can download every entry marked installable', () => {
+    for (const { entry, where } of all) {
+      if (entry.install) {
+        assert.ok(resolveInstallApp(entry), `${where}: ${entry.title} has no repo or install.url`);
+      }
+    }
+  });
+
+  it('uses valid regexes for install.match', () => {
+    for (const { entry, where } of all) {
+      if (entry.install?.match) {
+        assert.doesNotThrow(
+          () => new RegExp(entry.install!.match!, 'i'),
+          `${where}: ${entry.title} has an invalid install.match`,
+        );
+      }
+    }
+  });
+
+  it('only marks entries installable on pages that have an installer block', () => {
+    for (const topic of collectTopics(collections)) {
+      const hasInstaller = topic.blocks.some((block) => block.type === 'installer');
+      const installable = installableApps(topic.blocks);
+      if (hasInstaller) {
+        assert.ok(installable.length > 0, `${topic.title}: installer has no installable apps`);
+      } else {
+        assert.equal(installable.length, 0, `${topic.title}: installable entries, no installer`);
+      }
+    }
+  });
+
+  it('gives installable apps unique ids on each page', () => {
+    for (const topic of collectTopics(collections)) {
+      const ids = installableApps(topic.blocks).map((app) => app.id);
+      assert.equal(new Set(ids).size, ids.length, `duplicate install ids on "${topic.title}"`);
     }
   });
 });
