@@ -7,7 +7,7 @@ import { formatDate, formatMoney, isoDate, isValidCurrency } from '../format';
 import type { Block } from '../layout';
 import { computeTotals, type DiscountType } from '../money';
 import type { Field } from '../schema';
-import { money, number, pageFields, slug, type PageSize } from './common';
+import { fileNameField, fileNameOf, money, number, pageFields, type PageSize } from './common';
 
 interface Party {
   name: string;
@@ -17,6 +17,7 @@ interface Party {
 }
 
 export type InvoiceData = {
+  filename: string;
   number: string;
   issueDate: string;
   dueDate: string;
@@ -47,6 +48,7 @@ const fields: Field[] = [
     kind: 'group',
     label: 'Details',
     fields: [
+      fileNameField('invoice', (today) => `INV-${isoDate(today).replaceAll('-', '')}-001`),
       {
         kind: 'text',
         key: 'number',
@@ -165,7 +167,7 @@ export const invoice = defineDocType<InvoiceData>({
     'Line items with exact currency math, discount, tax and an optional payment QR code.',
   fields,
 
-  filename: (d) => `invoice-${slug(d.number, 'draft')}`,
+  filename: (d) => fileNameOf(d.filename, 'invoice'),
 
   live(d) {
     const code = d.currency.trim().toUpperCase();

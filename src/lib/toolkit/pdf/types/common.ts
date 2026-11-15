@@ -60,6 +60,23 @@ export const pageSizeField = (): SelectField => ({
   ],
 });
 
+/** Every type names its downloaded files the same way: with the user's own "File name". */
+export const fileNameField = (
+  fallback: string,
+  fill: ScalarField['default'] = '',
+): ScalarField => ({
+  kind: 'text',
+  key: 'filename',
+  label: 'File name',
+  default: fill,
+  placeholder: fallback,
+  maxLength: 100,
+  help: 'Used for the downloaded PDF and JSON files (without the extension).',
+});
+
+/** The file name (no extension): `data.filename`, or the type's fallback when it is empty. */
+export const fileNameOf = (typed: string, fallback: string): string => slug(typed, fallback);
+
 export const accentField = (color: string): ScalarField => ({
   kind: 'color',
   key: 'accentColor',

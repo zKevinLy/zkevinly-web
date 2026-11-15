@@ -524,7 +524,6 @@ export function initPdfTool(): void {
     (event) => {
       if (!dirty) return;
       event.preventDefault();
-      event.returnValue = '';
     },
     { signal },
   );

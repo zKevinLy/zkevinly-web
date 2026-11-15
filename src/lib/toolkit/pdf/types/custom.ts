@@ -7,9 +7,10 @@ import { formatDate } from '../format';
 import type { Block, TableColumn } from '../layout';
 import { isValidDecimal, sumAmounts, sumNumbers } from '../money';
 import type { Field, Sheet, SheetColumn } from '../schema';
-import { money, number, pageFields, slug, type PageSize } from './common';
+import { fileNameField, fileNameOf, money, number, pageFields, type PageSize } from './common';
 
 export type CustomData = {
+  filename: string;
   kicker: string;
   title: string;
   subtitle: string;
@@ -39,6 +40,7 @@ const fields: Field[] = [
     kind: 'group',
     label: 'Document',
     fields: [
+      fileNameField('document', 'Untitled document'),
       { kind: 'text', key: 'kicker', label: 'Small heading above the title' },
       { kind: 'text', key: 'title', label: 'Title', default: 'Untitled document' },
       { kind: 'text', key: 'subtitle', label: 'Subtitle' },
@@ -116,7 +118,7 @@ export const custom = defineDocType<CustomData>({
     'Start from nothing: your own title, details, table columns (with optional totals) and text sections.',
   fields,
 
-  filename: (d) => slug(d.title, 'document'),
+  filename: (d) => fileNameOf(d.filename, 'document'),
 
   layout(d) {
     const blocks: Block[] = [];

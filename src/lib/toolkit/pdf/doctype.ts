@@ -22,7 +22,7 @@ export interface DocType<D = Data> {
   fields: Field[];
   /** Gets sanitized data: every key present and the right type (see sanitize()). */
   layout(data: D): Layout;
-  /** File name without extension. */
+  /** File name without extension: the slugged value that names this document (no type prefix). */
   filename(data: D): string;
   /** `live` and `validate` get the in-progress form data, so values may be invalid. */
   live?(data: D): LiveInfo;

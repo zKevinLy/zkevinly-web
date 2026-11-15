@@ -462,6 +462,9 @@ export async function renderPdf(layout: Layout, attachment?: Attachment): Promis
     }
     for (const line of lines) {
       ensure(leading);
+      // newPage() clears this; without it the lines after the first page break never
+      // trigger another one and run off the bottom of the second page.
+      hasContent = true;
       draw(line, MARGIN, y, font, size, color);
       y -= leading;
     }

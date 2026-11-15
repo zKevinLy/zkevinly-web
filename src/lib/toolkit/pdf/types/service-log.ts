@@ -7,7 +7,7 @@ import { defineDocType } from '../doctype';
 import type { Block, TextLine } from '../layout';
 import { sumAmounts } from '../money';
 import type { Field } from '../schema';
-import { money, pageFields, pairs, slug, type PageSize } from './common';
+import { fileNameField, fileNameOf, money, pageFields, pairs, type PageSize } from './common';
 
 type ServiceRecord = {
   title: string;
@@ -22,6 +22,7 @@ type ServiceRecord = {
 };
 
 export type ServiceLogData = {
+  filename: string;
   heading: string;
   category: string;
   currency: string;
@@ -47,6 +48,7 @@ const fields: Field[] = [
     kind: 'group',
     label: 'Log',
     fields: [
+      fileNameField('service-log', 'Service log'),
       { kind: 'text', key: 'heading', label: 'Page heading', default: 'SERVICE RECORD' },
       { kind: 'text', key: 'category', label: 'Category', placeholder: 'e.g. Camry maintenance' },
       { kind: 'text', key: 'footerText', label: 'Footer text', default: 'Service log' },
@@ -154,7 +156,7 @@ export const serviceLog = defineDocType<ServiceLogData>({
     'One record per page for maintenance, repairs or inspections, with archive metadata and a PDF that stays editable.',
   fields,
 
-  filename: (d) => slug(d.footerText, 'service-log'),
+  filename: (d) => fileNameOf(d.filename, 'service-log'),
 
   layout(d) {
     const fmt = (amount: string) => money(amount, d.currency, d.locale);

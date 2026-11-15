@@ -32,6 +32,12 @@ standalone invoice tool (`invoice-config.json`, `toolkit.invoice`) still load as
 
 ## Preview and file names
 
+Every type has the same first field, "File name" (`filename` in the data, from `fileNameField()` in `types/common.ts`).
+The download and the preview use `data.filename` (made filename-safe by `slug()`). New documents start
+with a visible default in the field; if it is cleared, each type falls back to `invoice`, `service-log`
+or `document`. Document content such as the invoice
+number, footer text or title never changes the file name.
+
 The side preview is the browser's own PDF viewer in an iframe. Viewers name a saved file after
 the URL, so `public/toolkit/pdf-preview-sw.js` (a service worker scoped to
 `/toolkit/pdf/preview/`) serves each preview at `/toolkit/pdf/preview/<document-name>.pdf`.

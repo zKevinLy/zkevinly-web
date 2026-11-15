@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { newDoc, parseDoc } from '../../../../src/lib/toolkit/pdf/engine';
 import { docTypes, getType } from '../../../../src/lib/toolkit/pdf/types';
+import { slug } from '../../../../src/lib/toolkit/pdf/types/common';
 import type { TableBlock, TotalsBlock } from '../../../../src/lib/toolkit/pdf/layout';
 
 const type = (id: string) => getType(id)!;
@@ -39,9 +40,31 @@ test('invoice: totals follow the exact currency math', () => {
   assert.equal(totals.grand![1], '$144.09');
 });
 
-test('invoice: filename uses the number and survives odd characters', () => {
-  const t = type('invoice');
-  assert.equal(t.filename(parseDoc(t, { number: 'A/B 1' })), 'invoice-A-B-1');
+test('every type names its files from data.filename', () => {
+  const fallback: Record<string, string> = {
+    invoice: 'invoice',
+    'service-log': 'service-log',
+    custom: 'document',
+  };
+  for (const t of docTypes) {
+    assert.ok(JSON.stringify(t.fields).includes('"key":"filename"'), `${t.id} has no filename`);
+    // A new document shows a default in the field, and that is the name it downloads as.
+    const fresh = newDoc(t);
+    assert.ok(String(fresh.filename).length > 0);
+    assert.equal(t.filename(parseDoc(t, fresh)), slug(String(fresh.filename), 'x'));
+    // Whatever the user types is used, made safe; cleared, the type's fallback.
+    assert.equal(t.filename(parseDoc(t, { filename: 'A/B 1' })), 'A-B-1');
+    assert.equal(t.filename(parseDoc(t, { filename: '' })), fallback[t.id]);
+  }
+});
+
+test('file names ignore the invoice number, footer text and title', () => {
+  const inv = type('invoice');
+  assert.equal(inv.filename(parseDoc(inv, { number: 'INV-9', filename: 'March' })), 'March');
+  const log = type('service-log');
+  assert.equal(log.filename(parseDoc(log, { footerText: 'Family log', filename: 'Car' })), 'Car');
+  const doc = type('custom');
+  assert.equal(doc.filename(parseDoc(doc, { title: 'Trip plan', filename: 'Trip' })), 'Trip');
 });
 
 test('service log: one page break between records, and a table per record', () => {
