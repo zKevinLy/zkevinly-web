@@ -1,0 +1,267 @@
+/* ==========================================================================
+   Toolkit: shared tool chrome (layout, form fields, status line, PDF preview, drop
+   overlay). Loaded by layouts/Toolkit.astro only. Tool-specific rules live in
+   their own file next to this one (e.g. pdf.css).
+   ========================================================================== */
+
+.btn {
+  cursor: pointer;
+}
+
+.btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  color: var(--bg);
+  opacity: 0.88;
+}
+
+.tool {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (min-width: 1100px) {
+  .tool {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    align-items: start;
+  }
+}
+
+.tool-main {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.callout {
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The actions stay in reach while a long form scrolls underneath. */
+.actions {
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 5;
+  display: grid;
+  gap: 0.35rem;
+  margin-inline: -0.5rem;
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.actions .status {
+  min-height: 0;
+  margin: 0;
+}
+
+.actions .status:empty,
+.actions .status[hidden] {
+  display: none;
+}
+
+.status {
+  min-height: 1.4em;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.status[data-kind='ok'] {
+  color: var(--accent);
+}
+
+.status[data-kind='warn'] {
+  color: var(--warn);
+}
+
+.status[data-kind='error'] {
+  color: #ef4444;
+}
+
+/* Cards are full width; `.half` cards (From / Bill to...) pair up on wide screens. */
+.form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.form > * {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 720px) {
+  .form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form > .half {
+    grid-column: auto;
+  }
+}
+
+.group {
+  margin: 0;
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.group legend {
+  padding: 0 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.85rem;
+}
+
+.fields-one {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* A wrapper that only groups fields: its children join the parent's grid. */
+.contents {
+  display: contents;
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.field .select,
+.row .select,
+.col-row .select {
+  width: 100%;
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.field-color input {
+  height: 2.35rem;
+  padding: 0.2rem;
+}
+
+/* The preview sits below the form on narrow screens and beside it (sticky) on wide ones. */
+.tool-preview {
+  display: block;
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .tool-preview {
+    position: sticky;
+    top: calc(var(--topbar-h) + 1rem);
+  }
+}
+
+/* Two stacked frames: the next PDF loads in the one underneath, then they swap. */
+.preview-stack {
+  position: relative;
+  height: max(28rem, 75dvh);
+}
+
+@media (min-width: 1100px) {
+  .preview-stack {
+    height: calc(100dvh - var(--topbar-h) - 3rem);
+  }
+}
+
+.preview-open {
+  margin-top: 0.5rem;
+}
+
+.preview-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
+/* The next version loads *behind* the visible frame, already painted when it is brought
+   forward, so there is never a blank frame in between. */
+.preview-frame[data-front='true'] {
+  z-index: 2;
+}
+
+.preview-frame[data-front='false'] {
+  z-index: 1;
+  pointer-events: none;
+}
+
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--scrim);
+  pointer-events: none;
+}
+
+.drop-overlay p {
+  padding: 1.5rem 2.5rem;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 1.125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actions {
+    backdrop-filter: none;
+  }
+}

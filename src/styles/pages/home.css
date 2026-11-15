@@ -1,0 +1,27 @@
+/* ---------- Home ---------- */
+
+.hero {
+  padding: 1.5rem 0 0.5rem;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--accent);
+}
+
+.hero-title {
+  max-width: 40rem;
+  margin-top: 1rem;
+  font-size: clamp(2.25rem, 7vw, 3.75rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.hero-lead {
+  max-width: 36rem;
+  margin-top: 1.5rem;
+  font-size: 1.125rem;
+  color: var(--muted);
+}

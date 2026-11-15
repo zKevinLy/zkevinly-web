@@ -7,12 +7,12 @@ import { join } from 'node:path';
 import collections from '../../src/config/collections';
 import androidTv from '../../src/config/collections/android-tv';
 import nuvio from '../../src/config/collections/nuvio';
-import { childSections } from '../../src/lib/groups';
+import { childSections } from '../../src/lib/topics/groups';
 import projects from '../../src/config/projects';
 import resources from '../../src/config/resources';
 import { entryRepo } from '../../src/lib/github';
-import { remoteScriptUrl } from '../../src/lib/commands';
-import { installableApps, resolveInstallApp } from '../../src/lib/installer';
+import { remoteScriptUrl } from '../../src/lib/install/commands';
+import { installableApps, resolveInstallApp } from '../../src/lib/install/installer';
 import type { Entry, SitePage, TopicPage } from '../../src/config/types';
 
 /** Every entry reachable from a page, with where it lives (for readable failures). */

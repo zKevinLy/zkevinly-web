@@ -11,7 +11,7 @@
  * panel always shows the "Powered by GIPHY" attribution.
  *
  * Bases: Avatar, IconButton. Content lives in config/chatbot.ts and the reply
- * picker in lib/chatbot.ts.
+ * picker in lib/ui/chatbot.ts.
  */
 import { Minus, SendHorizontal } from '@lucide/astro';
 import Avatar from '../base/Avatar.astro';
@@ -83,7 +83,7 @@ import { chatbot } from '../../config/chatbot';
 
 <script>
   import { chatbot, type BotReply } from '../../config/chatbot';
-  import { getReply, toSearchQuery } from '../../lib/chatbot';
+  import { getReply, toSearchQuery } from '../../lib/ui/chatbot';
 
   const MAX_MESSAGES = 60;
 

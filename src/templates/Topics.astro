@@ -1,0 +1,82 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PageHeader from '../components/base/PageHeader.astro';
+import Section from '../components/base/Section.astro';
+import Grid from '../components/base/Grid.astro';
+import Breadcrumb from '../components/base/Breadcrumb.astro';
+import Node from '../components/base/Node.astro';
+import Tags from '../components/base/Tags.astro';
+import EntryCard from '../components/composite/EntryCard.astro';
+import TopicBlocks from '../components/composite/TopicBlocks.astro';
+import HubTrail from '../components/composite/HubTrail.astro';
+import FilterBar from '../components/composite/FilterBar.astro';
+import type { TopicPage } from '../config';
+import { getBreadcrumbs, normalizePath } from '../lib/ui/navigation';
+import { assertHub, findHub, getHubLayout, stepsFor } from '../lib/topics/hub';
+import { buildFilterModel, filterAttrs, pageSources } from '../lib/ui/filter';
+import { childSections } from '../lib/topics/groups';
+
+interface Props {
+  page: TopicPage;
+}
+
+const { page } = Astro.props;
+
+const breadcrumbs = getBreadcrumbs(Astro.url.pathname);
+const currentPath = normalizePath(Astro.url.pathname);
+
+// Hub pages must link to every page beneath them (build fails otherwise).
+if (page.hub) assertHub(page, currentPath);
+
+// Pages beneath a hub show a trail back to the steps that use them.
+const hubContext = findHub(currentPath);
+const hubLayout = hubContext && !page.hub ? getHubLayout(hubContext.hub) : undefined;
+const usedIn = hubContext && hubLayout ? stepsFor(hubLayout, currentPath) : [];
+
+// Page-local filter/search/sort over this page's lists (null when too short to bother).
+const filterModel = buildFilterModel(pageSources(page), { force: page.alwaysFilter });
+
+// Child pages, in the sections they're listed under (hubs list theirs in the workflow).
+const sections = page.hub ? [] : childSections(page);
+---
+
+<Layout title={page.title} description={page.description}>
+  <Breadcrumb items={breadcrumbs} />
+
+  {hubContext && hubLayout && (
+    <HubTrail hubTitle={hubContext.hub.title} hubPath={hubContext.hubPath} steps={usedIn} />
+  )}
+
+  <PageHeader title={page.title} lead={page.introduction ?? page.description} spaced />
+
+  <div data-filter-scope>
+    {filterModel && <FilterBar model={filterModel} />}
+
+    {sections.map((section) => (
+      <Section title={section.title} note={section.note} class="topic-section" filterGroup>
+        <Grid tight>
+          {section.pages.map((child) => (
+            <Node
+              title={child.title}
+              description={child.description}
+              href={`${currentPath}/${child.slug}`}
+              size="compact"
+              {...filterAttrs(child)}
+            >
+              <Tags tags={child.tags} />
+            </Node>
+          ))}
+        </Grid>
+        {section.entries.length > 0 && (
+          <Grid>
+            {section.entries.map((entry) => (
+              <EntryCard entry={entry} />
+            ))}
+          </Grid>
+        )}
+      </Section>
+    ))}
+
+    <TopicBlocks blocks={page.blocks} page={page} path={currentPath} />
+  </div>
+</Layout>

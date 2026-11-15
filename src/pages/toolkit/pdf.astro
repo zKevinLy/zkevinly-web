@@ -1,0 +1,144 @@
+---
+import Layout from '../../layouts/Toolkit.astro';
+import PageHeader from '../../components/base/PageHeader.astro';
+import Breadcrumb from '../../components/base/Breadcrumb.astro';
+import { toolkit, toolHref } from '../../config/toolkit';
+import { typeList } from '../../lib/toolkit/pdf/types';
+import '../../styles/toolkit/pdf.css';
+
+const tool = toolkit.tools.find((t) => t.slug === 'pdf')!;
+---
+
+<Layout title={tool.title} description={tool.description}>
+  <Breadcrumb
+    items={[
+      { title: toolkit.title, href: toolkit.path },
+      { title: tool.title, href: toolHref(tool) },
+    ]}
+  />
+  <PageHeader title={tool.title} lead={tool.description} />
+
+  <div class="tool" data-pdf-tool>
+    <div class="tool-main">
+      <p class="callout" data-reveal>
+        <strong>Private by design.</strong> Everything happens in this tab: nothing is uploaded and
+        your documents are never saved in your browser, so closing the tab erases them. Keep the PDF
+        you download. It carries its own data, so dropping it back here lets you edit it again.
+      </p>
+
+      <div class="type-switch" role="group" aria-label="Document type" data-reveal>
+        {typeList.map((type) => (
+          <button type="button" class="btn type-btn" data-type={type.id} aria-pressed="false">
+            {type.label}
+          </button>
+        ))}
+      </div>
+      <p class="type-blurb" data-type-blurb></p>
+
+      <div class="actions" data-reveal>
+        <div class="toolbar">
+          <button type="button" class="btn btn-primary" data-action="pdf">
+            Download PDF
+          </button>
+          <button type="button" class="btn" data-action="load">
+            Open a saved PDF or JSON
+          </button>
+          <button type="button" class="btn" data-action="json">
+            Export JSON
+          </button>
+          <button type="button" class="btn" data-action="example" hidden>
+            Fill with an example
+          </button>
+          <button type="button" class="btn" data-action="new">
+            Start over
+          </button>
+          <input
+            type="file"
+            accept=".pdf,.json,application/pdf,application/json"
+            hidden
+            data-file-input
+            aria-label="Open a PDF or JSON file made by this tool"
+          />
+        </div>
+        <p class="status" role="status" aria-live="polite" data-status data-kind="info"></p>
+        <p
+          class="status"
+          role="status"
+          aria-live="polite"
+          data-preview-note
+          data-kind="warn"
+          hidden
+        ></p>
+      </div>
+
+      <div class="type-switch view-switch" role="group" aria-label="Editing view" data-reveal>
+        <button type="button" class="btn type-btn" data-view="json" aria-pressed="true">
+          JSON
+        </button>
+        <button type="button" class="btn type-btn" data-view="form" aria-pressed="false">
+          Form
+        </button>
+      </div>
+
+      <section class="json-editor" id="json-editor" data-editor aria-label="JSON editor">
+        <div class="json-editor-head">
+          <p class="help">
+            The data inside the PDF. Paste a full file, or just the data for this type; valid JSON
+            updates the form and preview as you type.
+          </p>
+          <div class="json-editor-actions">
+            <button type="button" class="btn" data-action="editor-format">
+              Format
+            </button>
+          </div>
+        </div>
+        <textarea
+          class="json-editor-text"
+          data-editor-text
+          rows="18"
+          spellcheck="false"
+          autocapitalize="off"
+          aria-label="Document JSON"
+        ></textarea>
+        <p class="status" role="status" aria-live="polite" data-editor-status data-kind="info"></p>
+      </section>
+
+      <form class="form" data-form autocomplete="off" novalidate hidden></form>
+    </div>
+
+    <aside class="tool-preview" aria-label="PDF preview">
+      <div class="preview-stack">
+        <iframe class="preview-frame" title="PDF preview" data-preview data-front="true"></iframe>
+        <iframe
+          class="preview-frame"
+          title="PDF preview (loading next version)"
+          data-preview
+          data-front="false"
+          aria-hidden="true"
+          inert
+          tabindex="-1"
+        ></iframe>
+      </div>
+      <p class="preview-open">
+        <button type="button" class="btn" data-preview-open hidden>
+          Open preview in a new tab
+        </button>
+      </p>
+    </aside>
+
+    <div class="drop-overlay" data-drop-overlay hidden>
+      <p>Drop a PDF or JSON file made by this tool to edit it</p>
+    </div>
+
+    <noscript>
+      <p class="callout">This tool needs JavaScript to run in your browser.</p>
+    </noscript>
+  </div>
+</Layout>
+
+<script>
+  import { initPdfTool } from '../../lib/toolkit/pdf/ui/app';
+
+  // Fired by the Toolkit layout once the page has loaded.
+  document.addEventListener('astro:page-load', initPdfTool);
+</script>

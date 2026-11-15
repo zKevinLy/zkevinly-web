@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+.npm/
 
 # Build output & caches
 dist/
@@ -9,6 +10,8 @@ public/version.json
 *.tsbuildinfo
 .eslintcache
 .cache/
+.vite/
+.tmp/
 
 # Environment & secrets (only the example is committed)
 .env
@@ -34,6 +37,9 @@ lighthouse-*.html
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Release archives (CI attaches the built site to each release)
 *.zip
@@ -42,3 +48,8 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*~

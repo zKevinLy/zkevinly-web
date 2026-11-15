@@ -14,8 +14,8 @@ import Installer from './Installer.astro';
 import InstallSelectBar from './InstallSelectBar.astro';
 import DownloadButton from './DownloadButton.astro';
 import type { TopicBlock, TopicPage } from '../../config';
-import { filterAttrs } from '../../lib/filter';
-import { installableApps } from '../../lib/installer';
+import { filterAttrs } from '../../lib/ui/filter';
+import { installableApps } from '../../lib/install/installer';
 
 interface Props {
   blocks: TopicBlock[];

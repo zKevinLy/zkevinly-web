@@ -4,6 +4,7 @@ import Header from '../components/composite/Header.astro';
 import Search from '../components/composite/Search.astro';
 import ChatBot from '../components/composite/ChatBot.astro';
 import { site } from '../config';
+import '../styles/global.css';
 
 interface Props {
   title?: string;
@@ -27,8 +28,6 @@ const fullTitle = title ? `${title} · ${site.name}` : site.name;
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <title>{fullTitle}</title>
-
-    <link rel="stylesheet" href="/index.css" />
 
     <!-- Apply the saved theme before first paint (dark by default) so there's no flash. -->
     <script is:inline>
@@ -66,7 +65,7 @@ const fullTitle = title ? `${title} · ${site.name}` : site.name;
     >
       <slot />
     </main>
-    <!-- Must be a direct child of <body>, outside the header (see index.css). -->
+    <!-- Must be a direct child of <body>, outside the header (see styles/components/search.css). -->
     <Search />
     <ChatBot />
 

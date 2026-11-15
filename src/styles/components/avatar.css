@@ -1,0 +1,7 @@
+/* ---------- Avatar ---------- */
+
+.avatar {
+  display: block;
+  flex-shrink: 0;
+  border-radius: 28%;
+}

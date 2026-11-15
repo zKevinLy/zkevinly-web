@@ -4,7 +4,7 @@ import { siGithub } from 'simple-icons';
 import IconButton from '../base/IconButton.astro';
 import NavLink from '../base/NavLink.astro';
 import { site } from '../../config';
-import { getNavItems, isActivePath } from '../../lib/navigation';
+import { getNavItems, isActivePath } from '../../lib/ui/navigation';
 
 const nav = getNavItems();
 const pathname = Astro.url.pathname;
@@ -73,7 +73,7 @@ const version =
 </header>
 
 <script>
-  import { isActivePath } from '../../lib/navigation';
+  import { isActivePath } from '../../lib/ui/navigation';
 
   // --- Active link highlighting (header persists across navigations) ---
   function updateActiveNavigation() {

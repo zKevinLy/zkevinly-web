@@ -19,7 +19,8 @@
  * boxes clear. Only the CPU choice is kept, per page, in this browser.
  */
 import CommandBlock from './CommandBlock.astro';
-import { DEVICES, EMPTY_SCRIPT, type InstallApp } from '../../lib/installer';
+import Select from '../base/Select.astro';
+import { DEVICES, EMPTY_SCRIPT, type InstallApp } from '../../lib/install/installer';
 
 interface Props {
   apps: InstallApp[];
@@ -29,14 +30,11 @@ const { apps } = Astro.props;
 ---
 
 <div class="installer" data-installer data-apps={JSON.stringify(apps)} data-pagefind-ignore>
-  <label class="installer-field">
-    <span class="installer-label">Your device&rsquo;s CPU</span>
-    <select class="installer-select" data-installer-device>
-      {DEVICES.map((device) => (
-        <option value={device.id}>{device.label}</option>
-      ))}
-    </select>
-  </label>
+  <Select
+    label="Your device’s CPU"
+    options={DEVICES.map((device) => ({ value: device.id, label: device.label }))}
+    attrs={{ 'data-installer-device': '' }}
+  />
   <p class="installer-hint" data-installer-hint>
     {DEVICES[0].hint}
   </p>
@@ -78,7 +76,7 @@ const { apps } = Astro.props;
     resolveApkLink,
     type ApkLink,
     type InstallApp,
-  } from '../../lib/installer';
+  } from '../../lib/install/installer';
 
   function setupInstaller(root: HTMLElement) {
     if (root.dataset.bound) return;

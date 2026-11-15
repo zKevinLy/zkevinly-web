@@ -35,4 +35,15 @@ export default [
       },
     },
   },
+  {
+    // Service worker scripts served as-is from public/ (not bundled).
+    files: ['public/**/*.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        URL: 'readonly',
+        Response: 'readonly',
+      },
+    },
+  },
 ];

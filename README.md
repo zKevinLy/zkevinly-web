@@ -12,13 +12,45 @@ Central site for zkevinly.com: homepage, project directory, resources, tools, ex
 
 ## Where things live
 
-| To change...                              | Edit                        |
-| ----------------------------------------- | --------------------------- |
-| Name, tagline, nav, GitHub link, About    | `src/config/index.ts`       |
-| Entries on projects/resources/tools/etc.  | `src/config/index.ts`       |
-| Notes (digital garden)                    | `src/content/notes/*.md(x)` |
-| Colors, fonts, light/dark themes, styling | `public/index.css`          |
-| Page chrome and animations                | `src/layouts/Layout.astro`  |
+| To change...                               | Edit                                                        |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| Name, tagline, About text                  | `src/config/index.ts`                                       |
+| Projects / Resources / Collections entries | `src/config/{projects,resources,collections}/`              |
+| Toolkit tool list (cards, tests)           | `src/config/toolkit/index.ts`                               |
+| Colors, fonts, light/dark themes           | `src/styles/base/tokens.css`                                |
+| Styling for one component                  | `src/styles/components/<component>.css`                     |
+| Toolkit tool styling                       | `src/styles/toolkit/`                                       |
+| Page chrome and animations                 | `src/layouts/Layout.astro`, or `Toolkit.astro` for /toolkit |
+| Security headers / CSP                     | `public/_headers`                                           |
+
+## Project layout
+
+    src/
+      components/
+        base/         generic primitives (Node, Badge, Grid...)
+        composite/    built from base components; know about site data
+      config/
+        index.ts, types.ts   site name/tagline/About, shared types
+        projects/ resources/ collections/   one folder per section (these drive /projects etc.)
+        toolkit/      the tool list for /toolkit
+        shared/       entries reused by several sections
+        chatbot.ts
+      layouts/        document shells: Layout.astro (site), Toolkit.astro (/toolkit)
+      templates/      page types rendered inside Layout: Directory.astro, Topics.astro
+      lib/
+        topics/       topic-page structure: groups, hub, workflow
+        install/      batch-install script builder: installer, commands
+        ui/           browser/UI helpers: navigation, filter, spotlight, chatbot
+        toolkit/      one folder per tool (pdf/)
+        github.ts     repo release/star lookups
+      pages/          routes. [section] and [...slug] render config-driven pages; toolkit/ is hand-written
+      styles/
+        global.css    imports everything below, in cascade order
+        base/ layout/ components/ pages/   one file per component or page type
+        toolkit/      tool styles, loaded by the Toolkit layout only
+    tests/            mirrors src/ (config/, lib/<group>/, worker/)
+    worker/           Cloudflare Worker (/api/*)
+    public/           static files copied as-is
 
 ## Principles
 
@@ -28,8 +60,28 @@ Central site for zkevinly.com: homepage, project directory, resources, tools, ex
 
 ## Deploy
 
-Output is fully static (`dist/`). Works as-is on Cloudflare Pages, Netlify, Vercel, or GitHub Pages
-(build command `npm run build`, output dir `dist`).
+The pages are static (`dist/`), but the site is deployed as a Cloudflare Worker (`wrangler.toml`):
+the Worker serves `dist/` as assets and handles `/api/gif` and `/api/repo`. `public/_headers`
+carries the security headers, including the strict policy for `/toolkit`. Deploy with
+`npm run build:fast && npm run deploy` (CI does this on every push to `main`). Other static hosts
+will serve the pages but not the API routes or the headers.
+
+## Toolkit (`/toolkit`)
+
+Small tools that run entirely in the browser (first one: the PDF generator at `/toolkit/pdf`, which makes invoices, service logs and custom documents; the old `/toolkit/invoice` link redirects there).
+Unlike the config-driven sections, each tool is a hand-written page in `src/pages/toolkit/`, listed
+in `src/config/toolkit/index.ts` so it gets a card and a test.
+
+- To add a tool, one thing per place:
+  - page: `src/pages/toolkit/<slug>.astro` (use `layouts/Toolkit.astro`)
+  - logic: `src/lib/toolkit/<slug>/`, with tests in `tests/lib/toolkit/<slug>/`
+  - styles: `src/styles/toolkit/<slug>.css`, imported by the page (shared form/preview styles are in `tool.css`)
+  - config: an entry in `src/config/toolkit/index.ts` (the config test fails if the page is missing)
+- Toolkit pages use `layouts/Toolkit.astro`: no `ClientRouter` (so entering and leaving the toolkit is a
+  full page load) and no chat bot. That is what lets the strict Content-Security-Policy in
+  `public/_headers` (`/toolkit` and `/toolkit/*`) apply: tools can only talk to this origin.
+- Never write sensitive tool data to `localStorage`, `sessionStorage` or IndexedDB. Persistence is a
+  file the user downloads and loads back.
 
 ## Hub pages (no floating nodes)
 
@@ -56,7 +108,7 @@ does this: **Collections** (the picks themselves) and **Guides** (my own walkthr
 
 - Declare the sections on the parent with `groups: [{ id, title, description? }]`; their order is the display order.
 - Put each child in one with `group: '<id>'`. A child with a missing or unknown group fails the build
-  (`src/lib/groups.ts`), so a typo can't make a page vanish.
+  (`src/lib/topics/groups.ts`), so a typo can't make a page vanish.
 - A group can also hold `entries` (cards, same as the Directory cards below), shown after its pages. Collections uses
   this for a plain link to the AIOStore repo with a copyable manifest URL.
 - Parents without `groups` keep the single "Explore ..." section.

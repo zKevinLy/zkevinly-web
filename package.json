@@ -15,7 +15,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "node --import tsx --test \"tests/**/*.test.ts\"",
-    "tests": "npm run test",
     "test:watch": "node --import tsx --test --watch \"tests/**/*.test.ts\"",
     "test:coverage": "node --import tsx --test --experimental-test-coverage \"tests/**/*.test.ts\"",
     "test:ci": "node --import tsx --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results.xml \"tests/**/*.test.ts\"",
@@ -39,27 +38,31 @@
     "pin-actions": "node scripts/pin-actions.mjs"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.4",
-    "@astrojs/mdx": "^8.1.2",
-    "@lucide/astro": "^1.70.0",
-    "astro": "^7.4.4",
-    "gsap": "^3.12.5",
-    "simple-icons": "^16.36.0",
-    "typescript": "^5.6.0"
+    "@astrojs/check": "^0.9.12",
+    "@astrojs/mdx": "^8.1.6",
+    "@lucide/astro": "^1.73.0",
+    "astro": "^7.4.12",
+    "decimal.js": "^10.6.0",
+    "gsap": "^3.15.1",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
+    "simple-icons": "^16.38.0",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.6",
-    "eslint": "^9.39.5",
+    "@types/qrcode": "^1.5.6",
+    "eslint": "^10.15.0",
     "eslint-plugin-astro": "^1.7.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "pagefind": "^1.6.0",
-    "prettier": "^3.9.10",
+    "prettier": "^3.10.1",
     "prettier-plugin-astro": "^1.1.2",
     "tsx": "^4.23.15",
-    "typescript-eslint": "^8.72.1",
-    "vite": "^8.3.5",
-    "wrangler": "^4.158.0"
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.8",
+    "wrangler": "^4.162.0"
   },
   "overrides": {
     "@typescript-eslint/typescript-estree": {

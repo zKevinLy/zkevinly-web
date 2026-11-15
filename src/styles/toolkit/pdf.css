@@ -1,0 +1,343 @@
+/* ==========================================================================
+   Toolkit: PDF generator (pages/toolkit/pdf.astro). Everything the schema-driven form
+   can render: type switcher, table rows, record cards, the column editor and the totals
+   card. Builds on the shared form styles in tool.css.
+   ========================================================================== */
+
+/* Type switcher ---------------------------------------------------------- */
+.type-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.type-btn[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.type-blurb {
+  margin: -0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.help {
+  margin: 0 0 0.6rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.field .help {
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.subhead {
+  margin: 1rem 0 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Rows: table rows, sheet rows and the column editor ---------------------- */
+.row input,
+.row textarea,
+.col-row input[type='text'],
+.col-row input[type='number'] {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.row textarea {
+  resize: vertical;
+}
+
+.row input:focus-visible,
+.row textarea:focus-visible,
+.col-row input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.rows-head,
+.row,
+.col-row {
+  display: grid;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rows-head,
+.row {
+  grid-template-columns: var(--cols);
+}
+
+.col-row {
+  grid-template-columns: minmax(0, 1fr) 5.5rem 5.5rem 3.5rem 2.75rem 2rem;
+}
+
+.col-row input[type='checkbox'] {
+  justify-self: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+}
+
+.rows-head {
+  margin-bottom: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.rows-head .num {
+  text-align: right;
+}
+
+.rows {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.row-amount {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.row-remove,
+.mini-btn {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.row-remove {
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.mini-btn {
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 0.4rem;
+  font-size: 0.8125rem;
+  line-height: 1;
+}
+
+.row-remove:hover,
+.mini-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.mini-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .rows-head {
+    display: none;
+  }
+
+  .row,
+  .col-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .row > :first-child,
+  .col-row > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .row-amount {
+    text-align: left;
+  }
+
+  .row-remove,
+  .col-row .mini-btn {
+    justify-self: end;
+  }
+}
+
+/* Record / section cards -------------------------------------------------- */
+.cards {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.35rem;
+}
+
+.card-toggle {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.65rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.card-toggle:hover {
+  background: var(--surface-hover);
+}
+
+.card-toggle::before {
+  content: '\25b8';
+  display: inline-block;
+  width: 1.1em;
+  color: var(--muted);
+}
+
+.card-toggle[aria-expanded='true']::before {
+  content: '\25be';
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.card-body {
+  display: grid;
+  gap: 1rem;
+  padding: 0.25rem 0.9rem 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.card-body > .group {
+  background: transparent;
+}
+
+.card-body > .contents,
+.card-body > .group .fields {
+  padding-top: 0.75rem;
+}
+
+.card-body > .contents {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.85rem;
+}
+
+/* Totals card ------------------------------------------------------------- */
+.totals dl {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.totals dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+
+.totals dt {
+  color: var(--muted);
+}
+
+.totals dd {
+  margin: 0;
+  font-family: var(--font-mono);
+}
+
+.totals-grand {
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.totals-grand dd {
+  color: var(--accent);
+}
+
+/* JSON editor ------------------------------------------------------------- */
+.json-editor {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.json-editor-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.json-editor-head .help {
+  flex: 1 1 18rem;
+  margin: 0;
+}
+
+.json-editor-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.json-editor-text {
+  width: 100%;
+  min-height: 12rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  tab-size: 2;
+  resize: vertical;
+  white-space: pre;
+  overflow: auto;
+}
+
+.json-editor-text:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

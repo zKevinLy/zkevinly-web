@@ -1,0 +1,206 @@
+/* ---------- Dependency workflow (composes Node) ---------- */
+.workflow-intro {
+  max-width: 44rem;
+  margin: 0.75rem 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+.workflow {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 56rem);
+  margin-top: 1rem;
+}
+.workflow-edges {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: visible;
+  pointer-events: none;
+}
+.workflow-edge {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 40%, var(--border));
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 4 5;
+  transition:
+    opacity 150ms ease,
+    stroke 150ms ease,
+    stroke-width 150ms ease;
+}
+
+/* Progress + check-off */
+.workflow-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+.workflow-progress-bar {
+  flex: 1;
+  max-width: 14rem;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+.workflow-progress-bar > div {
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+  transition: width 200ms ease;
+}
+.workflow-reset {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+.workflow-reset:hover {
+  text-decoration: underline;
+}
+
+/* Phases: rows read top to bottom; nodes inside a row are parallel branches. */
+.workflow-phases {
+  display: grid;
+  gap: 2.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.workflow-phase {
+  display: grid;
+  gap: 0.9rem;
+}
+.workflow-phase-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--border);
+}
+.workflow-phase-label {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.workflow-phase-head h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.workflow-phase-head p {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  gap: 1.1rem;
+}
+
+/* A workflow step is a Node; only step-specific behaviour lives here. */
+.workflow-node {
+  min-width: 0;
+  scroll-margin-top: 5rem;
+  transition:
+    opacity 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.workflow-node.node-interactive:hover {
+  transform: none; /* edges are anchored to the card, so don't lift it */
+}
+.workflow-node.is-optional {
+  border-style: dashed;
+}
+.workflow-node.is-done .node-title {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.workflow-node.is-done .node-desc,
+.workflow-node.is-done .node-number {
+  opacity: 0.6;
+}
+
+/* Trace: hover/focus a node to light up its whole chain and dim the rest. */
+.workflow[data-focus] .workflow-node:not(.is-active):not(.is-related) {
+  opacity: 0.45;
+}
+.workflow[data-focus] .workflow-edge {
+  opacity: 0.15;
+}
+.workflow[data-focus] .workflow-edge.is-related {
+  opacity: 1;
+  stroke: var(--accent);
+  stroke-width: 2.25;
+  stroke-dasharray: none;
+}
+.workflow-node.is-related {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+.workflow-node.is-active,
+.workflow-node:target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.workflow-dependencies {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.workflow-dependencies + .workflow-dependencies {
+  margin-top: 0.4rem;
+}
+.workflow-dependencies > span {
+  min-width: 4.2rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.workflow-dependencies a {
+  position: relative;
+  z-index: 2; /* above the node's stretched link */
+  padding: 0.15rem 0.4rem;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.workflow-dependencies a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 640px) {
+  .workflow-phases {
+    gap: 2rem;
+  }
+  .workflow-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .workflow-edge {
+    stroke-dasharray: 3 5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workflow-node,
+  .workflow-edge {
+    transition: none;
+  }
+}

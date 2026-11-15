@@ -1,0 +1,41 @@
+---
+/**
+ * BASE: Select — the one dropdown. A native <select> (so keyboard, touch and screen readers
+ * behave) with the site's styling from styles/components/select.css. Use it everywhere a
+ * person picks one option from a list.
+ *
+ * It renders its own <label>, so callers never wrap it: pass `label`, and `hideLabel` when the
+ * surrounding UI already names it (the label then stays for screen readers only). Data
+ * attributes for scripts go on the <select> via `attrs`, e.g. attrs={{ 'data-sort': '' }}.
+ *
+ * Selects built from script (the PDF form) get the same look with `class="select"`.
+ */
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  options: readonly Option[];
+  label: string;
+  hideLabel?: boolean;
+  value?: string;
+  /** Denser, for table rows and form fields. */
+  small?: boolean;
+  name?: string;
+  attrs?: Record<string, string | boolean | undefined>;
+}
+
+const { options, label, hideLabel = false, value, small = false, name, attrs = {} } = Astro.props;
+---
+
+<label class="select-field">
+  <span class:list={hideLabel ? 'sr-only' : 'select-label'}>{label}</span>
+  <select class:list={['select', { 'select--sm': small }]} {name} {...attrs}>
+    {options.map((option) => (
+      <option value={option.value} selected={option.value === value}>
+        {option.label}
+      </option>
+    ))}
+  </select>
+</label>

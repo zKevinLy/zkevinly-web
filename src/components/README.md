@@ -7,23 +7,24 @@ Two layers, one direction of dependency: **composite → base**, never the rever
 Generic, content-agnostic building blocks. They know about markup, CSS classes
 and behaviour, but nothing about this site's data (`Entry`, `TopicBlock`, GitHub…).
 
-| Component    | Purpose                                                      |
-| ------------ | ------------------------------------------------------------ |
-| `Node`       | The only card/step. Title, number, link, check-off, slots    |
-| `Badge`      | Small pill, link or span                                     |
-| `Tags`       | Row of tag pills                                             |
-| `Freshness`  | "Updated 3 days ago" + heartbeat dot (owns the time refresh) |
-| `CopyButton` | Click-to-copy (owns the one delegated copy handler)          |
-| `IconButton` | Square icon control with tooltip, `<a>` or `<button>`        |
-| `Button`     | Text link styled as a button                                 |
-| `NavLink`    | Top-level nav link                                           |
-| `Grid`       | Responsive card grid                                         |
-| `Section`    | Optional title + note around content                         |
-| `PageHeader` | h1 + lead paragraph                                          |
-| `Prose`      | Running text paragraph                                       |
-| `Steps`      | Numbered list                                                |
-| `Figure`     | Image + caption                                              |
-| `Breadcrumb` | Breadcrumb trail                                             |
+| Component    | Purpose                                                                      |
+| ------------ | ---------------------------------------------------------------------------- |
+| `Node`       | The only card/step. Title, number, link, check-off, slots                    |
+| `Badge`      | Small pill, link or span                                                     |
+| `Tags`       | Row of tag pills                                                             |
+| `Freshness`  | "Updated 3 days ago" + heartbeat dot (owns the time refresh)                 |
+| `CopyButton` | Click-to-copy (owns the one delegated copy handler)                          |
+| `IconButton` | Square icon control with tooltip, `<a>` or `<button>`                        |
+| `Button`     | Text link styled as a button                                                 |
+| `Select`     | The one dropdown (native `<select>`); script-built ones use `class="select"` |
+| `NavLink`    | Top-level nav link                                                           |
+| `Grid`       | Responsive card grid                                                         |
+| `Section`    | Optional title + note around content                                         |
+| `PageHeader` | h1 + lead paragraph                                                          |
+| `Prose`      | Running text paragraph                                                       |
+| `Steps`      | Numbered list                                                                |
+| `Figure`     | Image + caption                                                              |
+| `Breadcrumb` | Breadcrumb trail                                                             |
 
 ## `composite/` — built from base (or other composite) components
 
@@ -51,5 +52,6 @@ May know about site data and wire primitives together.
    component, with its `<script>` next to its markup.
 3. Pages and layouts only assemble components; they don't carry their own markup
    for things a component already covers.
-4. Styling for a component lives in `public/index.css` under that component's
-   section. Prefer extending a base component's props over adding a one-off class.
+4. Styling for a component lives in its own file under `src/styles/components/`
+   (`Node.astro` → `node.css`), imported from `src/styles/global.css`. Prefer extending a base
+   component's props over adding a one-off class.

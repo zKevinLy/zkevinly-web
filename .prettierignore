@@ -1,4 +1,7 @@
 dist/
 .astro/
+.wrangler/
+coverage/
+.lighthouseci/
 node_modules/
 package-lock.json

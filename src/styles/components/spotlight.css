@@ -1,0 +1,50 @@
+/* ---------- Search spotlight ---------- */
+
+/* Added to the component a search result points at, right after the page opens. */
+
+.search-result-crumb {
+  margin-right: 0.4rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.is-spotlit {
+  position: relative;
+  z-index: 1;
+  border-color: var(--accent);
+  animation: spotlight-glow 2.4s ease-in-out 1;
+}
+
+@keyframes spotlight-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 transparent,
+      0 0 0 0 transparent;
+  }
+  18%,
+  58% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--accent) 70%, transparent),
+      0 0 34px 6px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  38% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent),
+      0 0 14px 2px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  80% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent),
+      0 0 22px 4px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No pulsing: a steady highlight that the script removes after a few seconds. */
+  .is-spotlit {
+    animation: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+}

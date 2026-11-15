@@ -1,0 +1,84 @@
+---
+// Layout for /toolkit pages. Same chrome as Layout.astro (header, search, theme) with two
+// deliberate differences, so the "nothing leaves this page" promise holds:
+//   - no ClientRouter: every move between the toolkit and the rest of the site is a full page
+//     load, so the strict Content-Security-Policy in public/_headers always applies;
+//   - no ChatBot: it fetches GIFs from another origin, which that policy blocks.
+import Header from '../components/composite/Header.astro';
+import Search from '../components/composite/Search.astro';
+import { site } from '../config';
+import '../styles/global.css';
+import '../styles/toolkit/tool.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Set false to keep a page out of the search index. */
+  indexable?: boolean;
+}
+
+const { title, description = site.tagline, indexable = true } = Astro.props;
+const fullTitle = title ? `${title} · ${site.name}` : site.name;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <title>{fullTitle}</title>
+
+    <!-- Apply the saved theme before first paint (dark by default) so there's no flash. -->
+    <script is:inline>
+      (() => {
+        let theme = 'dark';
+        try {
+          const saved = localStorage.getItem('theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+        } catch {
+          // Storage blocked: fall back to the dark default.
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <Header />
+    <main
+      class="page"
+      data-pagefind-body={indexable ? '' : undefined}
+      data-pagefind-ignore={indexable ? undefined : 'all'}
+    >
+      <slot />
+    </main>
+    <Search />
+
+    <script>
+      import { gsap } from 'gsap';
+
+      document.addEventListener('astro:page-load', () => {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        gsap.from('[data-reveal]', {
+          y: 16,
+          opacity: 0,
+          duration: 0.6,
+          stagger: 0.06,
+          ease: 'power2.out',
+          clearProps: 'all',
+        });
+      });
+
+      // Without the ClientRouter nothing fires `astro:page-load`, which the shared header,
+      // search and tool scripts listen for. Module scripts have all run by DOMContentLoaded,
+      // so fire it once then to get the same first-load behaviour as the rest of the site.
+      document.addEventListener('DOMContentLoaded', () => {
+        document.dispatchEvent(new Event('astro:page-load'));
+      });
+    </script>
+  </body>
+</html>

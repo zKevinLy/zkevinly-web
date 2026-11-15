@@ -99,7 +99,7 @@ const hostName = repo && repoHost(repo) === 'gitlab' ? 'GitLab' : 'GitHub';
     repoHost,
     type RepoInfo,
   } from '../../lib/github';
-  import { FILTER_REFRESH_EVENT, writeStats } from '../../lib/filter';
+  import { FILTER_REFRESH_EVENT, writeStats } from '../../lib/ui/filter';
 
   const TTL = 60 * 60 * 1000;
 

@@ -1,0 +1,20 @@
+---
+import Layout from '../../layouts/Toolkit.astro';
+import PageHeader from '../../components/base/PageHeader.astro';
+import Grid from '../../components/base/Grid.astro';
+import Node from '../../components/base/Node.astro';
+import Tags from '../../components/base/Tags.astro';
+import { toolkit, toolHref } from '../../config/toolkit';
+---
+
+<Layout title={toolkit.title} description={toolkit.description}>
+  <PageHeader title={toolkit.title} lead={toolkit.intro} />
+
+  <Grid>
+    {toolkit.tools.map((tool) => (
+      <Node title={tool.title} description={tool.description} href={toolHref(tool)} reveal>
+        <Tags tags={tool.tags} />
+      </Node>
+    ))}
+  </Grid>
+</Layout>

@@ -10,8 +10,8 @@ import RelatedList from './RelatedList.astro';
 import RepoMeta from './RepoMeta.astro';
 import type { Entry } from '../../config';
 import { entryRepo, fetchRepoInfo } from '../../lib/github';
-import { entrySource, filterAttrs } from '../../lib/filter';
-import { installId } from '../../lib/installer';
+import { entrySource, filterAttrs } from '../../lib/ui/filter';
+import { installId } from '../../lib/install/installer';
 
 interface Props {
   entry: Entry;

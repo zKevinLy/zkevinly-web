@@ -4,14 +4,14 @@
  *
  * Phases are rows read top to bottom (the linear instructions); nodes inside a
  * row are parallel branches. Edges come from `dependsOn`, and the build fails if
- * any node other than the start has no parent (see lib/workflow.ts). Each step is
+ * any node other than the start has no parent (see lib/topics/workflow.ts). Each step is
  * a base `Node`; hovering or focusing one traces everything it requires and
  * everything it unlocks.
  */
 import Node from '../base/Node.astro';
 import Tags from '../base/Tags.astro';
 import type { WorkflowNode, WorkflowPhase } from '../../config';
-import { layoutWorkflow } from '../../lib/workflow';
+import { layoutWorkflow } from '../../lib/topics/workflow';
 
 interface Props {
   nodes: WorkflowNode[];

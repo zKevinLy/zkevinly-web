@@ -1,10 +1,10 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import mdx from '@astrojs/mdx';
 import { gifDevApi } from './worker/dev-plugin.js';
 
 export default defineConfig({
   site: 'https://zkevinly.com',
-  integrations: [mdx()],
+  // The invoice generator became the multi-type PDF generator; keep the old link working.
+  redirects: { '/toolkit/invoice': '/toolkit/pdf?type=invoice' },
   vite: { plugins: [gifDevApi()] },
 });

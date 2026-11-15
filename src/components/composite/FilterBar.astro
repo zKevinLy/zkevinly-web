@@ -7,12 +7,13 @@
  * ancestor, and hides any `[data-filter-group]` (a Section) left with no visible
  * items. Cards get their `data-filter-*` attributes from `filterAttrs()`.
  *
- * Text box and tag chips share one query string and one matcher (lib/filter.ts):
+ * Text box and tag chips share one query string and one matcher (lib/ui/filter.ts):
  * a chip just adds/removes a `tag:xyz` term. The query and sort are mirrored to
  * `?q=` / `?sort=` so a filtered view is shareable.
  */
 import { Search } from '@lucide/astro';
-import { SORT_LABELS, type FilterModel } from '../../lib/filter';
+import Select from '../base/Select.astro';
+import { SORT_LABELS, type FilterModel } from '../../lib/ui/filter';
 
 interface Props {
   model: FilterModel;
@@ -43,14 +44,12 @@ const { model } = Astro.props;
       />
     </label>
 
-    <label class="filter-sort">
-      <span class="sr-only">Sort</span>
-      <select data-filter-sort>
-        {model.sorts.map((key) => (
-          <option value={key}>{SORT_LABELS[key]}</option>
-        ))}
-      </select>
-    </label>
+    <Select
+      label="Sort"
+      hideLabel
+      options={model.sorts.map((key) => ({ value: key, label: SORT_LABELS[key] }))}
+      attrs={{ 'data-filter-sort': '' }}
+    />
   </div>
 
   {model.tags.length > 0 && (
@@ -82,7 +81,7 @@ const { model } = Astro.props;
     sortOrder,
     toggleTag,
     type SortKey,
-  } from '../../lib/filter';
+  } from '../../lib/ui/filter';
 
   /** apply() for every bar that's been wired up. A bar is only ever wired once. */
   const appliers = new Map<HTMLElement, () => void>();
