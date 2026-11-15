@@ -21,11 +21,11 @@ export const site = {
   about: {
     title: 'About',
     description: 'A little about me and this site.',
-    intro: 'Hi, I’m Kevin. I build a few things, and I keep track of a lot of other people’s work.',
+    intro: 'Hi, I’m Kevin. I build projects, and this is where I keep the stuff I use.',
     paragraphs: [
-      'This site is my front door and my bookmark shelf in one. Projects is the only section that’s my own work; each one lives in its own repo and gets linked from here.',
-      'Resources and Collections are different: most of what’s listed there was made by other people, not me. I keep it here so everything I use is in one place, with the latest release, star count, and last-updated date on each card, so I can see at a glance what’s changed.',
-      'The setup guides, like the Nuvio path, are my own write-ups, but the apps, addons, and tools they point to belong to their creators. All credit for those goes to them.',
+      'Projects are things I’ve built for specific use cases, or because I found other apps lacking something I wanted.',
+      'Resources are public docs and references I use often and want to be able to find quickly.',
+      'Collections are bundles of related apps, sources, and tools for one setup.',
     ],
   },
 

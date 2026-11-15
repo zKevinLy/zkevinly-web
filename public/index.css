@@ -874,6 +874,18 @@ kbd {
   flex-shrink: 0;
 }
 
+/* Public vs private get their own accent: green (site accent) for public, amber (warn) for private. */
+.badge[data-role='visibility'] {
+  --vis: var(--accent);
+  border-color: color-mix(in srgb, var(--vis) 35%, var(--border));
+  background: color-mix(in srgb, var(--vis) 12%, transparent);
+  color: var(--vis);
+}
+
+.node-foot[data-private] .badge[data-role='visibility'] {
+  --vis: var(--warn);
+}
+
 a.badge-link {
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
   background: var(--accent-soft);
