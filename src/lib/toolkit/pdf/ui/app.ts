@@ -5,9 +5,9 @@
 // Each document type keeps its own in-progress data for the life of the tab, so switching
 // types never loses work.
 //
-// The one piece of browser state beyond the page itself is the preview service worker (see
-// public/toolkit/pdf-preview-sw.js). It holds preview bytes in its memory only, and this tab
-// tells it to drop them when the page is hidden or closed.
+// The side preview is a blob: URL, so it never touches the network. (A service worker used
+// to serve it from a named URL, but the browser's PDF viewer re-requests that URL itself when
+// you press its Download button, bypassing the worker, so it saved the site's HTML instead.)
 
 import type { AnyDocType } from '../doctype';
 import {
@@ -43,25 +43,29 @@ function download(bytes: BlobPart, type: string, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-const WORKER_URL = '/toolkit/pdf-preview-sw.js';
-const WORKER_SCOPE = '/toolkit/pdf/preview/';
-
-/** Waits until a registered worker is active (null when it fails). */
-function whenActive(registration: ServiceWorkerRegistration): Promise<ServiceWorker | null> {
-  const worker = registration.active ?? registration.waiting ?? registration.installing;
-  if (!worker) return Promise.resolve(null);
-  if (worker.state === 'activated') return Promise.resolve(worker);
-  return new Promise((resolve) => {
-    worker.addEventListener('statechange', () => {
-      if (worker.state === 'activated') resolve(worker);
-      if (worker.state === 'redundant') resolve(null);
-    });
-  });
+/**
+ * Earlier versions registered a preview service worker. Remove it for returning visitors;
+ * a leftover worker would keep answering /toolkit/pdf/preview/ requests.
+ */
+function removeLegacyPreviewWorker(): void {
+  if (!('serviceWorker' in navigator)) return;
+  void navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) =>
+      Promise.all(
+        registrations
+          .filter((r) => new URL(r.scope).pathname.startsWith('/toolkit/pdf/preview'))
+          .map((r) => r.unregister()),
+      ),
+    )
+    .catch(() => undefined);
 }
 
 export function initPdfTool(): void {
   const root = document.querySelector<HTMLElement>('[data-pdf-tool]');
   if (!root) return;
+
+  removeLegacyPreviewWorker();
 
   const abort = new AbortController();
   const { signal } = abort;
@@ -196,40 +200,7 @@ export function initPdfTool(): void {
     refresh();
   }
 
-  // The preview is served by a tiny in-memory service worker from /toolkit/pdf/preview/<name>.pdf,
-  // so the browser's PDF viewer saves it under the document's name. Without service worker
-  // support it falls back to a blob: URL (works, but the saved name is a random ID).
-  let worker: Promise<ServiceWorker | null> | undefined;
-  let previewVersion = 0;
-  /** Random per tab, so two open tabs never share (or overwrite) each other's previews. */
-  const previewId = crypto.randomUUID();
-
-  const getWorker = (): Promise<ServiceWorker | null> => {
-    worker ??=
-      'serviceWorker' in navigator
-        ? navigator.serviceWorker
-            .register(WORKER_URL, { scope: WORKER_SCOPE })
-            .then(whenActive)
-            .catch(() => null)
-        : Promise.resolve(null);
-    return worker;
-  };
-
-  async function previewUrlFor(bytes: Uint8Array, name: string): Promise<string> {
-    const active = await getWorker();
-    if (active) {
-      const version = ++previewVersion;
-      const copy = new Uint8Array(bytes).buffer as ArrayBuffer;
-      const channel = new MessageChannel();
-      const stored = await new Promise<boolean>((resolve) => {
-        channel.port1.onmessage = () => resolve(true);
-        window.setTimeout(() => resolve(false), 1000);
-        active.postMessage({ id: previewId, v: version, bytes: copy }, [copy, channel.port2]);
-      });
-      if (stored) {
-        return `${WORKER_SCOPE}${encodeURIComponent(name)}.pdf?id=${previewId}&v=${version}`;
-      }
-    }
+  function previewUrlFor(bytes: Uint8Array): string {
     return URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
   }
 
@@ -289,8 +260,7 @@ export function initPdfTool(): void {
         const data = docs.get(type.id)!;
         const { bytes, warnings } = await buildPdf(type, data);
         if (run !== previewRun) return; // a newer edit superseded this one
-        const name = type.filename(parseDoc(type, data));
-        const url = await previewUrlFor(bytes, name);
+        const url = previewUrlFor(bytes);
         if (run !== previewRun) {
           release(url);
           return;
@@ -556,16 +526,6 @@ export function initPdfTool(): void {
     },
     { signal },
   );
-  // Ask the preview worker to forget this tab's PDFs when the page goes away (they would
-  // otherwise sit in its memory until it is stopped or they expire).
-  window.addEventListener(
-    'pagehide',
-    () => {
-      void worker?.then((active) => active?.postMessage({ id: previewId, clear: true }));
-    },
-    { signal },
-  );
-
   // The header persists across navigations, so tear everything down before the swap.
   document.addEventListener(
     'astro:before-swap',
