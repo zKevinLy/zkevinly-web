@@ -26,6 +26,7 @@ export const site = {
       'Projects are things I’ve built for specific use cases, or because I found other apps lacking something I wanted.',
       'Resources are public docs and references I use often and want to be able to find quickly.',
       'Collections are bundles of related apps, sources, and tools for one setup.',
+      'The Toolkit is a set of small tools that run entirely in your browser, like a PDF generator for invoices and service logs. Nothing is uploaded.',
     ],
   },
 

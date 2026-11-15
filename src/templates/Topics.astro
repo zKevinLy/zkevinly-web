@@ -41,7 +41,8 @@ const sections = page.hub ? [] : childSections(page);
 ---
 
 <Layout title={page.title} description={page.description}>
-  <Breadcrumb items={breadcrumbs} />
+  {/* Top-level sections (e.g. /collections) show no breadcrumb, like /toolkit; sub-pages do. */}
+  <Breadcrumb items={breadcrumbs.length > 1 ? breadcrumbs : []} />
 
   {hubContext && hubLayout && (
     <HubTrail hubTitle={hubContext.hub.title} hubPath={hubContext.hubPath} steps={usedIn} />

@@ -12,7 +12,7 @@ import { toolkit, toolHref } from '../../config/toolkit';
 
   <Grid>
     {toolkit.tools.map((tool) => (
-      <Node title={tool.title} description={tool.description} href={toolHref(tool)} reveal>
+      <Node title={tool.title} description={tool.description} href={toolHref(tool)}>
         <Tags tags={tool.tags} />
       </Node>
     ))}

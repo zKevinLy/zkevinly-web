@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20.3.0"
+    "node": ">=22.23.4"
   },
   "scripts": {
     "dev": "astro dev",
@@ -28,7 +28,7 @@
     "rebuild": "npm run clean && npm run build",
     "outdated": "npm outdated",
     "update": "npm update",
-    "update:latest": "npx npm-check-updates -u && npm install",
+    "update:latest": "npx npm-check-updates --peer -u && npm install",
     "update:astro": "npx @astrojs/upgrade",
     "audit": "npm audit --omit=dev",
     "audit:ci": "npm audit --omit=dev --audit-level=high",
@@ -47,7 +47,7 @@
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "simple-icons": "^16.38.0",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
