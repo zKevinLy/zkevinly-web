@@ -14,14 +14,113 @@ const unescape = (s: string) =>
     .replace(/&gt;/g, '>')
     .replace(/&amp;/g, '&');
 
-const TAG = /<([a-zA-Z][\w-]*)((?:\s+[^\s=>/]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*\/?>/g;
-const ATTR = /([^\s=>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+type Token = { tag: Tag } | { text: string };
 
-/** HTML with comments and script/style bodies blanked, so text inside them is never read as tags. */
-const markup = (html: string) =>
-  html
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/(<(script|style)\b[^>]*>)[\s\S]*?(<\/\2>)/g, '$1$3');
+const isSpace = (c: string) => c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f';
+const isLetter = (c: string | undefined) => c !== undefined && /[a-zA-Z]/.test(c);
+const isNameChar = (c: string) => /[\w-]/.test(c);
+
+/**
+ * A small HTML scanner: one pass, no backtracking. It yields start tags (with parsed attributes)
+ * and text. Comments, doctype/bogus comments, end tags, and the bodies of <script> and <style>
+ * produce no text (the script/style start tags themselves are kept). Not a full HTML parser, but
+ * it never re-scans its own output, so there is nothing left to "sanitize twice".
+ */
+function* scan(html: string): Generator<Token> {
+  const n = html.length;
+  let i = 0;
+  while (i < n) {
+    const lt = html.indexOf('<', i);
+    if (lt === -1) {
+      yield { text: html.slice(i) };
+      return;
+    }
+    if (lt > i) yield { text: html.slice(i, lt) };
+
+    const next = html[lt + 1];
+    if (html.startsWith('<!--', lt)) {
+      const end = html.indexOf('-->', lt + 4);
+      i = end === -1 ? n : end + 3;
+      yield { text: ' ' };
+    } else if (next === '!' || next === '?') {
+      const end = html.indexOf('>', lt + 2);
+      i = end === -1 ? n : end + 1;
+      yield { text: ' ' };
+    } else if (next === '/') {
+      const end = html.indexOf('>', lt + 2);
+      i = end === -1 ? n : end + 1;
+      yield { text: ' ' };
+    } else if (isLetter(next)) {
+      let j = lt + 1;
+      while (j < n && isNameChar(html[j])) j++;
+      const name = html.slice(lt + 1, j).toLowerCase();
+      const attrs: Record<string, string> = {};
+      let selfClosed = false;
+      let closed = false;
+      while (j < n) {
+        while (j < n && isSpace(html[j])) j++;
+        if (html[j] === '/') {
+          selfClosed = true;
+          j++;
+          continue;
+        }
+        if (j >= n) break;
+        if (html[j] === '>') {
+          j++;
+          closed = true;
+          break;
+        }
+        selfClosed = false;
+        const nameStart = j;
+        j++; // an attribute name is at least one character, even a stray "="
+        while (j < n && !isSpace(html[j]) && !'=>/'.includes(html[j])) j++;
+        const attr = html.slice(nameStart, j);
+        while (j < n && isSpace(html[j])) j++;
+        let value = '';
+        if (html[j] === '=') {
+          j++;
+          while (j < n && isSpace(html[j])) j++;
+          const q = html[j];
+          if (q === '"' || q === "'") {
+            const close = html.indexOf(q, j + 1);
+            value = html.slice(j + 1, close === -1 ? n : close);
+            j = close === -1 ? n : close + 1;
+          } else {
+            const valueStart = j;
+            while (j < n && !isSpace(html[j]) && html[j] !== '>') j++;
+            value = html.slice(valueStart, j);
+          }
+        }
+        attrs[attr] = unescape(value);
+      }
+      if (!closed) return; // a tag cut off by the end of the input is dropped
+      yield { tag: { name, attrs } };
+      i = j;
+
+      // Raw-text elements: skip their body up to the matching end tag (which is scanned normally).
+      if ((name === 'script' || name === 'style') && !selfClosed) {
+        let k = i;
+        for (;;) {
+          const close = html.indexOf('</', k);
+          if (close === -1) {
+            i = n;
+            break;
+          }
+          const after = html[close + 2 + name.length];
+          const matches = html.slice(close + 2, close + 2 + name.length).toLowerCase() === name;
+          if (matches && (after === undefined || !isNameChar(after))) {
+            i = close;
+            break;
+          }
+          k = close + 2;
+        }
+      }
+    } else {
+      yield { text: '<' }; // a lone "<" is just text
+      i = lt + 1;
+    }
+  }
+}
 
 /** A chunk of rendered HTML with small query helpers (no DOM needed). */
 export class Html {
@@ -34,12 +133,9 @@ export class Html {
   /** Every start tag with the given name (optionally filtered by attribute values). */
   tags(name: string, where: Record<string, string | RegExp> = {}): Tag[] {
     const found: Tag[] = [];
-    for (const m of markup(this.html).matchAll(TAG)) {
-      if (m[1].toLowerCase() !== name) continue;
-      const attrs: Record<string, string> = {};
-      for (const a of m[2].matchAll(ATTR)) {
-        attrs[a[1]] = unescape(a[2] ?? a[3] ?? a[4] ?? '');
-      }
+    for (const token of scan(this.html)) {
+      if (!('tag' in token) || token.tag.name !== name) continue;
+      const { attrs } = token.tag;
       const ok = Object.entries(where).every(([k, v]) =>
         typeof v === 'string' ? attrs[k] === v : v.test(attrs[k] ?? ''),
       );
@@ -66,13 +162,9 @@ export class Html {
 
   /** Visible text: tags removed, entities decoded, whitespace collapsed. */
   get text(): string {
-    return unescape(
-      this.html
-        .replace(/<script[\s\S]*?<\/script>/g, '')
-        .replace(/<(?:"[^"]*"|'[^']*'|[^>"'])*>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim(),
-    );
+    let out = '';
+    for (const token of scan(this.html)) out += 'text' in token ? token.text : ' ';
+    return unescape(out.replace(/\s+/g, ' ').trim());
   }
 }
 

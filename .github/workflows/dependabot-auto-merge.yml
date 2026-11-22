@@ -3,12 +3,14 @@ name: '[AUTO] Dependabot auto-merge'
 on: pull_request
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   automerge:
     name: Auto-merge minor/patch
+    permissions:
+      contents: write # enable auto-merge
+      pull-requests: write
     if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10

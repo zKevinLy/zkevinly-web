@@ -24,6 +24,8 @@ self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
 self.addEventListener('message', (event) => {
+  // Only pages on this origin may talk to the worker.
+  if (event.origin !== self.location.origin) return;
   const { id, v, bytes, clear } = event.data || {};
   if (typeof id !== 'string' || !ID.test(id)) return;
 

@@ -58,3 +58,26 @@ describe('Page.case', () => {
     assert.throws(() => page.case('nope'), /no test case "nope"/);
   });
 });
+
+describe('Html helper: hostile input', () => {
+  it('does not rebuild a comment or script from nested fragments', () => {
+    assert.equal(new Html('<!<!---->-->x').text.includes('<'), false);
+    assert.equal(new Html('<scr<script>ipt>alert(1)</scr</script>ipt>').tags('script').length, 0);
+  });
+  it('closes script on </script > and is case-insensitive', () => {
+    const h = new Html('<SCRIPT>a<b></script ><i>ok</i>');
+    assert.equal(h.tags('b').length, 0);
+    assert.equal(h.text, 'ok');
+  });
+  it('handles unterminated comments, tags and a lone <', () => {
+    assert.equal(new Html('a <!-- never closed <b>').tags('b').length, 0);
+    assert.equal(new Html('<div class="x').tags('div').length, 0);
+    assert.equal(new Html('1 < 2').text, '1 < 2');
+  });
+  it('stays fast on pathological input', () => {
+    const t = Date.now();
+    new Html('<a' + ' b'.repeat(50_000)).tags('a');
+    new Html('<' + 'a="'.repeat(50_000)).text;
+    assert.ok(Date.now() - t < 1000);
+  });
+});

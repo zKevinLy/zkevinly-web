@@ -31,9 +31,9 @@ function boot(now = { t: 1_000_000 }) {
     { filename: 'sw.js' },
   );
 
-  const post = (data: unknown) => {
+  const post = (data: unknown, origin = ORIGIN) => {
     const replies: unknown[] = [];
-    listeners.message({ data, ports: [{ postMessage: (m: unknown) => replies.push(m) }] });
+    listeners.message({ origin, data, ports: [{ postMessage: (m: unknown) => replies.push(m) }] });
     return replies;
   };
   const get = async (path: string, origin = ORIGIN) => {
@@ -44,7 +44,7 @@ function boot(now = { t: 1_000_000 }) {
         out = r as Response;
       },
     });
-    return out === undefined ? undefined : out;
+    return out === undefined ? undefined : await out;
   };
   return { post, get, now };
 }
@@ -78,6 +78,11 @@ describe('PDF preview service worker', () => {
   it('ignores requests it does not own', async () => {
     assert.equal(await sw.get('/about'), undefined);
     assert.equal(await sw.get(path(ID, 1), 'https://evil.example'), undefined);
+  });
+
+  it('ignores messages from another origin', async () => {
+    assert.deepEqual(sw.post({ id: ID, v: 1, bytes: bytes() }, 'https://evil.example'), []);
+    assert.equal((await sw.get(path(ID, 1)))!.status, 404);
   });
 
   it('rejects malformed messages', () => {
