@@ -1,0 +1,124 @@
+---
+/**
+ * The page shell: <head> (meta, theme before first paint), Header, <main>, Search overlay,
+ * and the reveal animation. Imports the package's styles, so a site only adds its own.
+ *
+ * Slots: default = page content; `head` = extra <head> tags; `end` = after the search overlay
+ * (a site's own floating widgets, e.g. a chat bot).
+ *
+ * `transitions` (default true) turns on the ClientRouter. Without it every navigation is a
+ * full page load; the scripts still get a first-load `astro:page-load`.
+ */
+import { ClientRouter } from 'astro:transitions';
+import Header from '../components/composite/Header.astro';
+import Search from '../components/composite/Search.astro';
+import '../styles/index.css';
+
+interface Props {
+  /** Site name: the brand, and the suffix of the page title. */
+  name: string;
+  title?: string;
+  description?: string;
+  /** Set false to keep a page (e.g. 404) out of the search index. */
+  indexable?: boolean;
+  nav: { href: string; label: string }[];
+  version?: string;
+  aboutHref?: string;
+  githubUrl?: string;
+  searchPlaceholder?: string;
+  transitions?: boolean;
+  favicon?: string;
+}
+
+const {
+  name,
+  title,
+  description,
+  indexable = true,
+  nav,
+  version,
+  aboutHref,
+  githubUrl,
+  searchPlaceholder,
+  transitions = true,
+  favicon = '/favicon.svg',
+} = Astro.props;
+const fullTitle = title ? `${title} · ${name}` : name;
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site) : undefined;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {description && <meta name="description" content={description} />}
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta property="og:title" content={fullTitle} />
+    {description && <meta property="og:description" content={description} />}
+    <title>{fullTitle}</title>
+
+    <!-- Apply the saved theme before first paint (dark by default) so there's no flash. -->
+    <script is:inline>
+      (() => {
+        let theme = 'dark';
+        try {
+          const saved = localStorage.getItem('theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+        } catch {
+          // Storage blocked: fall back to the dark default.
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+    {transitions && <script is:inline>
+      // Keep the theme across ClientRouter page swaps.
+      document.addEventListener('astro:before-swap', (event) => {
+        event.newDocument.documentElement.dataset.theme = document.documentElement.dataset.theme;
+      });
+    </script>}
+    {transitions && <ClientRouter />}
+    <slot name="head" />
+  </head>
+  <body>
+    <Header name={name} nav={nav} version={version} aboutHref={aboutHref} githubUrl={githubUrl} />
+    <!--
+      Pagefind: once ANY element on the site carries data-pagefind-body, every page
+      without one is dropped from the index. Marking <main> on every page makes the
+      whole site searchable (header, search overlay and widgets sit outside it).
+    -->
+    {transitions ? (
+      <main
+        class="page"
+        transition:animate="fade"
+        data-pagefind-body={indexable ? '' : undefined}
+        data-pagefind-ignore={indexable ? undefined : 'all'}
+      >
+        <slot />
+      </main>
+    ) : (
+      <main
+        class="page"
+        data-pagefind-body={indexable ? '' : undefined}
+        data-pagefind-ignore={indexable ? undefined : 'all'}
+      >
+        <slot />
+      </main>
+    )}
+    <!-- Must be a direct child of <body>, outside the header (see styles/components/search.css). -->
+    <Search placeholder={searchPlaceholder} />
+    <slot name="end" />
+
+    <script>
+      // Without the ClientRouter nothing fires `astro:page-load`, which the header, search and
+      // page scripts listen for. Module scripts have all run by DOMContentLoaded, so fire it
+      // once then to get the same first-load behaviour.
+      if (!document.querySelector('meta[name="astro-view-transitions-enabled"]')) {
+        document.addEventListener('DOMContentLoaded', () => {
+          document.dispatchEvent(new Event('astro:page-load'));
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,7 +1,8 @@
 ---
 import Layout from '../../layouts/Toolkit.astro';
-import PageHeader from '../../components/base/PageHeader.astro';
-import Breadcrumb from '../../components/base/Breadcrumb.astro';
+import PageHeader from '@zkevinly/ui/base/PageHeader.astro';
+import Button from '@zkevinly/ui/base/Button.astro';
+import Breadcrumb from '@zkevinly/ui/base/Breadcrumb.astro';
 import { toolkit, toolHref } from '../../config/toolkit';
 import { typeList } from '../../lib/toolkit/pdf/types';
 import '../../styles/toolkit/pdf.css';
@@ -28,30 +29,24 @@ const tool = toolkit.tools.find((t) => t.slug === 'pdf')!;
 
       <div class="type-switch" role="group" aria-label="Document type" data-reveal>
         {typeList.map((type) => (
-          <button type="button" class="btn type-btn" data-type={type.id} aria-pressed="false">
+          <Button class="type-btn" data-type={type.id} aria-pressed="false">
             {type.label}
-          </button>
+          </Button>
         ))}
       </div>
       <p class="type-blurb" data-type-blurb></p>
 
       <div class="actions" data-reveal>
         <div class="toolbar">
-          <button type="button" class="btn btn-primary" data-action="pdf">
+          <Button primary data-action="pdf">
             Download PDF
-          </button>
-          <button type="button" class="btn" data-action="load">
-            Open a saved PDF or JSON
-          </button>
-          <button type="button" class="btn" data-action="json">
-            Export JSON
-          </button>
-          <button type="button" class="btn" data-action="example" hidden>
+          </Button>
+          <Button data-action="load">Open a saved PDF or JSON</Button>
+          <Button data-action="json">Export JSON</Button>
+          <Button data-action="example" hidden>
             Fill with an example
-          </button>
-          <button type="button" class="btn" data-action="new">
-            Start over
-          </button>
+          </Button>
+          <Button data-action="new">Start over</Button>
           <input
             type="file"
             accept=".pdf,.json,application/pdf,application/json"
@@ -72,12 +67,12 @@ const tool = toolkit.tools.find((t) => t.slug === 'pdf')!;
       </div>
 
       <div class="type-switch view-switch" role="group" aria-label="Editing view" data-reveal>
-        <button type="button" class="btn type-btn" data-view="json" aria-pressed="true">
+        <Button class="type-btn" data-view="json" aria-pressed="true">
           JSON
-        </button>
-        <button type="button" class="btn type-btn" data-view="form" aria-pressed="false">
+        </Button>
+        <Button class="type-btn" data-view="form" aria-pressed="false">
           Form
-        </button>
+        </Button>
       </div>
 
       <section class="json-editor" id="json-editor" data-editor aria-label="JSON editor">
@@ -87,9 +82,7 @@ const tool = toolkit.tools.find((t) => t.slug === 'pdf')!;
             updates the form and preview as you type.
           </p>
           <div class="json-editor-actions">
-            <button type="button" class="btn" data-action="editor-format">
-              Format
-            </button>
+            <Button data-action="editor-format">Format</Button>
           </div>
         </div>
         <textarea
@@ -120,9 +113,9 @@ const tool = toolkit.tools.find((t) => t.slug === 'pdf')!;
         ></iframe>
       </div>
       <p class="preview-open">
-        <button type="button" class="btn" data-preview-open hidden>
+        <Button data-preview-open hidden>
           Open preview in a new tab
-        </button>
+        </Button>
       </p>
     </aside>
 

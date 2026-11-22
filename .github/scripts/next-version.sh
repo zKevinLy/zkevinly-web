@@ -6,7 +6,8 @@
 #   feat: ... / feat(scope): ...                                   -> minor
 #   anything else (fix:, deps:, chore:, docs:, no prefix, ...)     -> patch
 #
-# The git tag is the source of truth. package.json is only read as the starting
+# The git tag is the source of truth. CI then writes the version into package.json and the
+# lockfile (set-version.mjs) and tags that commit; package.json is only read as the starting
 # point when no v* tag exists yet.
 #
 # Usage: next-version.sh [commit-ish]   (default: HEAD)

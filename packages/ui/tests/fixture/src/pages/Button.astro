@@ -1,0 +1,27 @@
+---
+import Button from '@zkevinly/ui/base/Button.astro';
+---
+
+<test-case id="internal">
+  <Button href="/about">About</Button>
+</test-case>
+<test-case id="external">
+  <Button href="https://example.com" external>
+    Site
+  </Button>
+</test-case>
+<test-case id="action">
+  <Button data-action="save" aria-pressed="false" class="wide">
+    Save
+  </Button>
+</test-case>
+<test-case id="primary">
+  <Button primary hidden>
+    Go
+  </Button>
+</test-case>
+<test-case id="primary-link">
+  <Button href="/go" primary>
+    Go
+  </Button>
+</test-case>

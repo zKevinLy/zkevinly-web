@@ -1,5 +1,6 @@
 import { loadEnv } from 'vite';
 import { handleGif } from './gif.js';
+import { handlePing } from './ping.js';
 import { handleRepo } from './repo.js';
 
 /**
@@ -7,7 +8,8 @@ import { handleRepo } from './repo.js';
  * production Worker. Put GIPHY_API_KEYS (comma-separated if several) in a local .env (git-ignored) to try the
  * chat bot's GIFs locally; without it the bot simply falls back to emoji.
  *
- * Also serves /api/repo (private-repo badges) from a GITHUB_TOKEN in the same .env.
+ * Also serves /api/repo (private-repo badges) from a GITHUB_TOKEN in the same .env, and /api/ping
+ * (card status dots; needs no secrets).
  */
 export function gifDevApi() {
   return {
@@ -35,6 +37,18 @@ export function gifDevApi() {
           { method: req.method },
         );
         const response = await handleRepo(request, env);
+
+        res.statusCode = response.status;
+        response.headers.forEach((value, name) => res.setHeader(name, value));
+        res.end(await response.text());
+      });
+
+      server.middlewares.use('/api/ping', async (req, res) => {
+        const request = new Request(
+          `http://localhost/api/ping${req.url?.replace(/^\/?/, '/') ?? '/'}`,
+          { method: req.method },
+        );
+        const response = await handlePing(request, env);
 
         res.statusCode = response.status;
         response.headers.forEach((value, name) => res.setHeader(name, value));

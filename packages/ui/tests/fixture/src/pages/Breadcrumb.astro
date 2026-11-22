@@ -1,0 +1,16 @@
+---
+import Breadcrumb from '@zkevinly/ui/base/Breadcrumb.astro';
+---
+
+<test-case id="trail">
+  <Breadcrumb
+    items={[
+      { title: 'Home', href: '/' },
+      { title: 'Guides', href: '/guides' },
+      { title: 'Setup', href: '/guides/setup' },
+    ]}
+  />
+</test-case>
+<test-case id="empty">
+  <Breadcrumb items={[]} />
+</test-case>

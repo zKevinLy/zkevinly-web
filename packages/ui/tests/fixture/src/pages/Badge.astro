@@ -1,0 +1,25 @@
+---
+import Badge from '@zkevinly/ui/base/Badge.astro';
+---
+
+<test-case id="span">
+  <Badge>v1.0</Badge>
+</test-case>
+<test-case id="link">
+  <Badge href="/rel">Release</Badge>
+</test-case>
+<test-case id="external">
+  <Badge href="https://example.com" external>
+    Out
+  </Badge>
+</test-case>
+<test-case id="forced-link">
+  <Badge as="a" data-role="release">
+    Soon
+  </Badge>
+</test-case>
+<test-case id="attrs">
+  <Badge data-role="visibility" title="Public">
+    Public
+  </Badge>
+</test-case>

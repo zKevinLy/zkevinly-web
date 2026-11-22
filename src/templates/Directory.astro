@@ -1,11 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import PageHeader from '../components/base/PageHeader.astro';
-import Grid from '../components/base/Grid.astro';
-import EntryCard from '../components/composite/EntryCard.astro';
-import FilterBar from '../components/composite/FilterBar.astro';
+import PageHeader from '@zkevinly/ui/base/PageHeader.astro';
+import Grid from '@zkevinly/ui/base/Grid.astro';
+import FilterBar from '@zkevinly/ui/composite/FilterBar.astro';
+import EntryCard from '../components/EntryCard.astro';
 import type { DirectoryPage } from '../config';
-import { buildFilterModel, entrySource } from '../lib/ui/filter';
+import { buildFilterModel } from '@zkevinly/ui/lib/filter';
+import { entrySource } from '../lib/ui/filter-sources';
 
 interface Props {
   page: DirectoryPage;

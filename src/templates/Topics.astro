@@ -1,19 +1,21 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import PageHeader from '../components/base/PageHeader.astro';
-import Section from '../components/base/Section.astro';
-import Grid from '../components/base/Grid.astro';
-import Breadcrumb from '../components/base/Breadcrumb.astro';
-import Node from '../components/base/Node.astro';
-import Tags from '../components/base/Tags.astro';
-import EntryCard from '../components/composite/EntryCard.astro';
-import TopicBlocks from '../components/composite/TopicBlocks.astro';
-import HubTrail from '../components/composite/HubTrail.astro';
-import FilterBar from '../components/composite/FilterBar.astro';
+import PageHeader from '@zkevinly/ui/base/PageHeader.astro';
+import Section from '@zkevinly/ui/base/Section.astro';
+import Grid from '@zkevinly/ui/base/Grid.astro';
+import Breadcrumb from '@zkevinly/ui/base/Breadcrumb.astro';
+import Node from '@zkevinly/ui/base/Node.astro';
+import Tags from '@zkevinly/ui/base/Tags.astro';
+import HubTrail from '@zkevinly/ui/composite/HubTrail.astro';
+import FilterBar from '@zkevinly/ui/composite/FilterBar.astro';
+import EntryCard from '../components/EntryCard.astro';
+import TopicBlocks from '../components/TopicBlocks.astro';
 import type { TopicPage } from '../config';
-import { getBreadcrumbs, normalizePath } from '../lib/ui/navigation';
+import { normalizePath } from '@zkevinly/ui/lib/navigation';
+import { buildFilterModel, filterAttrs } from '@zkevinly/ui/lib/filter';
+import { getBreadcrumbs } from '../lib/ui/navigation';
 import { assertHub, findHub, getHubLayout, stepsFor } from '../lib/topics/hub';
-import { buildFilterModel, filterAttrs, pageSources } from '../lib/ui/filter';
+import { pageSources } from '../lib/ui/filter-sources';
 import { childSections } from '../lib/topics/groups';
 
 interface Props {
@@ -59,6 +61,7 @@ const sections = page.hub ? [] : childSections(page);
           {section.pages.map((child) => (
             <Node
               title={child.title}
+              icon={child.icon}
               description={child.description}
               href={`${currentPath}/${child.slug}`}
               size="compact"

@@ -1,0 +1,39 @@
+/* ---------- Repo meta (composite/RepoMeta.astro): footer, badges, freshness heartbeat ---------- */
+
+/* Footer: version · stars · updated · visibility */
+
+.node-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Visibility badge: icon wrappers are spans so the [hidden] attribute works. */
+.badge [data-icon] {
+  display: inline-flex;
+}
+
+.badge [data-icon][hidden] {
+  display: none;
+}
+
+.badge[data-role='visibility'] svg {
+  flex-shrink: 0;
+}
+
+/* Public vs private get their own accent: green (site accent) for public, amber (warn) for private. */
+.badge[data-role='visibility'] {
+  --vis: var(--accent);
+  border-color: color-mix(in srgb, var(--vis) 35%, var(--border));
+  background: color-mix(in srgb, var(--vis) 12%, transparent);
+  color: var(--vis);
+}
+
+.node-foot[data-private] .badge[data-role='visibility'] {
+  --vis: var(--warn);
+}

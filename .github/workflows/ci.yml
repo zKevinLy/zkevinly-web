@@ -27,29 +27,34 @@ jobs:
       (github.event_name == 'push' ||
       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write # push the fix commit
     outputs:
       sha: ${{ steps.commit.outputs.sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # A PR run would otherwise check out the merge commit, which can't be pushed to.
           ref: ${{ github.head_ref || github.ref_name }}
-          # Unlike the other jobs, this one must keep the token so `git push` works.
-          persist-credentials: true
+          # The token is NOT left in .git/config: `npm ci` and the lint/format tools run branch
+          # and dependency code, which must never be able to read a write token. It is handed to
+          # `git push` alone, in the last step.
+          persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
-      - run: npm ci
+      # No lifecycle scripts: a compromised dependency must not run while a write job is open.
+      - run: npm ci --ignore-scripts
 
       - name: Fix lint and formatting
         run: |
           # Problems that can't be auto-fixed are left for the verify job to report.
           npm run lint:fix || true
+          npm run ui:sync
           npm run format
 
       - name: Commit and push the fixes
@@ -62,9 +67,12 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -u
             git commit -m "style: auto-fix lint and formatting"
-            git push
+            git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${PUSH_REF}"
           fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUSH_REF: ${{ github.head_ref || github.ref_name }}
 
   # Everything `npm run ci` does: lint, format check, unit tests, type check + build, audit.
   verify:
@@ -73,18 +81,19 @@ jobs:
     # Run even when autofix was skipped, but not when it failed (e.g. a push race).
     if: ${{ !cancelled() && contains(fromJSON('["success","skipped"]'), needs.autofix.result) }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.autofix.outputs.sha || github.sha }} # includes the auto-fix commit
           persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
-      - run: npm ci
+      - run: npm ci --ignore-scripts
 
       - name: Run CI checks
         run: npm run ci
@@ -98,20 +107,85 @@ jobs:
 
       - name: Upload test report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results
           path: test-results.xml
           if-no-files-found: ignore
 
+  # Decides both release versions and writes them into the repo, once, before anything ships:
+  #   - site: next v* tag (next-version.sh); UI package: next ui-v* tag, or none when
+  #     packages/ui didn't change (next-ui-version.sh);
+  #   - set-version.mjs stamps them into package.json, packages/ui/package.json and the lockfile;
+  #   - one `chore(release)` commit carries that, and deploy / release-ui build and tag THAT commit,
+  #     so every tag points at a commit whose files say the same version.
+  # The commit is pushed with GITHUB_TOKEN, which never starts another workflow run (no loop).
+  # If someone pushed to main in the meantime the push is rejected and this run stops; the newer
+  # push's own run releases instead. Needs permission to push to main (as `autofix` does).
+  version:
+    name: Stamp release versions
+    needs: [autofix, verify]
+    if: ${{ !cancelled() && needs.verify.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # push the version commit
+    concurrency:
+      group: release-version
+      cancel-in-progress: false
+    outputs:
+      sha: ${{ steps.commit.outputs.sha }}
+      site_tag: ${{ steps.tags.outputs.site }}
+      ui_tag: ${{ steps.tags.outputs.ui }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.autofix.outputs.sha || github.sha }} # includes the auto-fix commit
+          fetch-depth: 0 # the version scripts read the full history...
+          fetch-tags: true # ...and the existing v* / ui-v* tags
+          persist-credentials: true # `git push` below
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Work out the next versions
+        id: tags
+        run: |
+          echo "site=$(bash .github/scripts/next-version.sh)" >> "$GITHUB_OUTPUT"
+          echo "ui=$(bash .github/scripts/next-ui-version.sh)" >> "$GITHUB_OUTPUT" # empty = no UI release
+
+      - name: Stamp the versions into the repo's files
+        run: node .github/scripts/set-version.mjs --site "${SITE#v}" ${UI:+--ui "${UI#ui-v}"}
+        env:
+          SITE: ${{ steps.tags.outputs.site }}
+          UI: ${{ steps.tags.outputs.ui }}
+
+      - name: Commit and push
+        id: commit
+        run: |
+          if git diff --quiet; then
+            echo "Versions already match; nothing to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package.json package-lock.json packages/ui/package.json
+            git commit -m "chore(release): ${SITE}${UI:+ and ${UI}} [skip ci]"
+            git push origin HEAD:main
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          SITE: ${{ steps.tags.outputs.site }}
+          UI: ${{ steps.tags.outputs.ui }}
+
   # Only for pushes to main that passed verify. Deploy first, tag after: a failed
   # deploy means no release and no tag.
   deploy:
     name: Deploy & release
-    needs: [autofix, verify]
-    # Not plain success(): autofix may be skipped, which would otherwise skip the deploy.
-    if: ${{ !cancelled() && needs.verify.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: version
+    if: ${{ !cancelled() && needs.version.result == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: prod
     permissions:
       contents: write # create the tag + GitHub Release
@@ -120,23 +194,17 @@ jobs:
       group: deploy-prod
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.autofix.outputs.sha || github.sha }} # includes the auto-fix commit
-          fetch-depth: 0 # next-version.sh reads the full history...
-          fetch-tags: true # ...and the existing v* tags
+          ref: ${{ needs.version.outputs.sha }} # the commit with the stamped versions
           persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
 
-      - run: npm ci
-
-      - name: Work out the next version
-        id: version
-        run: echo "tag=$(bash .github/scripts/next-version.sh)" >> "$GITHUB_OUTPUT"
+      - run: npm ci --ignore-scripts
 
       - name: Build (stamped with the version)
         # `verify` already ran the type check; this is the build that ships.
@@ -145,9 +213,9 @@ jobs:
             "$TAG" "$SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > public/version.json
           npm run build:fast
         env:
-          TAG: ${{ steps.version.outputs.tag }}
-          SHA: ${{ needs.autofix.outputs.sha || github.sha }}
-          PUBLIC_APP_VERSION: ${{ steps.version.outputs.tag }}
+          TAG: ${{ needs.version.outputs.site_tag }}
+          SHA: ${{ needs.version.outputs.sha }}
+          PUBLIC_APP_VERSION: ${{ needs.version.outputs.site_tag }}
           GITHUB_TOKEN: ${{ secrets.SITE_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Deploy to Cloudflare Workers
@@ -178,6 +246,74 @@ jobs:
             --title "$TAG" \
             --generate-notes
         env:
-          TAG: ${{ steps.version.outputs.tag }}
-          SHA: ${{ needs.autofix.outputs.sha || github.sha }}
+          TAG: ${{ needs.version.outputs.site_tag }}
+          SHA: ${{ needs.version.outputs.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Releases @zkevinly/ui when the `version` job chose a ui-v* tag (a push to main changed
+  # packages/ui). Independent of the site deploy, so a UI-only change releases the package without
+  # a site deploy and vice versa. Publishes to GitHub Packages (npm registry, uses GITHUB_TOKEN)
+  # and attaches the tarball to a GitHub Release. The version is already stamped into
+  # packages/ui/package.json by the `version` job.
+  release-ui:
+    name: Release @zkevinly/ui
+    needs: version
+    if: ${{ !cancelled() && needs.version.result == 'success' && needs.version.outputs.ui_tag != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: prod
+    permissions:
+      contents: write # create the tag + GitHub Release
+      packages: write # publish to GitHub Packages
+    concurrency:
+      group: release-ui
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.version.outputs.sha }} # the commit with the stamped versions
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: '@zkevinly'
+
+      - run: npm ci --ignore-scripts
+
+      - name: Check the stamped version matches the tag
+        run: |
+          PKG="$(node -p "require('./packages/ui/package.json').version")"
+          if [ "ui-v${PKG}" != "$TAG" ]; then
+            echo "::error::packages/ui is at ${PKG} but the release tag is ${TAG}"
+            exit 1
+          fi
+        env:
+          TAG: ${{ needs.version.outputs.ui_tag }}
+
+      - name: Pack
+        id: pack
+        run: |
+          mkdir -p dist-ui
+          npm pack -w @zkevinly/ui --pack-destination dist-ui
+          echo "file=$(ls dist-ui/*.tgz)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to GitHub Packages
+        run: npm publish "$TARBALL"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARBALL: ${{ steps.pack.outputs.file }}
+
+      - name: Tag and create the GitHub Release
+        run: |
+          gh release create "$TAG" "$TARBALL" \
+            --target "$SHA" \
+            --title "@zkevinly/ui ${TAG#ui-v}" \
+            --generate-notes
+        env:
+          TAG: ${{ needs.version.outputs.ui_tag }}
+          SHA: ${{ needs.version.outputs.sha }}
+          TARBALL: ${{ steps.pack.outputs.file }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

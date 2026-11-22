@@ -26,6 +26,10 @@ import { isObj, type Data } from '../schema';
 import { DEFAULT_TYPE, getType } from '../types';
 import { renderForm, type FormHandle } from './form';
 
+/** The message of a thrown Error, or a fallback for anything else that was thrown. */
+const messageOf = (error: unknown, fallback: string): string =>
+  error instanceof Error ? error.message : fallback;
+
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 const PAINT_DELAY_MS = 350;
 
@@ -127,7 +131,7 @@ export function initPdfTool(): void {
     try {
       parsed = JSON.parse(text);
     } catch (error) {
-      throw new DocError(error instanceof Error ? error.message : 'Not valid JSON.');
+      throw new DocError(messageOf(error, 'Not valid JSON.'));
     }
     if (isObj(parsed) && !('schema' in parsed)) {
       return { type: current, data: parseDoc(current, parsed) };
@@ -146,7 +150,7 @@ export function initPdfTool(): void {
         'ok',
       );
     } catch (error) {
-      setEditorStatus(error instanceof Error ? error.message : 'Not valid.', 'error');
+      setEditorStatus(messageOf(error, 'Not valid.'), 'error');
     }
   }
 
@@ -205,7 +209,7 @@ export function initPdfTool(): void {
   }
 
   const release = (url: string | undefined) => {
-    if (url?.startsWith('blob:')) URL.revokeObjectURL(url);
+    if (url) URL.revokeObjectURL(url);
   };
 
   /** The visible frame is focusable and announced; the one loading behind it is neither. */
@@ -260,19 +264,14 @@ export function initPdfTool(): void {
         const data = docs.get(type.id)!;
         const { bytes, warnings } = await buildPdf(type, data);
         if (run !== previewRun) return; // a newer edit superseded this one
-        const url = previewUrlFor(bytes);
-        if (run !== previewRun) {
-          release(url);
-          return;
-        }
-        swapIn(url, run);
+        swapIn(previewUrlFor(bytes), run);
         // Problems that used to appear after a download now show next to the live preview.
         const problems = [...validateDoc(type, data).map((p) => p.message), ...warnings];
         previewNote.hidden = problems.length === 0;
         previewNote.textContent = problems.join(' ');
       } catch (error) {
         previewNote.hidden = false;
-        previewNote.textContent = error instanceof Error ? error.message : 'Preview unavailable.';
+        previewNote.textContent = messageOf(error, 'Preview unavailable.');
       }
     }, 350);
   }
@@ -294,7 +293,7 @@ export function initPdfTool(): void {
         problems.length > 0 ? 'warn' : 'ok',
       );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Could not create the PDF.', 'error');
+      setStatus(messageOf(error, 'Could not create the PDF.'), 'error');
     }
   }
 
@@ -343,7 +342,7 @@ export function initPdfTool(): void {
     button.addEventListener(
       'click',
       () => {
-        const type = getType(button.dataset.type ?? '');
+        const type = getType(button.dataset.type!);
         if (type && type !== current) {
           show(type);
           setStatus('', 'info');
@@ -369,7 +368,7 @@ export function initPdfTool(): void {
         show(loaded.type);
         syncEditor(true);
       } catch (error) {
-        setEditorStatus(error instanceof Error ? error.message : 'Not valid.', 'error');
+        setEditorStatus(messageOf(error, 'Not valid.'), 'error');
       }
     },
     { signal },

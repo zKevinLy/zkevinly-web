@@ -1,0 +1,13 @@
+---
+import Freshness from '@zkevinly/ui/base/Freshness.astro';
+---
+
+<test-case id="dated">
+  <Freshness date="2020-01-01T00:00:00Z" />
+</test-case>
+<test-case id="labelled">
+  <Freshness date="2020-01-01T00:00:00Z" label="Pushed" />
+</test-case>
+<test-case id="undated">
+  <Freshness />
+</test-case>

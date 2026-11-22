@@ -10,6 +10,8 @@ import {
   resolveApkLink,
   resolveInstallApp,
   gitlabReleaseAssets,
+  abiKeysFor,
+  isTrustedDownload,
   selectApk,
   type InstallApp,
 } from '../../../src/lib/install/installer';
@@ -274,13 +276,31 @@ describe('resolveApkLink', () => {
 
   it('reads GitHub release assets', async () => {
     const releases = [
-      { assets: [{ name: 'notes.txt', browser_download_url: 'https://x/notes.txt' }] },
-      { assets: [{ name: 'tv-bro-arm64-v8a.apk', browser_download_url: 'https://x/a.apk' }] },
+      {
+        assets: [
+          {
+            name: 'notes.txt',
+            browser_download_url: 'https://github.com/o/r/releases/download/v1/notes.txt',
+          },
+        ],
+      },
+      {
+        assets: [
+          {
+            name: 'tv-bro-arm64-v8a.apk',
+            browser_download_url:
+              'https://github.com/o/r/releases/download/v1/tv-bro-arm64-v8a.apk',
+          },
+        ],
+      },
     ];
     const link = await resolveApkLink(github, 'arm64', reply(releases));
     assert.deepEqual(
       { name: link?.name, url: link?.url },
-      { name: 'tv-bro-arm64-v8a.apk', url: 'https://x/a.apk' },
+      {
+        name: 'tv-bro-arm64-v8a.apk',
+        url: 'https://github.com/o/r/releases/download/v1/tv-bro-arm64-v8a.apk',
+      },
     );
   });
 
@@ -295,5 +315,181 @@ describe('resolveApkLink', () => {
   it('throws when the host refuses, and gives null when nothing matches', async () => {
     await assert.rejects(resolveApkLink(github, 'arm64', reply({}, false, 403)), /HTTP 403/);
     assert.equal(await resolveApkLink(github, 'arm64', reply([])), null);
+  });
+});
+
+describe('download hardening', () => {
+  const reply = (body: unknown) =>
+    (async () => ({ ok: true, status: 200, json: async () => body })) as unknown as typeof fetch;
+
+  it('only trusts https links on GitHub and GitLab hosts', () => {
+    for (const url of [
+      'https://github.com/o/r/releases/download/v1/a.apk',
+      'https://objects.githubusercontent.com/x/a.apk',
+      'https://release-assets.githubusercontent.com/x',
+      'https://gitlab.com/-/project/1/uploads/abc/a.apk',
+    ]) {
+      assert.equal(isTrustedDownload(url), true, url);
+    }
+    for (const url of [
+      'http://github.com/a.apk',
+      'https://evil.example/a.apk',
+      'https://github.com.evil.example/a.apk',
+      'https://evilgithub.com/a.apk',
+      'https://github.com@evil.example/a.apk',
+      'javascript:alert(1)',
+      'file:///etc/passwd',
+      '//github.com/a.apk',
+      'not a url',
+      '',
+    ]) {
+      assert.equal(isTrustedDownload(url), false, url);
+    }
+  });
+
+  it('ignores GitHub assets hosted anywhere else, falling back to a trusted one', async () => {
+    const releases = [
+      {
+        assets: [
+          { name: 'evil-arm64.apk', browser_download_url: 'https://evil.example/evil.apk' },
+          { name: 'tv-bro-arm64.apk', browser_download_url: 'https://github.com/o/r/a.apk' },
+        ],
+      },
+    ];
+    const link = await resolveApkLink(github, 'arm64', reply(releases));
+    assert.equal(link?.url, 'https://github.com/o/r/a.apk');
+    const onlyEvil = [
+      { assets: [{ name: 'a.apk', browser_download_url: 'http://github.com/a.apk' }] },
+    ];
+    assert.equal(await resolveApkLink(github, 'arm64', reply(onlyEvil)), null);
+  });
+
+  it('ignores GitLab links to other hosts, whether in assets or the release notes', async () => {
+    const releases = [
+      {
+        assets: { links: [{ name: 'a.apk', url: 'https://evil.example/a.apk' }] },
+        description: 'https://evil.example/uploads/b.apk',
+      },
+    ];
+    assert.equal(await resolveApkLink(gitlab, 'arm64', reply(releases)), null);
+  });
+
+  it('makes release file names safe to use as a path', async () => {
+    const releases = [
+      {
+        assets: [
+          { name: '..\\..\\evil app?.apk', browser_download_url: 'https://github.com/o/r/a.apk' },
+        ],
+      },
+    ];
+    const link = await resolveApkLink(github, 'arm64', reply(releases));
+    assert.doesNotMatch(link!.name, /[\\/:*?"<>|\s]/);
+  });
+
+  it('the script repeats the host rule and sanitises names on the PowerShell side', () => {
+    const script = buildInstallScript([github], 'arm64');
+    assert.match(script, /function Test-DownloadUrl/);
+    assert.match(script, /\$u\.Scheme -eq 'https'/);
+    assert.match(script, /github\\\.com\|githubusercontent\\\.com\|gitlab\\\.com/);
+    assert.match(script, /\(Test-DownloadUrl \$_\.Url\)/);
+    assert.match(script, /\$_\.name -replace/);
+  });
+
+  it('escapes every PowerShell quote character, not just the ASCII one', () => {
+    const script = buildInstallScript(
+      [{ ...github, name: "It's \u2018a\u2019 \u201Ab\u201B" }],
+      'arm64',
+    );
+    assert.match(script, /Name = 'It''s \u2018\u2018a\u2019\u2019 \u201A\u201Ab\u201B\u201B'/);
+  });
+
+  it('keeps a name on one line so it cannot start a new statement', () => {
+    const script = buildInstallScript([{ ...github, name: "x'\r\n; Remove-Item C:\\ #" }], 'arm64');
+    assert.doesNotMatch(script, /^; Remove-Item/m);
+    assert.match(script, /Name = 'x'' ; Remove-Item C:\\ #'/);
+  });
+
+  it('fixed links from the site config are not host-checked', async () => {
+    const link = await resolveApkLink(direct, 'auto', reply({}));
+    assert.equal(link?.url, 'https://f-droid.org/F-Droid.apk');
+  });
+});
+
+describe('unusual releases and links', () => {
+  const reply = (body: unknown) =>
+    (async () => ({ ok: true, status: 200, json: async () => body })) as unknown as typeof fetch;
+  const uploads = (path: string) => `see ${path}/uploads/${'a'.repeat(32)}/app.apk`;
+
+  it('the browser assumes 64-bit ARM for "auto"', () => {
+    assert.deepEqual(abiKeysFor('auto'), abiKeysFor('arm64'));
+    assert.notDeepEqual(abiKeysFor('x86'), abiKeysFor('arm64'));
+  });
+
+  it('GitLab: a release with no assets or notes yields nothing, and notes may be missing or odd', () => {
+    assert.deepEqual(gitlabReleaseAssets(null, 'g/p'), []);
+    assert.deepEqual(gitlabReleaseAssets({}, 'g/p'), []);
+    assert.deepEqual(gitlabReleaseAssets({ description: 42, assets: {} }, 'g/p'), []);
+  });
+
+  it('GitLab: release-note uploads may be project-relative, site-relative or absolute', () => {
+    const [a, b, c] = ['', '/group/proj', 'https://gitlab.com/group/proj'].map((prefix) =>
+      gitlabReleaseAssets({ description: uploads(prefix) }, 'group/proj'),
+    );
+    assert.equal(a[0].url, `https://gitlab.com/group/proj/uploads/${'a'.repeat(32)}/app.apk`);
+    assert.equal(b[0].url, `https://gitlab.com/group/proj/uploads/${'a'.repeat(32)}/app.apk`);
+    assert.equal(c[0].url, `https://gitlab.com/group/proj/uploads/${'a'.repeat(32)}/app.apk`);
+  });
+
+  it('GitLab: a link whose name cannot be decoded gets an empty file name instead of failing', () => {
+    const [asset] = gitlabReleaseAssets(
+      { assets: { links: [{ url: 'https://gitlab.com/x/%E0%A4%A.apk' }] } },
+      'g/p',
+    );
+    assert.equal(asset.name, '');
+  });
+
+  it('a release that is not an object, or has no assets, is skipped', async () => {
+    const releases = [
+      null,
+      {},
+      { assets: [{ name: 'tv-arm64.apk', browser_download_url: 'https://github.com/o/r/a.apk' }] },
+    ];
+    assert.equal(
+      (await resolveApkLink(github, 'arm64', reply(releases)))?.url,
+      'https://github.com/o/r/a.apk',
+    );
+    assert.equal(await resolveApkLink(gitlab, 'arm64', reply([null, {}])), null);
+  });
+
+  it('refuses a reply that is not a list of releases', async () => {
+    await assert.rejects(
+      resolveApkLink(github, 'arm64', reply({ message: 'nope' })),
+      /unexpected reply/,
+    );
+  });
+
+  it('names a fixed download from its URL, or from the app name when the URL says nothing useful', () => {
+    const app = (url: string, name: string) => ({
+      ...direct,
+      name,
+      source: { host: 'url' as const, url },
+    });
+    const script = buildInstallScript(
+      [
+        app('https://example.com/dl/My App.apk', 'One'),
+        app('https://example.com/download?id=7', 'Two Words'),
+        app('not a url at all', ''),
+        app('https://example.com/%E0%A4%A', 'Broken'),
+      ],
+      'arm64',
+    );
+    assert.match(script, /My-App\.apk/);
+    assert.match(script, /two-words\.apk/);
+    assert.match(script, /app\.apk/);
+    assert.match(script, /broken\.apk/);
+  });
+
+  it('says which CPU a chosen device is, in the script', () => {
+    assert.match(buildInstallScript([github], 'x86_64'), /# Device CPU: /);
   });
 });

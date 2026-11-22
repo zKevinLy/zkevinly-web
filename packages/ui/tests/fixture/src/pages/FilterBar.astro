@@ -1,0 +1,12 @@
+---
+import FilterBar from '@zkevinly/ui/composite/FilterBar.astro';
+---
+
+<test-case id="full">
+  <FilterBar
+    model={{ total: 5, tags: ['alpha', 'beta'], sorts: ['default', 'title', 'updated', 'stars'] }}
+  />
+</test-case>
+<test-case id="no-tags">
+  <FilterBar model={{ total: 3, tags: [], sorts: ['default', 'title'] }} />
+</test-case>

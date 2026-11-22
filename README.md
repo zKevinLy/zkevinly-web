@@ -12,43 +12,47 @@ Central site for zkevinly.com: homepage, project directory, resources, tools, ex
 
 ## Where things live
 
-| To change...                               | Edit                                                        |
-| ------------------------------------------ | ----------------------------------------------------------- |
-| Name, tagline, About text                  | `src/config/index.ts`                                       |
-| Projects / Resources / Collections entries | `src/config/{projects,resources,collections}/`              |
-| Toolkit tool list (cards, tests)           | `src/config/toolkit/index.ts`                               |
-| Colors, fonts, light/dark themes           | `src/styles/base/tokens.css`                                |
-| Styling for one component                  | `src/styles/components/<component>.css`                     |
-| Toolkit tool styling                       | `src/styles/toolkit/`                                       |
-| Page chrome and animations                 | `src/layouts/Layout.astro`, or `Toolkit.astro` for /toolkit |
-| Security headers / CSP                     | `public/_headers`                                           |
+| To change...                               | Edit                                             |
+| ------------------------------------------ | ------------------------------------------------ |
+| Name, tagline, About text                  | `src/config/index.ts`                            |
+| Projects / Resources / Collections entries | `src/config/{projects,resources,collections}/`   |
+| Toolkit tool list (cards, tests)           | `src/config/toolkit/index.ts`                    |
+| Colors, fonts, light/dark themes           | `packages/ui/src/styles/base/tokens.css`         |
+| Header, search, filter bar, any shared UI  | `packages/ui/src/` (components, layouts, styles) |
+| Styling for an app component               | `src/styles/components/<component>.css`          |
+| Toolkit tool styling                       | `src/styles/toolkit/`                            |
+| Page shell (head, header, search, motion)  | `packages/ui/src/layouts/Layout.astro`           |
+| What the shell is fed (nav, name, version) | `src/lib/ui/shell.ts`                            |
+| Security headers / CSP                     | `public/_headers`                                |
 
 ## Project layout
 
     src/
-      components/
-        base/         generic primitives (Node, Badge, Grid...)
-        composite/    built from base components; know about site data
+      components/     this site's own features, built from @zkevinly/ui: ChatBot, Installer,
+                      TopicBlocks (content -> UI), EntryCard, HubIndex
       config/
         index.ts, types.ts   site name/tagline/About, shared types
         projects/ resources/ collections/   one folder per section (these drive /projects etc.)
         toolkit/      the tool list for /toolkit
         shared/       entries reused by several sections
         chatbot.ts
-      layouts/        document shells: Layout.astro (site), Toolkit.astro (/toolkit)
+      layouts/        thin wrappers around the package's Layout: Layout.astro (+ chat bot), Toolkit.astro
       templates/      page types rendered inside Layout: Directory.astro, Topics.astro
       lib/
         topics/       topic-page structure: groups, hub, workflow
         install/      batch-install script builder: installer, commands
-        ui/           browser/UI helpers: navigation, filter, spotlight, chatbot
+        ui/           site-specific UI helpers: navigation, shell, filter-sources, chatbot
+      scripts/        browser scripts that need site data (repo-refresh)
         toolkit/      one folder per tool (pdf/)
         github.ts     repo release/star lookups
       pages/          routes. [section] and [...slug] render config-driven pages; toolkit/ is hand-written
       styles/
         global.css    imports everything below, in cascade order
-        base/ layout/ components/ pages/   one file per component or page type
+        components/ pages/   styles for this site's own components and page types (the rest is in packages/ui)
         toolkit/      tool styles, loaded by the Toolkit layout only
-    tests/            mirrors src/ (config/, lib/<group>/, worker/)
+    packages/
+      ui/             @zkevinly/ui: all shared UI (components, layout, styles, UI logic), no site data (own README)
+    tests/            mirrors src/ (config/, lib/<group>/, worker/); the package keeps its own in packages/ui/tests/
     worker/           Cloudflare Worker (/api/*)
     public/           static files copied as-is
 
@@ -56,12 +60,13 @@ Central site for zkevinly.com: homepage, project directory, resources, tools, ex
 
 - One central identity, independently deployable projects. Link out to other repos/subdomains; don't absorb them.
 - `*.lab.zkevinly.com` (homelab) stays separate, with its own auth. Do not link private services from here.
-- No shared packages until real code reuse justifies one.
+- UI lives in `packages/ui` (`@zkevinly/ui`), published for other repos; site data and business logic (config, GitHub lookups, install scripts, the chat bot, the PDF toolkit) stay in `src/` and are passed in as props. Nothing in the package may import from `src/`.
+- Build big components out of small ones: base components (Button, Node, Badge...) are composed into larger ones; don't add wrapper components that only rename or re-wrap another.
 
 ## Deploy
 
 The pages are static (`dist/`), but the site is deployed as a Cloudflare Worker (`wrangler.toml`):
-the Worker serves `dist/` as assets and handles `/api/gif` and `/api/repo`. `public/_headers`
+the Worker serves `dist/` as assets and handles `/api/gif`, `/api/repo` and `/api/ping`. `public/_headers`
 carries the security headers, including the strict policy for `/toolkit`. Deploy with
 `npm run build:fast && npm run deploy` (CI does this on every push to `main`). Other static hosts
 will serve the pages but not the API routes or the headers.
@@ -126,14 +131,46 @@ Data is fetched at build time and refreshed in the browser (cached 1 hour).
 - Set `GITHUB_TOKEN` in the build environment to avoid GitHub's 60 requests/hour
   unauthenticated limit (in GitHub Actions: `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`).
 
+## Icons and ping
+
+Any card can carry a picture before its name, like Homepage's Icon + Name. Nothing uses one yet.
+Set `icon` on an entry, a `links` item or a topic page (a workflow step takes it too):
+
+- `icon: 'si-github'`: a [Simple Icons](https://simpleicons.org) brand glyph, inlined and coloured like the text.
+- `icon: 'jellyfin.svg'` (or `.png`, `.webp`): a [Dashboard Icons](https://github.com/homarr-labs/dashboard-icons)
+  file, loaded from jsDelivr. Names are kebab-case, as on that site.
+- `icon: '/logo.png'`: a file in `public/`. `icon: 'https://example.com/i.png'`: any image URL.
+
+An icon the UI can't place (a typo'd `si-` slug, an unknown form) fails the build and `npm test`.
+
+An entry can also show a live status dot with the response time, like Homepage's ping:
+
+```ts
+{ title: 'Docs', href: 'https://docs.example.com/', ping: true }
+{ title: 'Jellyfin', href: 'https://jf.example.com/', ping: { url: 'https://jf.example.com/health' } }
+{ title: 'NAS', href: 'http://nas.lan/', ping: { via: 'browser' } }
+```
+
+- `via: 'worker'` (default): `/api/ping` checks from Cloudflare. Up means the host answered with
+  anything below 500 (a redirect or a 401 still counts); down is no answer in 5 s, an error or a 5xx.
+  It is an HTTP check, not an ICMP ping, and it only ever requests URLs listed in the config, so it
+  can't be used to probe other hosts. It can't see private/LAN addresses.
+- `via: 'browser'`: the visitor's own browser makes the request, the only way to see LAN hosts. It
+  can't read the status code, so it means "something answered", and what it shows is true for that
+  visitor only. An `https` page can't check plain `http` hosts (mixed content), and newer browsers may
+  ask permission before a public page may reach the local network.
+
+Dots refresh every minute while the tab is visible. Private hostnames put in this public config are
+visible in the page source, so keep homelab entries on their own site (see Principles).
+
 ## Releases
 
-Every push to `main` that passes CI is deployed to Cloudflare Workers (`wrangler.toml`, using the
-`CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` secrets in the `prod` environment), then tagged:
-a GitHub Release and a matching `vX.Y.Z` tag are created, with generated release notes and the
-built site attached as a zip. A failed deploy means no tag. The tag is the version of record
-(`package.json` is only the starting point before the first tag). If a push contains several
-commits, the highest applicable bump wins. Releases follow
+Every push to `main` that passes CI first gets its versions decided and written into the repo, then
+is deployed to Cloudflare Workers (`wrangler.toml`, using the `CLOUDFLARE_ACCOUNT_ID` /
+`CLOUDFLARE_API_TOKEN` secrets in the `prod` environment), then tagged: a GitHub Release and a
+matching `vX.Y.Z` tag are created, with generated release notes and the built site attached as a
+zip. A failed deploy means no tag. If a push contains several commits, the highest applicable bump
+wins. Releases follow
 [Conventional Commits](https://www.conventionalcommits.org/):
 
 | Commit message                                                    | Effect                             |
@@ -145,9 +182,23 @@ commits, the highest applicable bump wins. Releases follow
 When squash-merging a PR, the PR title becomes the commit message, so write it as
 `feat: ...` / `feat!: ...` to trigger a minor / major release.
 
-The deployed build is stamped with its version (shown on the About page and in `/version.json`).
-The logic lives in `.github/scripts/next-version.sh` and can be run locally to preview the next tag:
-`bash .github/scripts/next-version.sh`.
+### Versions are written by CI, never by hand
+
+The `version` job in `.github/workflows/ci.yml` runs once per push to `main`, after the checks pass:
+
+1. `next-version.sh` picks the site's next `vX.Y.Z`; `next-ui-version.sh` picks the UI package's next
+   `ui-vX.Y.Z` (or nothing when `packages/ui` didn't change).
+2. `set-version.mjs` writes those into every file that carries a version: `package.json`,
+   `packages/ui/package.json` and `package-lock.json`.
+3. One `chore(release): vX.Y.Z [skip ci]` commit holds that. The deploy and the UI release build
+   and tag _that_ commit, so every tag points at files that say the same version.
+
+So the `version` fields in the repo always match the latest tags, and nobody edits them. The build is
+also stamped (shown on the About page and in `/version.json`). Anything new that carries a version
+gets added to `.github/scripts/set-version.mjs` (its tests are in `tests/ci/`). To preview the next
+tags locally: `bash .github/scripts/next-version.sh` and `bash .github/scripts/next-ui-version.sh`.
+The version commit is pushed with `GITHUB_TOKEN`, so branch rules on `main` must let the Actions bot
+push (the auto-fix commit already needs that).
 
 ## Chat bot GIFs (GIPHY)
 

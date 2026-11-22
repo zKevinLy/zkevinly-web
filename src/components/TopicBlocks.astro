@@ -1,0 +1,118 @@
+---
+/**
+ * Renders a topic page's content blocks (this site's content model) with the UI package's
+ * components. Entry cards, the hub index and the installer are the site's own features.
+ */
+import Section from '@zkevinly/ui/base/Section.astro';
+import Prose from '@zkevinly/ui/base/Prose.astro';
+import Grid from '@zkevinly/ui/base/Grid.astro';
+import Steps from '@zkevinly/ui/base/Steps.astro';
+import Figure from '@zkevinly/ui/base/Figure.astro';
+import Node from '@zkevinly/ui/base/Node.astro';
+import Tags from '@zkevinly/ui/base/Tags.astro';
+import Button from '@zkevinly/ui/base/Button.astro';
+import LinkList from '@zkevinly/ui/base/LinkList.astro';
+import Workflow from '@zkevinly/ui/composite/Workflow.astro';
+import EntryCard from './EntryCard.astro';
+import HubIndex from './HubIndex.astro';
+import Installer from './Installer.astro';
+import type { TopicBlock, TopicPage } from '../config';
+import { filterAttrs } from '@zkevinly/ui/lib/filter';
+import { installableApps } from '../lib/install/installer';
+
+interface Props {
+  blocks: TopicBlock[];
+  /** Needed by `index` blocks, which render the page's own children. */
+  page?: TopicPage;
+  path?: string;
+}
+
+const { blocks, page, path } = Astro.props;
+
+// Entry cards only get their checkbox when this page has an installer to feed.
+const installApps = blocks.some((block) => block.type === 'installer')
+  ? installableApps(blocks)
+  : [];
+---
+
+<div class="topic-blocks">
+  {blocks
+    .filter((block) => !(block.type === 'text' && block.title?.toLowerCase().startsWith('about ')))
+    .map((block) => (
+      <Section
+        title={block.title}
+        note={
+          block.type === 'links' ||
+          block.type === 'entries' ||
+          block.type === 'index' ||
+          block.type === 'installer'
+            ? block.description
+            : undefined
+        }
+        filterGroup={block.type === 'links' || block.type === 'entries'}
+        reveal={block.type !== 'entries'}
+      >
+        {block.type === 'text' && <Prose>{block.content}</Prose>}
+
+        {block.type === 'links' && (
+          <Grid tight>
+            {block.items.map((link) => (
+              <Node
+                title={link.title}
+                icon={link.icon}
+                description={link.description}
+                href={link.download ? undefined : link.href}
+                label={link.label}
+                size="compact"
+                {...filterAttrs(link)}
+              >
+                <Tags tags={link.tags} />
+                {link.download && (
+                  <LinkList
+                    links={[{ title: link.download, href: link.href, download: link.download }]}
+                  />
+                )}
+              </Node>
+            ))}
+          </Grid>
+        )}
+
+        {/* "Select all / Clear" for the app cards; Installer's script wires it to their checkboxes. */}
+        {block.type === 'entries' &&
+          installApps.length > 0 &&
+          block.items.some((e) => e.install) && (
+            <div class="install-select" data-pagefind-ignore>
+              <Button data-installer-toggle>Select all</Button>
+              <p class="installer-status" data-installer-status aria-live="polite">
+                No apps selected
+              </p>
+            </div>
+          )}
+
+        {block.type === 'entries' && (
+          <Grid>
+            {block.items.map((entry) => (
+              <EntryCard entry={entry} selectable={installApps.length > 0} />
+            ))}
+          </Grid>
+        )}
+
+        {block.type === 'installer' && <Installer apps={installApps} />}
+
+        {block.type === 'steps' && <Steps items={block.items} />}
+
+        {block.type === 'workflow' && (
+          <>
+            {block.description && <p class="workflow-intro">{block.description}</p>}
+            <Workflow nodes={block.nodes} phases={block.phases} />
+          </>
+        )}
+
+        {block.type === 'index' && page && path && <HubIndex page={page} path={path} />}
+
+        {block.type === 'image' && (
+          <Figure src={block.src} alt={block.alt} caption={block.caption} />
+        )}
+      </Section>
+    ))}
+</div>

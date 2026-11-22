@@ -1,0 +1,70 @@
+---
+import Node from '@zkevinly/ui/base/Node.astro';
+---
+
+<test-case id="plain">
+  <Node title="Hello World!" description="A card" />
+</test-case>
+<test-case id="internal">
+  <Node title="Docs" href="/docs" />
+</test-case>
+<test-case id="external">
+  <Node title="Repo" href="https://example.com/r" />
+</test-case>
+<test-case id="selectable">
+  <Node title="App" href="https://example.com/app" check="app-1" />
+</test-case>
+<test-case id="selectable-label">
+  <Node title="App" check="app-2" checkLabel="Include" />
+</test-case>
+<test-case id="aside">
+  <Node title="Step" number="01" label="Official" badges={['Optional', 'Beta']} />
+</test-case>
+<test-case id="links">
+  <Node
+    title="L"
+    links={[
+      { label: 'Inside', href: '/in' },
+      { label: 'Outside', href: 'https://example.com' },
+    ]}
+  />
+</test-case>
+<test-case id="variants">
+  <Node title="V" as="h2" size="compact" reveal searchable class="extra" data-x="1" />
+</test-case>
+<test-case id="slots">
+  <Node title="S">
+    <p>body</p>
+    <footer slot="foot">foot</footer>
+  </Node>
+</test-case>
+<test-case id="no-slug">
+  <Node title="!!!" />
+</test-case>
+<test-case id="icon-glyph">
+  <Node title="Repo" icon="si-github" />
+</test-case>
+<test-case id="icon-dashboard">
+  <Node title="Media" icon="Jellyfin.svg" size="compact" />
+</test-case>
+<test-case id="icon-image">
+  <Node title="Mine" icon="/logo.png" />
+</test-case>
+<test-case id="icon-url">
+  <Node title="Remote" icon="https://example.com/i.webp" />
+</test-case>
+<test-case id="no-icon-blank">
+  <Node title="Blank" icon="  " />
+</test-case>
+<test-case id="ping">
+  <Node title="Server" ping />
+</test-case>
+<test-case id="ping-aside">
+  <Node
+    title="Server"
+    ping
+    label="LAN"
+    href="https://example.com"
+    data-ping-url="https://example.com/"
+  />
+</test-case>

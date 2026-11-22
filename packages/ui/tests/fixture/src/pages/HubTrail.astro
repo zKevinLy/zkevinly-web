@@ -1,0 +1,17 @@
+---
+import HubTrail from '@zkevinly/ui/composite/HubTrail.astro';
+---
+
+<test-case id="steps">
+  <HubTrail
+    hubTitle="Setup Hub"
+    hubPath="/hub"
+    steps={[
+      { id: 'install', number: 1, title: 'Install' },
+      { id: 'tune', number: 12, title: 'Tune' },
+    ]}
+  />
+</test-case>
+<test-case id="no-steps">
+  <HubTrail hubTitle="Setup Hub" hubPath="/hub" steps={[]} />
+</test-case>

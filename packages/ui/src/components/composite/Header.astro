@@ -1,0 +1,137 @@
+---
+/**
+ * COMPOSITE: the sticky top bar: brand, primary navigation, search trigger, theme toggle and
+ * optional About / GitHub icons (bases: NavLink, IconButton). All content comes in through
+ * props; the scripts only handle behaviour (active-link highlighting, theme toggle).
+ *
+ * The search trigger (#search-open) opens the overlay rendered by Search.astro.
+ */
+import { CircleUserRound, Moon, Search, Sun } from '@lucide/astro';
+import { siGithub } from 'simple-icons';
+import IconButton from '../base/IconButton.astro';
+import NavLink from '../base/NavLink.astro';
+import { isActivePath } from '../../lib/navigation';
+
+interface Props {
+  /** Brand text; shown lowercase followed by a slash. */
+  name: string;
+  nav: { href: string; label: string }[];
+  /** Small tag next to the brand, e.g. the deployed version. */
+  version?: string;
+  /** Shows the "About me" icon button when set. */
+  aboutHref?: string;
+  /** Shows the GitHub icon button when set. */
+  githubUrl?: string;
+}
+
+const { name, nav, version, aboutHref, githubUrl } = Astro.props;
+const pathname = Astro.url.pathname;
+const isActive = (href: string) => isActivePath(pathname, href);
+---
+
+<header class="topbar" transition:persist>
+  <div class="topbar-inner">
+    <div class="brand-group">
+      <a href="/" class="brand">
+        {name.toLowerCase()}
+        <span>/</span>
+      </a>
+      {version && (
+        <span class="brand-version" title="Site version">
+          {version}
+        </span>
+      )}
+    </div>
+
+    <nav class="nav" aria-label="Primary">
+      {nav.map((item) => (
+        <NavLink href={item.href} current={isActive(item.href)}>
+          {item.label}
+        </NavLink>
+      ))}
+    </nav>
+
+    <div class="topbar-actions">
+      <button id="search-open" type="button" class="search-trigger" aria-label="Open site search">
+        <Search size={16} aria-hidden="true" />
+        <span class="search-trigger-label">Search anything...</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+
+      <IconButton id="theme-toggle" label="Switch to light mode" tooltip="Light mode">
+        <Sun class="theme-icon-sun" size={19} aria-hidden="true" />
+        <Moon class="theme-icon-moon" size={19} aria-hidden="true" />
+      </IconButton>
+
+      {aboutHref && (
+        <IconButton
+          href={aboutHref}
+          navHref={aboutHref}
+          label="About me"
+          current={isActive(aboutHref)}
+        >
+          <CircleUserRound size={19} aria-hidden="true" />
+        </IconButton>
+      )}
+
+      {githubUrl && (
+        <IconButton href={githubUrl} label="GitHub" external>
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true">
+            <path d={siGithub.path}></path>
+          </svg>
+        </IconButton>
+      )}
+    </div>
+  </div>
+
+  <!-- Mobile navigation -->
+  <nav class="nav-mobile" aria-label="Primary (mobile)">
+    {nav.map((item) => (
+      <NavLink href={item.href} current={isActive(item.href)}>
+        {item.label}
+      </NavLink>
+    ))}
+  </nav>
+</header>
+
+<script>
+  import { isActivePath } from '../../lib/navigation';
+
+  // --- Active link highlighting (header persists across navigations) ---
+  function updateActiveNavigation() {
+    const path = window.location.pathname;
+
+    document.querySelectorAll<HTMLElement>('[data-nav-href]').forEach((link) => {
+      const active = isActivePath(path, link.dataset.navHref ?? '');
+
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+  }
+
+  document.addEventListener('astro:page-load', updateActiveNavigation);
+  updateActiveNavigation();
+
+  // --- Theme toggle (dark by default, remembered in localStorage) ---
+  const toggle = document.querySelector<HTMLButtonElement>('#theme-toggle');
+
+  function syncToggleLabel() {
+    if (!toggle) return;
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    toggle.setAttribute('aria-label', `Switch to ${next} mode`);
+    toggle.dataset.tooltip = next === 'light' ? 'Light mode' : 'Dark mode';
+  }
+
+  toggle?.addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = next;
+    try {
+      localStorage.setItem('theme', next);
+    } catch {
+      // Storage unavailable (private mode); the choice just won't persist.
+    }
+    syncToggleLabel();
+  });
+
+  syncToggleLabel();
+</script>

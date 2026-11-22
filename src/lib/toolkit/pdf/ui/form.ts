@@ -22,7 +22,7 @@ import {
   type TableField,
 } from '../schema';
 
-type Attrs = Record<string, string | boolean | undefined>;
+type Attrs = Record<string, string | undefined>;
 
 function h<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -31,8 +31,7 @@ function h<K extends keyof HTMLElementTagNameMap>(
 ): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
   for (const [name, value] of Object.entries(attrs)) {
-    if (value === undefined || value === false) continue;
-    node.setAttribute(name, value === true ? '' : value);
+    if (value !== undefined) node.setAttribute(name, value);
   }
   node.append(...children);
   return node;

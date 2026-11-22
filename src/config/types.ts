@@ -1,16 +1,10 @@
-export interface CopyCommand {
-  label?: string;
-  command: string;
-}
+import type { CopyCommand, LinkItem, WorkflowNode, WorkflowPhase } from '@zkevinly/ui/types';
 
+// Shapes the UI package renders live in the package; this file re-exports them so the content
+// config reads naturally.
+export type { CopyCommand, WorkflowNode, WorkflowPhase };
 /** A button on a card that jumps to a related page on this site (or anywhere). */
-export interface RelatedLink {
-  /** Small caps label above the button, e.g. "Setup guide". */
-  label?: string;
-  /** Button text. */
-  title: string;
-  href: string;
-}
+export type RelatedLink = LinkItem;
 
 /**
  * Makes an entry installable: its card gets a checkbox that adds it to the page's
@@ -24,10 +18,35 @@ export interface EntryInstall {
   match?: string;
 }
 
+/**
+ * Shows a live status dot (and response time) on an entry's card, like Homepage's ping.
+ * `true` checks the entry's own `href`.
+ */
+export interface EntryPing {
+  /** What to check. Defaults to the entry's `href`. Must be http(s). */
+  url?: string;
+  /**
+   * Who makes the request.
+   *  - `worker` (default): the Cloudflare Worker, from the internet. Right for public sites; it
+   *    can't see anything on your LAN. Only URLs listed in the config are ever checked.
+   *  - `browser`: the visitor's own browser. The only way to see LAN / homelab hosts, and what it
+   *    reports is true for that visitor only. An https page can't check plain http hosts (mixed
+   *    content), so use https for these.
+   */
+  via?: 'worker' | 'browser';
+}
+
 export interface Entry {
   title: string;
   description: string;
   href: string;
+  /**
+   * Picture before the title (Homepage-style). One string: `si-github` (Simple Icons),
+   * `jellyfin.svg` (Dashboard Icons), a `/path` to a file in public/, or an image URL.
+   */
+  icon?: string;
+  /** Live status dot on the card. See `EntryPing`. */
+  ping?: boolean | EntryPing;
   tags?: string[];
   /**
    * Repo used for the version badge, stars and "last updated": GitHub as
@@ -71,6 +90,8 @@ export interface DirectoryPage extends BasePage {
 export interface TopicLink {
   title: string;
   description: string;
+  /** Picture before the title (see `Entry.icon`). */
+  icon?: string;
   /** For a `download` link this is a file on this site, e.g. "/templates/x.json". */
   href: string;
   label?: string;
@@ -139,33 +160,7 @@ export type TopicBlock =
       caption?: string;
     };
 
-export interface WorkflowPhase {
-  id: string;
-  title: string;
-  description?: string;
-}
-
 export type WorkflowBlock = Extract<TopicBlock, { type: 'workflow' }>;
-
-export interface WorkflowNode {
-  id: string;
-  /** Which phase (row) this step sits in. */
-  phase: string;
-  title: string;
-  description: string;
-  /** Primary destination: makes the whole step clickable. */
-  href?: string;
-  /** Extra destinations, listed on the step with link icons. */
-  links?: { label: string; href: string }[];
-  /**
-   * This node's parents. Every node except the single start node must have
-   * at least one, and each parent must sit in an earlier phase.
-   */
-  dependsOn?: string[];
-  optional?: boolean;
-  branch?: string;
-  tags?: string[];
-}
 
 /** A titled section on a topic page that its child pages are listed under. */
 export interface TopicGroup {
@@ -189,6 +184,8 @@ export interface TopicPage extends BasePage {
   group?: string;
   /** Shown on this page's card in its parent's "Explore" grid. */
   tags?: string[];
+  /** Picture before the title on this page's card in its parent's "Explore" grid (see `Entry.icon`). */
+  icon?: string;
   introduction?: string;
   /**
    * Marks this page as the hub for everything beneath it.

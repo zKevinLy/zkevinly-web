@@ -1,0 +1,15 @@
+---
+import Select from '@zkevinly/ui/base/Select.astro';
+
+const options = [
+  { value: 'a', label: 'Alpha' },
+  { value: 'b', label: 'Beta' },
+];
+---
+
+<test-case id="basic">
+  <Select options={options} label="Letter" value="b" name="letter" />
+</test-case>
+<test-case id="small">
+  <Select options={options} label="Hidden" hideLabel small attrs={{ 'data-sort': '' }} />
+</test-case>

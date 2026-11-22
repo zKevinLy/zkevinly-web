@@ -1,43 +1,20 @@
 /* ==========================================================================
-   zkevinly — global styles
-   Plain CSS, bundled by Astro (imported once by each layout). Dark by default; light
-   via <html data-theme="light">. Edit base/tokens.css to restyle the site.
+   zkevinly: this site's own styles.
+   Plain CSS, bundled by Astro. Tokens, element defaults, the page chrome (header, search,
+   filter bar, workflow...) and every UI component's CSS come from @zkevinly/ui, which the
+   layout imports first (packages/ui/src/styles/). Only what belongs to this site is here:
 
-   Layout of this folder:
-     base/        tokens (colors, fonts, spacing) and element defaults
-     layout/      page chrome: top bar, page container
-     components/  one file per component, named after it (components/Node.astro -> node.css)
+     components/  styles for this site's own components (chat bot, installer, hub index)
      pages/       styles that belong to a single page type (home, topics, about)
      toolkit/     tool styles, loaded only by layouts/Toolkit.astro (not imported here)
 
-   ORDER MATTERS. These files were split out of one stylesheet and are imported in their
-   original order, so the cascade is unchanged: later rules win ties. Add new files at the
-   end of their group; don't reorder without checking the page in both themes.
+   ORDER MATTERS: later rules win ties. Add new files at the end; don't reorder without
+   checking the pages in both themes.
    ========================================================================== */
 
-@import './base/tokens.css';
-@import './base/base.css';
-
-@import './layout/header.css';
-@import './layout/page.css';
-
 @import './pages/home.css';
-
-@import './components/node.css';
-@import './components/filter-bar.css';
-@import './components/node-interactive.css';
-@import './components/repo-meta.css';
-@import './components/commands.css';
-
 @import './pages/topics.css';
 @import './pages/about.css';
-
-@import './components/search.css';
-@import './components/avatar.css';
 @import './components/chat-bot.css';
-@import './components/workflow.css';
 @import './components/hub.css';
-@import './components/card-motion.css';
-@import './components/spotlight.css';
 @import './components/installer.css';
-@import './components/select.css';

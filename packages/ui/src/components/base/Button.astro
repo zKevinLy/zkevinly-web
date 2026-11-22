@@ -1,0 +1,35 @@
+---
+/**
+ * BASE: Button — styled as a button. With `href` it is a link; without, a real <button type="button">
+ * (for script-driven actions). Icon goes in the default slot before the text.
+ *
+ * Extra attributes (data-*, aria-*, hidden…) are forwarded so client scripts can hook in.
+ * `primary` is the filled accent variant.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'button'> {
+  href?: string;
+  /** Opens in a new tab when the link is external. */
+  external?: boolean;
+  primary?: boolean;
+}
+
+const { href, external = false, primary = false, class: className, ...attrs } = Astro.props;
+---
+
+{href !== undefined ? (
+  <a
+    class:list={['btn', { 'btn-primary': primary }, className]}
+    href={href}
+    target={external ? '_blank' : undefined}
+    rel={external ? 'noopener noreferrer' : undefined}
+    {...attrs}
+  >
+    <slot />
+  </a>
+) : (
+  <button type="button" class:list={['btn', { 'btn-primary': primary }, className]} {...attrs}>
+    <slot />
+  </button>
+)}

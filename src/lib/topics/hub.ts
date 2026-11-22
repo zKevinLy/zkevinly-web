@@ -10,7 +10,7 @@ import {
   type WorkflowBlock,
   type WorkflowNode,
 } from '../../config';
-import { layoutWorkflow, type LaidOutNode, type WorkflowLayout } from './workflow';
+import { layoutWorkflow, type LaidOutNode, type WorkflowLayout } from '@zkevinly/ui/lib/workflow';
 
 export interface PageRef {
   page: TopicPage;

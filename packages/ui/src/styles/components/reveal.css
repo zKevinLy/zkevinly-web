@@ -1,0 +1,35 @@
+/* Page reveal: pure CSS replacement for the old GSAP fade-up (saves ~27 KB gzipped of JS on
+   every page, and the content is never painted visible before it animates). Elements animate in
+   DOM order within their parent, 60ms apart. Re-runs on every ClientRouter swap because the
+   new elements are inserted fresh. */
+
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    animation: reveal-up 600ms cubic-bezier(0.215, 0.61, 0.355, 1) both;
+  }
+  [data-reveal]:nth-child(2) {
+    animation-delay: 60ms;
+  }
+  [data-reveal]:nth-child(3) {
+    animation-delay: 120ms;
+  }
+  [data-reveal]:nth-child(4) {
+    animation-delay: 180ms;
+  }
+  [data-reveal]:nth-child(5) {
+    animation-delay: 240ms;
+  }
+  [data-reveal]:nth-child(6) {
+    animation-delay: 300ms;
+  }
+  [data-reveal]:nth-child(n + 7) {
+    animation-delay: 360ms;
+  }
+}

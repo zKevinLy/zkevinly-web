@@ -1,5 +1,5 @@
-// Navigation helpers shared by the build (Header, Topics layout) and the
-// browser (Header's active-link script). Keep this file free of Node-only APIs.
+// This site's navigation, derived from its config. (Path helpers like isActivePath live in the
+// UI package: @zkevinly/ui/lib/navigation.)
 
 import { site, type SitePage, type TopicPage } from '../../config';
 import { toolkit } from '../../config/toolkit';
@@ -16,17 +16,6 @@ export function getNavItems(): { href: string; label: string }[] {
     .map(([slug, page]) => ({ href: `/${slug}`, label: page.title }));
 
   return [...pages, { href: toolkit.path, label: toolkit.title }];
-}
-
-/** "/projects/" -> "/projects", "" -> "/". */
-export function normalizePath(pathname: string): string {
-  return pathname.replace(/\/$/, '') || '/';
-}
-
-/** True when `pathname` is `href` or anywhere below it. */
-export function isActivePath(pathname: string, href: string): boolean {
-  const path = normalizePath(pathname);
-  return path === href || path.startsWith(href + '/');
 }
 
 /** Walks the page tree to build breadcrumbs for a URL like /collections/nuvio/addons. */

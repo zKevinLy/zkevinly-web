@@ -3,11 +3,12 @@
 // specific to a type; types come from the registry.
 
 import type { AnyDocType } from './doctype';
-import { readAttachment } from './embedded';
 import { DocError } from './errors';
-import { renderPdf, type BuiltPdf } from './render';
+import type { BuiltPdf } from './render';
 import { defaultsOf, isObj, sanitize, validateFields, type Data, type Problem } from './schema';
+import { loadEmbedded, loadRender } from './lazy';
 import { getType } from './types';
+import { invoice } from './types/invoice';
 
 export const SCHEMA = 'toolkit.pdf';
 export const SCHEMA_VERSION = 1;
@@ -50,6 +51,7 @@ export async function buildPdf(type: AnyDocType, data: Data): Promise<BuiltPdf> 
   const fatal = validateDoc(type, data).find((problem) => problem.fatal);
   if (fatal) throw new DocError(fatal.message);
   const clean = parseDoc(type, data);
+  const { renderPdf } = await loadRender();
   return renderPdf(type.layout(clean), {
     name: ATTACHMENT_NAME,
     json: serialize(type, clean),
@@ -63,8 +65,6 @@ export function parseEnvelope(input: unknown): Loaded {
     if (typeof input.version !== 'number' || input.version > LEGACY_VERSION) {
       throw new DocError('This invoice was made by a newer version of the tool.');
     }
-    const invoice = getType('invoice');
-    if (!invoice) throw new DocError('This tool has no invoice type.');
     const legacy = { ...input };
     delete legacy.schema;
     delete legacy.version;
@@ -97,6 +97,7 @@ export function parseJsonText(text: string): Loaded {
 
 /** Reads the embedded config back out of a PDF made by this tool (or the old invoice tool). */
 export async function extractPdf(pdfBytes: Uint8Array): Promise<Loaded> {
+  const { readAttachment } = await loadEmbedded();
   const found = await readAttachment(pdfBytes, [ATTACHMENT_NAME, LEGACY_ATTACHMENT_NAME]);
   if (!found) {
     throw new DocError(

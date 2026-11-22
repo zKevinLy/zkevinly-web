@@ -51,9 +51,9 @@ export function getReply(input: string, brain: Brain, rng: () => number = Math.r
 
   // Emoji in, emoji out: echo what they sent, with a little extra.
   if (EMOJI.test(text)) {
-    const sent = text.match(EMOJI_RUN) ?? [];
-    const echoed = sent.slice(0, 3).join('');
-    if (echoed) return { emoji: `${echoed}❗`, motion: 'bounce' };
+    // EMOJI matched, so EMOJI_RUN (the same character class, as runs) matches too.
+    const echoed = text.match(EMOJI_RUN)!.slice(0, 3).join('');
+    return { emoji: `${echoed}❗`, motion: 'bounce' };
   }
 
   if (text.endsWith('?')) return pick(brain.question, rng);

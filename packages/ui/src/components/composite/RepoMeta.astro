@@ -1,0 +1,82 @@
+---
+/**
+ * COMPOSITE: card footer for a repository-backed entry: latest release, stars, "updated" and
+ * public/private (bases: Badge, Freshness). Pure markup: all data comes in through props.
+ *
+ * To keep it live in the browser, an app finds every `[data-repo]` (and `[data-private]`, which
+ * means "don't call the host directly") and repaints it with `applyRepoInfo` from
+ * `@zkevinly/ui/lib/repo-info`.
+ *
+ * Without a `repo` it falls back to a manual `updated` date, or renders nothing.
+ */
+import { Globe, Lock, Star, Tag } from '@lucide/astro';
+import Badge from '../base/Badge.astro';
+import Freshness from '../base/Freshness.astro';
+import { versionTitle } from '../../lib/repo-info';
+import type { RepoInfo } from '../../types';
+
+interface Props {
+  /** Repository id shown to scripts (`data-repo`), e.g. "owner/name". */
+  repo?: string | null;
+  /** Manual ISO date for entries that aren't on a code host. */
+  updated?: string;
+  /** Already-fetched data. */
+  info?: RepoInfo | null;
+  /** Known-private repo (also implied by `info.private`). */
+  isPrivate?: boolean;
+  /** Name of the host, for the stars tooltip. */
+  host?: string;
+}
+
+const { repo, updated: manualUpdated, info, isPrivate = false, host = 'GitHub' } = Astro.props;
+
+const updated = info?.pushedAt ?? manualUpdated;
+const repoIsPrivate = isPrivate || !!info?.private;
+---
+
+{(repo || updated) && (
+  <div
+    class="node-foot"
+    data-repo={repo ?? undefined}
+    data-private={repoIsPrivate ? '' : undefined}
+  >
+    {repo && (
+      <Badge
+        as="a"
+        href={info?.releaseUrl ?? undefined}
+        external
+        data-role="version"
+        data-prerelease={info?.prerelease ? '' : undefined}
+        title={versionTitle(info?.prerelease)}
+        hidden={!info?.version}
+      >
+        <Tag size={12} aria-hidden="true" />
+        <span data-role="version-text">{info?.version}</span>
+      </Badge>
+    )}
+
+    {repo && (
+      <Badge data-role="stars" title={`${host} stars`} hidden={!info}>
+        <Star size={12} aria-hidden="true" />
+        <span data-role="stars-text">{info?.stars.toLocaleString('en-US')}</span>
+      </Badge>
+    )}
+
+    <Freshness date={updated} />
+
+    {repo && (
+      <Badge
+        data-role="visibility"
+        title={repoIsPrivate ? 'Private repository' : 'Public repository'}
+      >
+        <span data-icon="lock" hidden={!repoIsPrivate}>
+          <Lock size={12} aria-hidden="true" />
+        </span>
+        <span data-icon="globe" hidden={repoIsPrivate}>
+          <Globe size={12} aria-hidden="true" />
+        </span>
+        <span data-role="visibility-text">{repoIsPrivate ? 'Private' : 'Public'}</span>
+      </Badge>
+    )}
+  </div>
+)}

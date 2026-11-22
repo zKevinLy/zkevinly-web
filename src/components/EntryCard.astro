@@ -1,0 +1,73 @@
+---
+/**
+ * A directory entry. Glue between this site's content and the UI package: it fetches the repo
+ * info, builds the filter attributes and install checkbox id, and lays the entry out with the
+ * package's Node, Tags, CommandBlock, LinkList and RepoMeta. Also decides the card's `icon` and
+ * status dot (`ping`): what to check lives in lib/ping.ts, the dot is painted by scripts/ping-refresh.ts.
+ */
+import Node from '@zkevinly/ui/base/Node.astro';
+import Tags from '@zkevinly/ui/base/Tags.astro';
+import LinkList from '@zkevinly/ui/base/LinkList.astro';
+import CommandBlock from '@zkevinly/ui/composite/CommandBlock.astro';
+import RepoMeta from '@zkevinly/ui/composite/RepoMeta.astro';
+import { filterAttrs } from '@zkevinly/ui/lib/filter';
+import type { Entry } from '../config';
+import { entryRepo, fetchRepoInfo, repoHost } from '../lib/github';
+import { entryPing } from '../lib/ping';
+import { entrySource } from '../lib/ui/filter-sources';
+import { installId } from '../lib/install/installer';
+
+interface Props {
+  entry: Entry;
+  /** Show the "include in install script" checkbox (only when the page has an installer block). */
+  selectable?: boolean;
+}
+
+const { entry, selectable = false } = Astro.props;
+const checkId = selectable && entry.install ? installId(entry) : undefined;
+
+const repo = entryRepo(entry);
+
+// Fetched once here: RepoMeta renders it, and the filter bar sorts by it.
+// Shell env vars (CI) are only guaranteed on process.env; .env files land on import.meta.env.
+const token = process.env.GITHUB_TOKEN || import.meta.env.GITHUB_TOKEN;
+const info = repo ? await fetchRepoInfo(repo, token) : null;
+const host = repo && repoHost(repo) === 'gitlab' ? 'GitLab' : 'GitHub';
+
+// A status dot, when the entry asks for one: scripts/ping-refresh.ts finds the card by these attributes.
+const ping = entryPing(entry);
+---
+
+<Node
+  title={entry.title}
+  description={entry.description}
+  href={entry.href}
+  icon={entry.icon}
+  ping={ping !== null}
+  data-ping-url={ping?.url}
+  data-ping-via={ping?.via}
+  searchable
+  check={checkId}
+  checkLabel="Include in install script"
+  data-install-card={checkId}
+  {...filterAttrs(entrySource(entry), info)}
+>
+  <Tags tags={entry.tags} />
+  <CommandBlock commands={entry.commands} />
+  <LinkList links={entry.related} />
+  <RepoMeta
+    slot="foot"
+    repo={repo}
+    info={info}
+    updated={entry.updated}
+    isPrivate={entry.repoPrivate}
+    host={host}
+  />
+</Node>
+
+<script>
+  // Keeps every card's release / stars / updated fresh in the browser (see the script for how).
+  import '../scripts/repo-refresh';
+  // Keeps every status dot (cards with `ping`) fresh.
+  import '../scripts/ping-refresh';
+</script>

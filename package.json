@@ -14,10 +14,10 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --import tsx --test \"tests/**/*.test.ts\"",
-    "test:watch": "node --import tsx --test --watch \"tests/**/*.test.ts\"",
-    "test:coverage": "node --import tsx --test --experimental-test-coverage \"tests/**/*.test.ts\"",
-    "test:ci": "node --import tsx --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results.xml \"tests/**/*.test.ts\"",
+    "test": "node --import tsx --test \"tests/**/*.test.ts\" \"packages/*/tests/**/*.test.ts\"",
+    "test:watch": "node --import tsx --test --watch \"tests/**/*.test.ts\" \"packages/*/tests/**/*.test.ts\"",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage --test-coverage-include=\"src/**/*.ts\" --test-coverage-include=\"worker/*.js\" --test-coverage-include=\"packages/ui/src/lib/**/*.ts\" --test-coverage-exclude=\"src/config/**\" --test-coverage-exclude=\"src/lib/toolkit/pdf/layout.ts\" --test-coverage-exclude=\"src/lib/toolkit/pdf/lazy.ts\" \"tests/**/*.test.ts\" \"packages/*/tests/**/*.test.ts\"",
+    "test:ci": "node --import tsx --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results.xml --experimental-test-coverage --test-coverage-include=\"src/**/*.ts\" --test-coverage-include=\"worker/*.js\" --test-coverage-include=\"packages/ui/src/lib/**/*.ts\" --test-coverage-exclude=\"src/config/**\" --test-coverage-exclude=\"src/lib/toolkit/pdf/layout.ts\" --test-coverage-exclude=\"src/lib/toolkit/pdf/lazy.ts\" --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100 \"tests/**/*.test.ts\" \"packages/*/tests/**/*.test.ts\"",
     "build": "astro check && astro build && pagefind --site dist",
     "build:fast": "astro build && pagefind --site dist",
     "preview": "astro preview",
@@ -34,16 +34,19 @@
     "audit:ci": "npm audit --omit=dev --audit-level=high",
     "lighthouse": "npx --yes @lhci/cli@0.15.x autorun --config=./lighthouserc.json",
     "ci": "npm run lint && npm run format:check && npm run test:ci && npm run build && npm run audit:ci",
-    "ci:fix": "npm run lint:fix && npm run format && npm run ci",
-    "pin-actions": "node scripts/pin-actions.mjs"
+    "ci:fix": "npm run lint:fix && npm run ui:sync && npm run format && npm run ci",
+    "pin-actions": "node scripts/pin-actions.mjs",
+    "ui:pack": "npm pack -w @zkevinly/ui --pack-destination dist-ui",
+    "ui:sync": "node packages/ui/scripts/sync.mjs",
+    "ui:check": "node packages/ui/scripts/sync.mjs --check"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.12",
     "@astrojs/mdx": "^8.1.6",
     "@lucide/astro": "^1.73.0",
+    "@zkevinly/ui": "*",
     "astro": "^7.4.12",
     "decimal.js": "^10.6.0",
-    "gsap": "^3.15.1",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "simple-icons": "^16.38.0",
@@ -51,11 +54,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^26.6.6",
     "@types/qrcode": "^1.5.6",
     "eslint": "^9.39.5",
     "eslint-plugin-astro": "^1.7.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "jsdom": "^31.0.1",
     "pagefind": "^1.6.0",
     "prettier": "^3.10.1",
     "prettier-plugin-astro": "^1.1.2",
@@ -68,5 +73,8 @@
     "@typescript-eslint/typescript-estree": {
       "minimatch": "^11.0.5"
     }
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }

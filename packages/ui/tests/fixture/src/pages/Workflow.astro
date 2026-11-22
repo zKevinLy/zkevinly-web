@@ -1,0 +1,32 @@
+---
+import Workflow from '@zkevinly/ui/composite/Workflow.astro';
+
+const phases = [
+  { id: 'p1', title: 'Prepare', description: 'Get ready' },
+  { id: 'p2', title: 'Build' },
+];
+const nodes = [
+  { id: 'start', phase: 'p1', title: 'Start', description: 'Begin', href: '/start' },
+  { id: 'a', phase: 'p2', title: 'Alpha', description: 'First', dependsOn: ['start'], tags: ['x'] },
+  {
+    id: 'b',
+    phase: 'p2',
+    title: 'Beta',
+    description: 'Second',
+    dependsOn: ['start'],
+    optional: true,
+    branch: 'Side',
+    links: [{ label: 'Docs', href: '/docs' }],
+  },
+];
+---
+
+<test-case id="graph">
+  <Workflow nodes={nodes} phases={phases} />
+</test-case>
+<test-case id="single">
+  <Workflow
+    nodes={[{ id: 'only', phase: 'p1', title: 'Only', description: 'Just one' }]}
+    phases={[{ id: 'p1', title: 'Solo' }]}
+  />
+</test-case>

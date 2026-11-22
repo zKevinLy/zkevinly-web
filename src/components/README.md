@@ -1,57 +1,32 @@
 # Components
 
-Two layers, one direction of dependency: **composite → base**, never the reverse.
+**The UI lives in `packages/ui` (`@zkevinly/ui`)**: every base component (Button, Node, Badge...),
+the larger ones built from them (Header, Search, FilterBar, Workflow, RepoMeta, CommandBlock...)
+and the page shell (`layouts/Layout.astro`). See `packages/ui/README.md`. This site imports
+them like any consumer: `import Node from '@zkevinly/ui/base/Node.astro'`.
 
-## `base/` — primitives
+This folder is only what is specific to this site: features that carry business logic or content
+knowledge. They fetch, map and decide, then hand finished values to the package as props.
 
-Generic, content-agnostic building blocks. They know about markup, CSS classes
-and behaviour, but nothing about this site's data (`Entry`, `TopicBlock`, GitHub…).
+| Component     | What it does                                                                                    |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| `EntryCard`   | A directory entry: fetches repo info, builds filter attributes, lays out Node + RepoMeta        |
+| `TopicBlocks` | Renders a topic page's content blocks (this site's content model) with package components       |
+| `HubIndex`    | The hub's index: pages beneath it and the workflow steps that use them                          |
+| `Installer`   | Batch-install script + APK links (Android TV apps): UI from the package, logic in `lib/install` |
+| `ChatBot`     | The chat bot (config in `config/chatbot.ts`)                                                    |
 
-| Component    | Purpose                                                                      |
-| ------------ | ---------------------------------------------------------------------------- |
-| `Node`       | The only card/step. Title, number, link, check-off, slots                    |
-| `Badge`      | Small pill, link or span                                                     |
-| `Tags`       | Row of tag pills                                                             |
-| `Freshness`  | "Updated 3 days ago" + heartbeat dot (owns the time refresh)                 |
-| `CopyButton` | Click-to-copy (owns the one delegated copy handler)                          |
-| `IconButton` | Square icon control with tooltip, `<a>` or `<button>`                        |
-| `Button`     | Text link styled as a button                                                 |
-| `Select`     | The one dropdown (native `<select>`); script-built ones use `class="select"` |
-| `NavLink`    | Top-level nav link                                                           |
-| `Grid`       | Responsive card grid                                                         |
-| `Section`    | Optional title + note around content                                         |
-| `PageHeader` | h1 + lead paragraph                                                          |
-| `Prose`      | Running text paragraph                                                       |
-| `Steps`      | Numbered list                                                                |
-| `Figure`     | Image + caption                                                              |
-| `Breadcrumb` | Breadcrumb trail                                                             |
-
-## `composite/` — built from base (or other composite) components
-
-May know about site data and wire primitives together.
-
-| Component                      | Built from                                                     |
-| ------------------------------ | -------------------------------------------------------------- |
-| `EntryCard`                    | `Node` + `Tags` + `CommandList` + `RepoMeta`                   |
-| `Workflow`                     | `Node` (one per step) + phase rows + trace/check-off           |
-| `Installer`                    | `CommandBlock` + device dropdown; reads `EntryCard` checkboxes |
-| `HubIndex`                     | `Node` + `Grid`                                                |
-| `CommandBlock` → `CommandList` | `CopyButton`                                                   |
-| `RepoMeta`                     | `Badge` + `Freshness` (+ GitHub live data)                     |
-| `DownloadButton`               | (classes shared with `CommandBlock` / related links)           |
-| `TopicBlocks`                  | `Section`, `Prose`, `Grid`, `Steps`, `Figure`, `Node`          |
-| `Header`                       | `IconButton`, `NavLink`                                        |
-| `FilterBar`                    | (self-contained; acts on `data-filter-*` cards)                |
-| `Search`                       | (self-contained overlay)                                       |
+The PDF toolkit (`pages/toolkit`, `lib/toolkit`, `styles/toolkit`) is the other app-only feature.
 
 ## Rules
 
-1. Need a new card, tile, or step? Use `Node` (extend its props if it can't express it). Do not
-   write a second card component or hand-write `<div class="node">`.
-2. Need new behaviour (copy, relative time, live data)? It lives in exactly one
-   component, with its `<script>` next to its markup.
-3. Pages and layouts only assemble components; they don't carry their own markup
-   for things a component already covers.
-4. Styling for a component lives in its own file under `src/styles/components/`
-   (`Node.astro` → `node.css`), imported from `src/styles/global.css`. Prefer extending a base
-   component's props over adding a one-off class.
+1. App code depends on the package, never the reverse. `tests/packages/ui-boundary.test.ts` fails
+   if the package imports from `src/`, or if `src/` re-implements a package component.
+2. Don't add a component that only wraps or renames another. Compose the base components in the
+   place that needs them; extract a component when two or more places repeat the same markup.
+3. Need something the package's components can't express (a variant, a slot)? Extend the
+   package's component (and its tests) rather than copying its markup or classes here.
+4. Business logic (data, fetching, scripts that need site data) stays here; the package's scripts
+   only do UI behaviour. Where a component needs data-driven behaviour in the browser, the package
+   exposes a function (e.g. `applyRepoInfo`) and the app's script calls it with its own data.
+5. Styles for these components live in `src/styles/components/`, imported from `src/styles/global.css`.

@@ -11,6 +11,8 @@ import { childSections } from '../../src/lib/topics/groups';
 import projects from '../../src/config/projects';
 import resources from '../../src/config/resources';
 import { entryRepo } from '../../src/lib/github';
+import { entryPing, pageEntries } from '../../src/lib/ping';
+import { resolveIcon } from '@zkevinly/ui/lib/icon';
 import { remoteScriptUrl } from '../../src/lib/install/commands';
 import { installableApps, resolveInstallApp } from '../../src/lib/install/installer';
 import type { Entry, SitePage, TopicPage } from '../../src/config/types';
@@ -70,6 +72,22 @@ describe('site content', () => {
           assert.match(entry.repo, /^(?:[\w.-]+\/[\w.-]+|gitlab:[\w.-]+(?:\/[\w.-]+)+)$/);
       });
 
+      it('has an icon the UI can place, if any', () => {
+        if (entry.icon !== undefined) {
+          assert.ok(entry.icon.trim(), 'empty icon');
+          assert.doesNotThrow(() => resolveIcon(entry.icon));
+        }
+      });
+
+      it('has a ping target the site can check, if any', () => {
+        if (entry.ping) {
+          assert.ok(
+            entryPing(entry),
+            'ping needs an http(s) url (or an http(s) href to fall back to)',
+          );
+        }
+      });
+
       it('has well-formed commands, if any', () => {
         for (const { command } of entry.commands ?? []) assert.ok(command.trim());
       });
@@ -92,6 +110,26 @@ describe('site content', () => {
       const slugs = (topic.children ?? []).map((child) => child.slug);
       assert.equal(new Set(slugs).size, slugs.length, `duplicate slugs under "${topic.title}"`);
     }
+  });
+
+  it('has icons the UI can place on topic pages and links, if any', () => {
+    for (const topic of pages
+      .filter((p): p is TopicPage => p.type === 'topic')
+      .flatMap(collectTopics)) {
+      const icons = [
+        topic.icon,
+        ...topic.blocks.flatMap((block) =>
+          block.type === 'links' ? block.items.map((link) => link.icon) : [],
+        ),
+      ].filter((icon): icon is string => icon !== undefined);
+      for (const icon of icons) {
+        assert.doesNotThrow(() => resolveIcon(icon), `${topic.title}: icon "${icon}"`);
+      }
+    }
+  });
+
+  it('collects the same entries for pings as the content checks above', () => {
+    assert.equal(pages.flatMap(pageEntries).length, all.length);
   });
 
   it('only uses remote-script commands that point at a URL we can show', () => {

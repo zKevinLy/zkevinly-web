@@ -1,29 +1,5 @@
 /* ---------- Hub: index + trail back to the setup steps ---------- */
-.hub-trail {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 0.6rem;
-  margin-top: 1rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-.hub-trail-label {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.hub-trail a {
-  color: var(--accent);
-}
-.hub-trail a:hover,
-.hub-sub a:hover,
-.hub-chip:hover {
+.hub-sub a:hover {
   text-decoration: underline;
 }
 .hub-chips {
@@ -31,17 +7,6 @@
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-top: 0.75rem;
-}
-.hub-chip {
-  padding: 0.15rem 0.45rem;
-  border-radius: 5px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 0.7rem;
-}
-.hub-chip b {
-  margin-right: 0.35rem;
-  font-family: var(--font-mono);
 }
 .hub-sub {
   display: grid;

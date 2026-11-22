@@ -6,12 +6,13 @@ export default [
   {
     ignores: [
       'dist/',
-      '.astro/',
+      '**/.astro/',
       'node_modules/',
       // Local tool output: never lint generated files.
       '.wrangler/',
       '.lighthouseci/',
       'coverage/',
+      'dist-ui/',
     ],
   },
   js.configs.recommended,

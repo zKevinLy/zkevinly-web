@@ -1,0 +1,15 @@
+---
+import PageHeader from '@zkevinly/ui/base/PageHeader.astro';
+---
+
+<test-case id="lead">
+  <PageHeader title="Title" lead="Lead text" />
+</test-case>
+<test-case id="slot">
+  <PageHeader title="T2">
+    <em>rich lead</em>
+  </PageHeader>
+</test-case>
+<test-case id="spaced">
+  <PageHeader title="T3" lead="x" spaced />
+</test-case>

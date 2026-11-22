@@ -1,0 +1,20 @@
+---
+import Header from '@zkevinly/ui/composite/Header.astro';
+const nav = [
+  { href: '/Header', label: 'Here' },
+  { href: '/other', label: 'Other' },
+];
+---
+
+<test-case id="full">
+  <Header
+    name="Acme"
+    nav={nav}
+    version="v1.2.3"
+    aboutHref="/about"
+    githubUrl="https://github.com/acme"
+  />
+</test-case>
+<test-case id="minimal">
+  <Header name="Acme" nav={[]} />
+</test-case>

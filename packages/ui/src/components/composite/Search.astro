@@ -1,0 +1,616 @@
+---
+import { ChevronRight, ExternalLink, Search } from '@lucide/astro';
+
+interface Props {
+  /** Placeholder in the search box. */
+  placeholder?: string;
+}
+
+const { placeholder = 'Search the site...' } = Astro.props;
+---
+
+<!--
+  Search overlay. Rendered directly under <body> (see layouts/Layout.astro), NOT inside
+  the header: the header uses backdrop-filter, which turns it into the containing
+  block for `position: fixed` children and made this overlay only cover the bar.
+  The trigger button (#search-open) lives in Header.astro.
+-->
+<div
+  id="search-overlay"
+  class="search-overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Universal site search"
+  data-pagefind-ignore
+  transition:persist="search-overlay"
+  hidden
+>
+  <div class="search-panel">
+    <div class="search-field">
+      <Search size={20} aria-hidden="true" />
+
+      <input
+        id="search-input"
+        class="search-input"
+        type="search"
+        placeholder={placeholder}
+        autocomplete="off"
+      />
+
+      <button id="search-close" type="button" class="search-esc">
+        ESC
+      </button>
+    </div>
+
+    <div id="search-status" class="search-status" aria-live="polite">
+      Start typing to search the entire website.
+    </div>
+
+    <div id="search-results" class="search-results"></div>
+
+    <div class="search-foot">Enter to open · Esc to close</div>
+  </div>
+
+  <!-- Same lucide icons Node.astro uses, cloned into each result by the script below. -->
+  <template id="search-icon-external">
+    <ExternalLink size={16} aria-hidden="true" />
+  </template>
+  <template id="search-icon-internal">
+    <ChevronRight size={16} aria-hidden="true" />
+  </template>
+</div>
+
+<script>
+  import {
+    SPOTLIGHT_CLASS,
+    SPOTLIGHT_KEY,
+    SPOTLIGHT_MS,
+    cleanPath,
+    encodePending,
+    pickCandidate,
+    readPending,
+  } from '../../lib/spotlight';
+
+  interface SearchItem {
+    url: string;
+    title: string;
+    /** Title of the page this result lives on, when the result is a part of one. */
+    section?: string;
+    excerpt: string;
+    content: string;
+    /** Pagefind excerpt: plain text with <mark> tags around matches. */
+    excerptHtml?: string;
+  }
+
+  interface PagefindResultData {
+    url: string;
+    excerpt?: string;
+    meta?: { title?: string };
+    /** Parts of the page (headings with ids). Each has its own #anchor url. */
+    sub_results?: { title?: string; url: string; excerpt?: string }[];
+  }
+
+  interface PagefindModule {
+    search(query: string): Promise<{ results: { data(): Promise<PagefindResultData> }[] }>;
+  }
+
+  const IDLE_MESSAGE = 'Start typing to search the entire website.';
+
+  /* ---------- Spotlight: glow the found component after opening a result ---------- */
+
+  const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /** The node a result points at: its #anchor if it has one, else the best match for the query. */
+  function findSpotlightTarget(hash: string, terms: string[]): HTMLElement | null {
+    if (hash) {
+      let id = hash.slice(1);
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        // Keep the raw id.
+      }
+      const anchored = document.getElementById(id);
+      if (anchored) return anchored.closest<HTMLElement>('.node, .cmd') ?? anchored;
+    }
+
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>('main .node'));
+    const index = pickCandidate(
+      nodes.map((node) => ({
+        title: node.querySelector('.node-title')?.textContent ?? '',
+        text: node.textContent ?? '',
+      })),
+      terms,
+    );
+    return index >= 0 ? nodes[index] : null;
+  }
+
+  function spotlight(target: HTMLElement) {
+    document
+      .querySelectorAll<HTMLElement>(`.${SPOTLIGHT_CLASS}`)
+      .forEach((el) => el.classList.remove(SPOTLIGHT_CLASS));
+
+    target.scrollIntoView({
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      block: 'center',
+    });
+
+    // Re-add on the next frame so the animation restarts if it was already running.
+    requestAnimationFrame(() => {
+      target.classList.add(SPOTLIGHT_CLASS);
+      setTimeout(() => target.classList.remove(SPOTLIGHT_CLASS), SPOTLIGHT_MS);
+    });
+  }
+
+  function rememberSpotlight(target: URL, terms: string[]) {
+    try {
+      sessionStorage.setItem(SPOTLIGHT_KEY, encodePending(target, terms));
+    } catch {
+      // Storage blocked: the page still opens, it just won't glow.
+    }
+  }
+
+  /** Runs once the destination page is on screen; a no-op unless a result was just opened. */
+  function runPendingSpotlight(delay = 300) {
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(SPOTLIGHT_KEY);
+    } catch {
+      return;
+    }
+
+    const pending = readPending(raw);
+    if (!pending) return;
+    if (pending.path !== cleanPath(window.location.pathname)) return;
+
+    try {
+      sessionStorage.removeItem(SPOTLIGHT_KEY);
+    } catch {
+      // Nothing to clean up.
+    }
+
+    // Wait for the page's reveal animation and layout to settle.
+    setTimeout(() => {
+      const target = findSpotlightTarget(pending.hash, pending.terms);
+      if (target) spotlight(target);
+    }, delay);
+  }
+
+  // First load and every ClientRouter navigation.
+  document.addEventListener('astro:page-load', () => runPendingSpotlight());
+
+  const openButton = document.querySelector<HTMLButtonElement>('#search-open');
+  const closeButton = document.querySelector<HTMLButtonElement>('#search-close');
+  const overlay = document.querySelector<HTMLDivElement>('#search-overlay');
+  const input = document.querySelector<HTMLInputElement>('#search-input');
+  const resultsContainer = document.querySelector<HTMLDivElement>('#search-results');
+  const status = document.querySelector<HTMLDivElement>('#search-status');
+
+  if (openButton && closeButton && overlay && input && resultsContainer && status) {
+    let pagefind: PagefindModule | null = null;
+    let devIndex: SearchItem[] | null = null;
+    let activeIndex = -1;
+    let currentResults: HTMLAnchorElement[] = [];
+    let searchCounter = 0;
+    let debounce: ReturnType<typeof setTimeout>;
+
+    const isOpen = () => !overlay.hidden;
+
+    // Production: load Pagefind.
+    async function loadSearch(): Promise<PagefindModule> {
+      if (pagefind) return pagefind;
+      const url = new URL('/pagefind/pagefind.js', window.location.origin);
+      const loaded: PagefindModule = await import(/* @vite-ignore */ url.href);
+      pagefind = loaded;
+      return loaded;
+    }
+
+    // Development: crawl the running Astro website.
+    async function buildDevIndex(): Promise<SearchItem[]> {
+      const index: SearchItem[] = [];
+      const visited = new Set<string>();
+      const queue = ['/'];
+
+      const normalize = (url: URL) => url.pathname.replace(/\/+$/, '') || '/';
+
+      while (queue.length > 0 && visited.size < 1000) {
+        const path = queue.shift()!;
+
+        const url = new URL(path, window.location.origin);
+        const normalizedPath = normalize(url);
+
+        if (visited.has(normalizedPath)) continue;
+        visited.add(normalizedPath);
+
+        try {
+          const response = await fetch(normalizedPath, {
+            headers: { Accept: 'text/html' },
+          });
+
+          if (!response.ok) continue;
+          if (!(response.headers.get('content-type') || '').includes('text/html')) continue;
+
+          const html = await response.text();
+          const doc = new DOMParser().parseFromString(html, 'text/html');
+
+          // Remove non-content elements.
+          doc
+            .querySelectorAll('script, style, noscript, [data-pagefind-ignore]')
+            .forEach((element) => element.remove());
+
+          const body = doc.querySelector('main') || doc.body;
+
+          const title = doc.querySelector('h1')?.textContent?.trim() || doc.title || normalizedPath;
+
+          const content = body.textContent?.replace(/\s+/g, ' ').trim() || '';
+
+          if (content.length > 0) {
+            index.push({
+              url: normalizedPath,
+              title,
+              excerpt: content.slice(0, 220),
+              content,
+            });
+          }
+
+          // Index each card / step as its own result, so it can be linked (and glowed) directly.
+          doc.querySelectorAll<HTMLElement>('[data-search-item], .node').forEach((card) => {
+            const heading = card.querySelector<HTMLElement>('.node-title');
+            const number = heading?.querySelector('.node-number')?.textContent ?? '';
+            const cardTitle =
+              (heading?.textContent ?? '').replace(number, '').trim() ||
+              card.querySelector('h3, h2')?.textContent?.trim() ||
+              'Untitled';
+
+            const cardContent = card.textContent?.replace(/\s+/g, ' ').trim() || '';
+            if (!cardContent) return;
+
+            const anchor = card.matches('a[href]') ? card : card.querySelector('a[href]');
+            const destination = anchor ? new URL(anchor.getAttribute('href') || '/', url) : null;
+            const external = destination ? destination.origin !== window.location.origin : false;
+            const anchorId = heading?.id;
+
+            // Other sites open directly; everything else points at this node on this page.
+            const cardUrl = external
+              ? destination!.href
+              : anchorId
+                ? `${normalizedPath}#${anchorId}`
+                : (destination?.href ?? normalizedPath);
+
+            index.push({
+              url: cardUrl,
+              title: cardTitle,
+              section: title,
+              excerpt: cardContent.slice(0, 220),
+              content: cardContent,
+            });
+          });
+
+          // Discover other internal pages.
+          doc.querySelectorAll<HTMLAnchorElement>('a[href]').forEach((link) => {
+            try {
+              const target = new URL(link.getAttribute('href') || '', url);
+
+              if (target.origin !== window.location.origin) return;
+
+              target.hash = '';
+              target.search = '';
+
+              if (
+                !/\.(xml|json|jpg|jpeg|png|gif|svg|webp|pdf|zip|js|css)$/i.test(target.pathname) &&
+                !target.pathname.startsWith('/pagefind/')
+              ) {
+                const targetPath = normalize(target);
+                if (!visited.has(targetPath)) queue.push(targetPath);
+              }
+            } catch {
+              // Ignore invalid URLs.
+            }
+          });
+        } catch (error) {
+          console.warn(`Could not index ${normalizedPath}`, error);
+        }
+      }
+
+      return index;
+    }
+
+    function openSearch() {
+      overlay!.hidden = false;
+      document.body.style.overflow = 'hidden';
+
+      // Refresh the development index when opening search.
+      if (import.meta.env.DEV) devIndex = null;
+
+      requestAnimationFrame(() => input!.focus());
+    }
+
+    function closeSearch() {
+      overlay!.hidden = true;
+      document.body.style.overflow = '';
+
+      input!.value = '';
+      resultsContainer!.innerHTML = '';
+      status!.textContent = IDLE_MESSAGE;
+
+      currentResults = [];
+      activeIndex = -1;
+    }
+
+    function setActive(index: number) {
+      if (!currentResults.length) return;
+
+      activeIndex = Math.max(0, Math.min(index, currentResults.length - 1));
+
+      currentResults.forEach((result, i) => {
+        result.classList.toggle('is-active', i === activeIndex);
+        result.setAttribute('aria-selected', String(i === activeIndex));
+      });
+
+      currentResults[activeIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+
+    /** Builds a <mark> element containing plain text. */
+    function createMark(text: string): HTMLElement {
+      const mark = document.createElement('mark');
+      mark.textContent = text;
+      return mark;
+    }
+
+    /**
+     * Pagefind returns excerpts as an HTML string whose only markup is <mark>.
+     * Rebuild it node by node so nothing but <mark> can ever reach the page.
+     */
+    function appendPagefindExcerpt(target: HTMLElement, html: string) {
+      const doc = new DOMParser().parseFromString(`<body>${html}</body>`, 'text/html');
+      doc.body.childNodes.forEach((node) => {
+        if (node instanceof HTMLElement && node.tagName === 'MARK') {
+          target.append(createMark(node.textContent ?? ''));
+        } else {
+          target.append(document.createTextNode(node.textContent ?? ''));
+        }
+      });
+    }
+
+    const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    /** Dev search: show a snippet around the first match and highlight every term. */
+    function appendDevExcerpt(target: HTMLElement, text: string, terms: string[]) {
+      const lower = text.toLowerCase();
+      const first = terms.map((term) => lower.indexOf(term)).filter((i) => i >= 0);
+      const at = first.length ? Math.min(...first) : 0;
+      const start = Math.max(0, at - 60);
+      const snippet = text.slice(start, start + 220);
+
+      if (start > 0) target.append('… ');
+
+      const pattern = terms.length
+        ? new RegExp(`(${terms.map(escapeRegExp).join('|')})`, 'gi')
+        : null;
+      const parts = pattern ? snippet.split(pattern) : [snippet];
+      // split() with one capture group puts the matches at the odd indexes.
+      parts.forEach((part, i) => {
+        if (!part) return;
+        if (i % 2 === 1) target.append(createMark(part));
+        else target.append(document.createTextNode(part));
+      });
+
+      if (start + 220 < text.length) target.append(' …');
+    }
+
+    function renderResults(results: SearchItem[], terms: string[]) {
+      resultsContainer!.innerHTML = '';
+      currentResults = [];
+      activeIndex = -1;
+
+      for (const result of results) {
+        const targetUrl = new URL(result.url, window.location.origin);
+        const isExternal = targetUrl.origin !== window.location.origin;
+
+        const link = document.createElement('a');
+        link.href = result.url;
+        link.className = 'search-result';
+
+        const row = document.createElement('div');
+        row.className = 'search-result-row';
+
+        const title = document.createElement('div');
+        title.className = 'search-result-title';
+        if (result.section && result.section !== result.title) {
+          const crumb = document.createElement('span');
+          crumb.className = 'search-result-crumb';
+          crumb.textContent = `${result.section} ›`;
+          title.append(crumb);
+        }
+        title.append(document.createTextNode(result.title));
+
+        const arrow = document.createElement('span');
+        arrow.className = 'search-result-arrow';
+        arrow.title = isExternal ? 'External website' : 'Internal page';
+        arrow.setAttribute('aria-label', isExternal ? 'External link' : 'Internal link');
+        const icon = document.querySelector<HTMLTemplateElement>(
+          isExternal ? '#search-icon-external' : '#search-icon-internal',
+        );
+        if (icon) arrow.append(icon.content.cloneNode(true));
+
+        row.append(title, arrow);
+
+        const excerpt = document.createElement('p');
+        excerpt.className = 'search-result-excerpt';
+        if (result.excerptHtml !== undefined) appendPagefindExcerpt(excerpt, result.excerptHtml);
+        else appendDevExcerpt(excerpt, result.content, terms);
+
+        link.append(row, excerpt);
+        resultsContainer!.appendChild(link);
+        currentResults.push(link);
+
+        link.addEventListener('click', () => {
+          if (!isExternal) rememberSpotlight(targetUrl, terms);
+          closeSearch();
+
+          // Same page: no navigation event follows, so trigger the glow ourselves.
+          const samePage = cleanPath(targetUrl.pathname) === cleanPath(window.location.pathname);
+          if (!isExternal && samePage) setTimeout(() => runPendingSpotlight(0), 120);
+        });
+      }
+
+      if (currentResults.length) setActive(0);
+    }
+
+    async function search(query: string) {
+      const request = ++searchCounter;
+
+      resultsContainer!.innerHTML = '';
+      currentResults = [];
+      activeIndex = -1;
+
+      if (!query.trim()) {
+        status!.textContent = IDLE_MESSAGE;
+        return;
+      }
+
+      status!.textContent = import.meta.env.DEV ? 'Searching your website...' : 'Searching...';
+
+      try {
+        let results: SearchItem[];
+        const terms = query.toLowerCase().trim().split(/\s+/);
+
+        if (import.meta.env.DEV) {
+          // Search the live development website.
+          if (!devIndex) devIndex = await buildDevIndex();
+
+          if (request !== searchCounter) return;
+
+          results = devIndex
+            .map((item) => {
+              const title = item.title.toLowerCase();
+              const content = item.content.toLowerCase();
+
+              const matches = terms.every((term) => `${title} ${content}`.includes(term));
+
+              const score = terms.reduce(
+                (total, term) =>
+                  total + (title.includes(term) ? 10 : 0) + (content.includes(term) ? 1 : 0),
+                0,
+              );
+
+              return { item, matches, score };
+            })
+            .filter((result) => result.matches)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 12)
+            .map((result) => result.item);
+        } else {
+          // Search the production Pagefind index.
+          const engine = await loadSearch();
+          const response = await engine.search(query);
+
+          if (request !== searchCounter) return;
+
+          const data = await Promise.all(
+            response.results.slice(0, 8).map((result) => result.data()),
+          );
+
+          // Each page, then up to two of its sections (headings with ids) so a result can
+          // land on, and glow, the exact node that matched.
+          results = data
+            .flatMap((page): SearchItem[] => {
+              const pageTitle = page.meta?.title || 'Untitled page';
+              const sections = (page.sub_results ?? [])
+                .filter((sub) => sub.url.includes('#') && sub.title && sub.title !== pageTitle)
+                .slice(0, 2)
+                .map((sub) => ({
+                  url: sub.url,
+                  title: sub.title!,
+                  section: pageTitle,
+                  excerpt: '',
+                  content: '',
+                  excerptHtml: sub.excerpt || '',
+                }));
+
+              return [
+                {
+                  url: page.url,
+                  title: pageTitle,
+                  excerpt: '',
+                  content: '',
+                  excerptHtml: page.excerpt || '',
+                },
+                ...sections,
+              ];
+            })
+            .slice(0, 12);
+        }
+
+        if (request !== searchCounter) return;
+
+        if (!results.length) {
+          status!.textContent = 'No results found.';
+          return;
+        }
+
+        status!.textContent = `${results.length} results found`;
+        renderResults(results, terms);
+      } catch (error) {
+        console.error('Search error:', error);
+        status!.textContent = 'Search is unavailable. Check the browser console for details.';
+      }
+    }
+
+    openButton.addEventListener('click', openSearch);
+    closeButton.addEventListener('click', closeSearch);
+
+    // The overlay now covers the whole viewport, so a click anywhere outside
+    // the panel hits the overlay itself and closes it.
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) closeSearch();
+    });
+
+    input.addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => search(input!.value), 200);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      const shortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k';
+
+      if (shortcut) {
+        event.preventDefault();
+        if (isOpen()) input!.focus();
+        else openSearch();
+        return;
+      }
+
+      if (
+        event.key === '/' &&
+        !isOpen() &&
+        !['INPUT', 'TEXTAREA'].includes((document.activeElement as HTMLElement)?.tagName)
+      ) {
+        event.preventDefault();
+        openSearch();
+        return;
+      }
+
+      if (!isOpen()) return;
+
+      if (event.key === 'Escape') {
+        closeSearch();
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActive(activeIndex + 1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActive(activeIndex - 1);
+      } else if (event.key === 'Enter' && activeIndex >= 0) {
+        currentResults[activeIndex]?.click();
+      }
+    });
+  }
+</script>
+
+<style is:global>
+  .search-result-excerpt mark {
+    background: none;
+    color: var(--accent, #34d399);
+    font-weight: 600;
+  }
+</style>

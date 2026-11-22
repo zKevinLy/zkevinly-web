@@ -1,8 +1,0 @@
-/* ---------- No entrance animation on cards ----------
-   Cards render in place: no fade/"pop" on load or reload. (Card hover lift is
-   a transition on .node-interactive and is unaffected.) */
-.topic-blocks > section[data-reveal]:has([data-filter-item]),
-[data-filter-item] {
-  animation: none !important;
-  opacity: 1 !important;
-}

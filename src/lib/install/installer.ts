@@ -147,11 +147,31 @@ export function selectApk(assets: ApkAsset[], keys: string[], match?: string): A
   return ranked[0]?.asset ?? null;
 }
 
+/**
+ * Where release assets may be downloaded from. The release APIs are answered by the project's
+ * maintainers, so a link they return could point anywhere; only the hosts GitHub and GitLab
+ * actually serve release files from are accepted. (Fixed `install.url` links come from this
+ * site's own config and are not checked here.) The PowerShell script applies the same rule.
+ */
+const DOWNLOAD_HOSTS = ['github.com', 'githubusercontent.com', 'gitlab.com'];
+
+export function isTrustedDownload(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === 'https:' &&
+      DOWNLOAD_HOSTS.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`))
+    );
+  } catch {
+    return false;
+  }
+}
+
 const safeName = (name: string) => name.replace(/[\\/:*?"<>|\s]+/g, '_');
 
 const fileFromUrl = (url: string): string => {
   try {
-    return safeName(decodeURIComponent(new URL(url).pathname.split('/').pop() ?? ''));
+    return safeName(decodeURIComponent(new URL(url).pathname.split('/').at(-1)!));
   } catch {
     return '';
   }
@@ -182,15 +202,19 @@ export function gitlabReleaseAssets(release: unknown, project: string): ApkAsset
     else urls.push(`https://gitlab.com${found}`);
   }
 
-  return [...new Set(urls)].map((url) => ({ name: fileFromUrl(url), url }));
+  return [...new Set(urls)]
+    .filter(isTrustedDownload)
+    .map((url) => ({ name: fileFromUrl(url), url }));
 }
 
 const githubReleaseAssets = (release: unknown): ApkAsset[] => {
   const assets = (release as { assets?: { name?: unknown; browser_download_url?: unknown }[] })
     ?.assets;
   return (assets ?? []).flatMap((a) =>
-    typeof a.name === 'string' && typeof a.browser_download_url === 'string'
-      ? [{ name: a.name, url: a.browser_download_url }]
+    typeof a.name === 'string' &&
+    typeof a.browser_download_url === 'string' &&
+    isTrustedDownload(a.browser_download_url)
+      ? [{ name: safeName(a.name), url: a.browser_download_url }]
       : [],
   );
 };
@@ -233,8 +257,13 @@ export async function resolveApkLink(
 
 /* ---------- Script ---------- */
 
-/** A PowerShell single-quoted string. */
-const ps = (value: string) => `'${value.replace(/'/g, "''")}'`;
+/**
+ * A PowerShell single-quoted string. PowerShell treats the typographic quotes (‘ ’ ‚ ‛) as
+ * single quotes too, so each of them is doubled, not just the ASCII one. Line breaks are
+ * flattened so a value can never continue onto a new statement.
+ */
+const ps = (value: string) =>
+  `'${value.replace(/\r?\n|\r/g, ' ').replace(/['\u2018\u2019\u201A\u201B]/g, (q) => q + q)}'`;
 
 const psArray = (values: string[]) => `@(${values.map(ps).join(', ')})`;
 
@@ -242,7 +271,7 @@ const psArray = (values: string[]) => `@(${values.map(ps).join(', ')})`;
 function urlFileName(url: string, fallback: string): string {
   let name = '';
   try {
-    name = decodeURIComponent(new URL(url).pathname.split('/').pop() ?? '');
+    name = decodeURIComponent(new URL(url).pathname.split('/').at(-1)!);
   } catch {
     // Not a valid URL: use the fallback.
   }
@@ -280,11 +309,17 @@ $abiKeys = @(switch -Wildcard ($abi) {
 })
 Write-Host "Device CPU: $abi"`;
 
-const SELECT_APK = `# Best APK first: built for this CPU, then universal, then an older compatible build
+const SELECT_APK = `# Release files must come over https from GitHub's or GitLab's own hosts
+function Test-DownloadUrl($url) {
+    try { $u = [uri]$url } catch { return $false }
+    $u.Scheme -eq 'https' -and $u.Host -match '(^|\\.)(github\\.com|githubusercontent\\.com|gitlab\\.com)$'
+}
+
+# Best APK first: built for this CPU, then universal, then an older compatible build
 $anyArch = ${ps(ANY_ARCH)}
 function Select-Apk($assets, $match) {
     $assets |
-        Where-Object { $_.Name -like '*.apk' -and (-not $match -or $_.Name -match $match) } |
+        Where-Object { $_.Name -like '*.apk' -and (Test-DownloadUrl $_.Url) -and (-not $match -or $_.Name -match $match) } |
         ForEach-Object {
             $rank = if ($_.Name -match $abiKeys[0]) { 0 }
                     elseif ($_.Name -notmatch $anyArch) { 1 }
@@ -322,7 +357,7 @@ const GITHUB = `# Newest release (pre-releases included) that has a matching APK
 function Get-GitHubApk($repo, $match) {
     $releases = Invoke-Api "https://api.github.com/repos/$repo/releases?per_page=30"
     foreach ($release in $releases) {
-        $assets = $release.assets | ForEach-Object { [pscustomobject]@{ Name = $_.name; Url = $_.browser_download_url } }
+        $assets = $release.assets | ForEach-Object { [pscustomobject]@{ Name = ($_.name -replace '[\\\\/:*?"<>|\\s]+', '_'); Url = $_.browser_download_url } }
         $apk = Select-Apk $assets $match
         if ($apk) { return $apk }
     }
@@ -426,7 +461,7 @@ export function buildInstallScript(apps: InstallApp[], device: DeviceId = 'auto'
     ? null
     : device === 'auto'
       ? AUTO_DETECT
-      : `# Device CPU: ${DEVICES.find((d) => d.id === device)?.label ?? device}\n$abiKeys = ${psArray(ABI_KEYS[device])}`;
+      : `# Device CPU: ${DEVICES.find((d) => d.id === device)!.label}\n$abiKeys = ${psArray(ABI_KEYS[device])}`;
 
   const table = `$apps = @(\n${apps
     .map(

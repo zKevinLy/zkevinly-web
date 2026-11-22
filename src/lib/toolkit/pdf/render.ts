@@ -68,7 +68,7 @@ export async function renderPdf(layout: Layout, attachment?: Attachment): Promis
   const clean = (value: string): string => {
     let out = '';
     for (const ch of value.replace(/[\u00a0\u2007\u2009\u202f]/g, ' ').replace(/\t/g, '  ')) {
-      const code = ch.codePointAt(0) ?? 0;
+      const code = ch.codePointAt(0)!; // `ch` is one whole character, never empty
       if (ch === '\n') out += ch;
       else if (code < 32 || code === 127) continue;
       else if (supported.has(code)) out += ch;

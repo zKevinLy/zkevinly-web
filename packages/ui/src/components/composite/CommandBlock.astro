@@ -1,0 +1,37 @@
+---
+/**
+ * COMPOSITE: labelled shell commands, each with a copy button (base: CopyButton).
+ * Takes a list and renders nothing when it is empty. Multi-line scripts keep their line
+ * breaks and drop the single-line "> " prompt.
+ */
+import CopyButton from '../base/CopyButton.astro';
+import type { CopyCommand } from '../../types';
+
+interface Props {
+  commands?: CopyCommand[];
+}
+
+const { commands = [] } = Astro.props;
+---
+
+{commands.length > 0 && (
+  <div class="cmds">
+    {commands.map((command) => {
+      const multiline = command.command.includes('\n');
+      return (
+        <div class="cmd">
+          {command.label && <span class="cmd-label">{command.label}</span>}
+          <div class="cmd-row" data-copy-root>
+            <code class="cmd-text" data-copy-source data-multiline={multiline ? '' : undefined}>
+              {command.command}
+            </code>
+            <CopyButton
+              text={command.command}
+              ariaLabel={multiline ? `Copy ${command.label ?? 'script'}` : undefined}
+            />
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}

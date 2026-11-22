@@ -1,3 +1,4 @@
+import { json } from './http.js';
 import projects from '../src/config/projects';
 import { entryRepo, fetchRepoInfo, repoHost } from '../src/lib/github';
 
@@ -30,16 +31,6 @@ const ALLOWED = new Map(
     .filter((repo) => typeof repo === 'string' && repoHost(repo) === 'github')
     .map((repo) => [repo.toLowerCase(), repo]),
 );
-
-const json = (body, status = 200, cache = 'no-store') =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': cache,
-      'X-Content-Type-Options': 'nosniff',
-    },
-  });
 
 /**
  * @param {Request} request

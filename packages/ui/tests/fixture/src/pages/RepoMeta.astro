@@ -1,0 +1,37 @@
+---
+import RepoMeta from '@zkevinly/ui/composite/RepoMeta.astro';
+
+const info = {
+  pushedAt: '2020-01-01T00:00:00Z',
+  stars: 1234,
+  version: 'v1.0.0',
+  releaseUrl: 'https://example.com/releases/v1.0.0',
+  prerelease: false,
+  private: false,
+};
+---
+
+<test-case id="full">
+  <RepoMeta repo="o/r" info={info} />
+</test-case>
+<test-case id="prerelease">
+  <RepoMeta repo="o/r" info={{ ...info, prerelease: true }} />
+</test-case>
+<test-case id="private">
+  <RepoMeta repo="o/r" info={{ ...info, private: true }} />
+</test-case>
+<test-case id="known-private">
+  <RepoMeta repo="o/r" isPrivate />
+</test-case>
+<test-case id="gitlab">
+  <RepoMeta repo="gitlab:g/p" info={info} host="GitLab" />
+</test-case>
+<test-case id="no-info">
+  <RepoMeta repo="o/r" />
+</test-case>
+<test-case id="manual-date">
+  <RepoMeta updated="2020-01-01T00:00:00Z" />
+</test-case>
+<test-case id="nothing">
+  <RepoMeta />
+</test-case>

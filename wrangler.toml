@@ -1,5 +1,6 @@
 # Cloudflare Worker that serves the static Astro build (dist/) as assets, plus a
-# tiny /api/gif proxy for the chat bot (worker/). The custom domain is attached in
+# tiny /api/gif proxy for the chat bot, /api/repo (private repo badges) and /api/ping (card
+# status dots) (worker/). The custom domain is attached in
 # the Cloudflare dashboard (Workers & Pages -> this Worker -> Settings -> Domains
 # & Routes), not here.
 name = "zkevinly-web"
@@ -17,3 +18,13 @@ not_found_handling = "404-page"
 # The GIPHY key(s) are a secret, not a var. Set one key, or several separated by
 # commas, with:
 #   npx wrangler secret put GIPHY_API_KEYS
+
+# Per-visitor limit on /api/gif (the GIPHY quota is shared by everyone). 20 GIF searches a
+# minute is far more than a person chatting needs. The namespace_id is any number you pick that
+# is unique in your account.
+[[ratelimits]]
+name = "GIF_LIMITER"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 20
+  period = 60

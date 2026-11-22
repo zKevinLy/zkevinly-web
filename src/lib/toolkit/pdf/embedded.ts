@@ -8,12 +8,67 @@ import {
   PDFName,
   PDFRawStream,
   PDFString,
-  decodePDFRawStream,
 } from 'pdf-lib';
 import { DocError } from './errors';
 
-function* embeddedFiles(node: PDFDict, depth = 0): Generator<[string, PDFDict]> {
-  if (depth > 8) return;
+/** The most an attachment may inflate to. Real configs are a few hundred KB at most. */
+export const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+/** Most dictionaries visited while walking the name tree (a crafted shared-kids tree is exponential). */
+const MAX_TREE_NODES = 2000;
+
+/** Inflates `bytes` but gives up as soon as the output passes `limit` (a decompression bomb). */
+async function inflateCapped(bytes: Uint8Array, limit: number): Promise<Uint8Array> {
+  const stream = new Blob([bytes as BlobPart])
+    .stream()
+    .pipeThrough(new DecompressionStream('deflate'));
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > limit) {
+      await reader.cancel();
+      throw new Error('too large');
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, at);
+    at += chunk.length;
+  }
+  return out;
+}
+
+/** The decoded bytes of an embedded file stream: stored as-is, or Flate with a size cap. */
+async function streamBytes(stream: PDFRawStream): Promise<Uint8Array> {
+  const filter = stream.dict.lookup(PDFName.of('Filter'));
+  const raw = stream.getContents();
+  if (filter === undefined) {
+    if (raw.length > MAX_ATTACHMENT_BYTES) throw new Error('too large');
+    return raw;
+  }
+  const only =
+    filter instanceof PDFName
+      ? filter
+      : filter instanceof PDFArray && filter.size() === 1
+        ? filter.lookup(0)
+        : null;
+  if (!(only instanceof PDFName) || only.asString() !== '/FlateDecode') {
+    throw new Error('unsupported filter');
+  }
+  return inflateCapped(raw, MAX_ATTACHMENT_BYTES);
+}
+
+function* embeddedFiles(
+  node: PDFDict,
+  depth = 0,
+  budget = { left: MAX_TREE_NODES },
+): Generator<[string, PDFDict]> {
+  if (depth > 8 || budget.left-- <= 0) return;
   const names = node.lookupMaybe(PDFName.of('Names'), PDFArray);
   if (names) {
     for (let i = 0; i + 1 < names.size(); i += 2) {
@@ -28,7 +83,7 @@ function* embeddedFiles(node: PDFDict, depth = 0): Generator<[string, PDFDict]> 
   if (kids) {
     for (let i = 0; i < kids.size(); i++) {
       const kid = kids.lookupMaybe(i, PDFDict);
-      if (kid) yield* embeddedFiles(kid, depth + 1);
+      if (kid) yield* embeddedFiles(kid, depth + 1, budget);
     }
   }
 }
@@ -60,7 +115,7 @@ export async function readAttachment(
     const stream = spec?.lookupMaybe(PDFName.of('EF'), PDFDict)?.lookup(PDFName.of('F'));
     if (!(stream instanceof PDFRawStream)) continue;
     try {
-      return { name: wanted, text: new TextDecoder().decode(decodePDFRawStream(stream).decode()) };
+      return { name: wanted, text: new TextDecoder().decode(await streamBytes(stream)) };
     } catch {
       throw new DocError('The data inside this PDF is damaged.');
     }

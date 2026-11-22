@@ -1,0 +1,20 @@
+---
+import Layout from '@zkevinly/ui/layouts/Layout.astro';
+---
+
+<Layout
+  name="Acme"
+  title="Hello"
+  description="A test page"
+  nav={[{ href: '/Layout', label: 'Here' }]}
+  version="v9"
+  aboutHref="/about"
+  githubUrl="https://github.com/acme"
+  searchPlaceholder="Find it"
+>
+  <p id="page-body">page body</p>
+  <p slot="end" id="end-slot">
+    widget
+  </p>
+  <meta slot="head" name="x-extra" content="1" />
+</Layout>

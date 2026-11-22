@@ -1,0 +1,26 @@
+---
+import LinkList from '@zkevinly/ui/base/LinkList.astro';
+---
+
+<test-case id="mixed">
+  <LinkList
+    links={[
+      { label: 'Guide', title: 'Setup', href: '/setup' },
+      { title: 'Docs', href: 'https://example.com/docs' },
+    ]}
+  />
+</test-case>
+<test-case id="download">
+  <LinkList links={[{ title: 'x.json', href: '/files/x.json', download: 'x.json' }]} />
+</test-case>
+<test-case id="action">
+  <LinkList
+    links={[{ title: 'y.json', href: '/files/y.json', download: 'y.json', action: 'Save' }]}
+  />
+</test-case>
+<test-case id="empty">
+  <LinkList links={[]} />
+</test-case>
+<test-case id="omitted">
+  <LinkList />
+</test-case>

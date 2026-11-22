@@ -1,26 +1,12 @@
-// GitHub + GitLab helpers shared by the build (RepoMeta.astro frontmatter) and the browser
-// (RepoMeta.astro <script>). Keep this file free of Node-only APIs.
+// GitHub + GitLab helpers shared by the build (TopicBlocks) and the browser (scripts/repo-refresh.ts). Keep this file free of Node-only APIs.
 //
 // A repo reference is a plain string: bare "owner/name" is GitHub, "gitlab:group/project"
 // is GitLab (gitlab.com; the project path may sit in nested groups).
 
+import type { RepoInfo } from '@zkevinly/ui/types';
 import type { Entry } from '../config/types';
 
-export interface RepoInfo {
-  /** ISO timestamp of the most recent push. */
-  pushedAt: string;
-  stars: number;
-  /** Tag of the newest published (non-draft) release, pre-releases included, if any. */
-  version: string | null;
-  releaseUrl: string | null;
-  /** True when `version` is a GitHub pre-release (beta, RC, nightly…). GitLab has no such flag, so it is always false there. */
-  prerelease: boolean;
-  /**
-   * True when the host says the repo is private (GitHub: only visible with a build-time token).
-   * The browser has no token, so it must not try to refresh these: it would only get a 404.
-   */
-  private: boolean;
-}
+export type { RepoInfo };
 
 export interface GitHubRelease {
   tag_name: string;
@@ -28,8 +14,6 @@ export interface GitHubRelease {
   draft?: boolean;
   prerelease?: boolean;
 }
-
-export type Freshness = 'hot' | 'warm' | 'cold';
 
 const API = 'https://api.github.com';
 const GITLAB_API = 'https://gitlab.com/api/v4';
@@ -348,35 +332,4 @@ async function fetchGitHubInfo(repo: string, token?: string): Promise<RepoInfo |
     console.warn(`[github] ${repo}: request failed`, error);
     return null;
   }
-}
-
-/** "3 days ago", "2 months ago", "just now". */
-export function relativeTime(iso: string, now = Date.now()): string {
-  const seconds = Math.round((new Date(iso).getTime() - now) / 1000);
-  const abs = Math.abs(seconds);
-
-  if (abs < 60) return 'just now';
-
-  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-  const units: [Intl.RelativeTimeFormatUnit, number][] = [
-    ['year', 31_536_000],
-    ['month', 2_592_000],
-    ['week', 604_800],
-    ['day', 86_400],
-    ['hour', 3600],
-    ['minute', 60],
-  ];
-
-  for (const [unit, size] of units) {
-    if (abs >= size) return rtf.format(Math.round(seconds / size), unit);
-  }
-  return 'just now';
-}
-
-/** hot = touched in the last 2 weeks (pulses), warm = last 3 months, else cold. */
-export function freshness(iso: string, now = Date.now()): Freshness {
-  const days = (now - new Date(iso).getTime()) / 86_400_000;
-  if (days <= 14) return 'hot';
-  if (days <= 90) return 'warm';
-  return 'cold';
 }

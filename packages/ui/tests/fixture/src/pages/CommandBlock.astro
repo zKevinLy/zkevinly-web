@@ -1,0 +1,25 @@
+---
+import CommandBlock from '@zkevinly/ui/composite/CommandBlock.astro';
+---
+
+<test-case id="single">
+  <CommandBlock commands={[{ label: 'Install', command: 'npm i x && npm test' }]} />
+</test-case>
+<test-case id="unlabelled">
+  <CommandBlock commands={[{ command: 'ls' }]} />
+</test-case>
+<test-case id="multiline">
+  <CommandBlock commands={[{ command: 'line1\nline2' }]} />
+</test-case>
+<test-case id="multiline-labelled">
+  <CommandBlock commands={[{ label: 'Script', command: 'a\nb' }]} />
+</test-case>
+<test-case id="list">
+  <CommandBlock commands={[{ command: 'one' }, { label: 'L', command: 'two' }]} />
+</test-case>
+<test-case id="empty">
+  <CommandBlock commands={[]} />
+</test-case>
+<test-case id="omitted">
+  <CommandBlock />
+</test-case>

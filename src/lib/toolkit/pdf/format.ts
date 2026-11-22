@@ -3,8 +3,8 @@
 /** Falls back to en-US when the tag is invalid or unsupported. */
 export function safeLocale(locale: string): string {
   try {
-    const [canonical] = Intl.getCanonicalLocales(locale);
-    return canonical ?? 'en-US';
+    // A string always canonicalises to exactly one tag, or throws.
+    return Intl.getCanonicalLocales(locale)[0];
   } catch {
     return 'en-US';
   }
