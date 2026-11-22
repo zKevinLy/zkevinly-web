@@ -301,7 +301,7 @@ jobs:
           echo "file=$(ls dist-ui/*.tgz)" >> "$GITHUB_OUTPUT"
 
       - name: Publish to GitHub Packages
-        run: npm publish "$TARBALL"
+        run: npm publish "./$TARBALL"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TARBALL: ${{ steps.pack.outputs.file }}
