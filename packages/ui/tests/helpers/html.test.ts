@@ -77,7 +77,7 @@ describe('Html helper: hostile input', () => {
   it('stays fast on pathological input', () => {
     const t = Date.now();
     new Html('<a' + ' b'.repeat(50_000)).tags('a');
-    new Html('<' + 'a="'.repeat(50_000)).text;
+    assert.equal(typeof new Html('<' + 'a="'.repeat(50_000)).text, 'string');
     assert.ok(Date.now() - t < 1000);
   });
 });
