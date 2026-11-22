@@ -1,6 +1,6 @@
 {
   "name": "@zkevinly/ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Presentational Astro components and styles for zkevinly sites. No business logic: data goes in through props.",
   "type": "module",
   "license": "MIT",
