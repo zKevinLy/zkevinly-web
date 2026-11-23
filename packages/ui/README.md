@@ -56,14 +56,14 @@ pages that use it.
 
 ## What is in it
 
-| Import                           | Contents                                                                                                                                                                 |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@zkevinly/ui/base/*.astro`      | Primitives: Avatar, Background, Badge, Breadcrumb, Button, CopyButton, Figure, Freshness, Grid, IconButton, LinkList, NavLink, Node, PageHeader, Prose, Section, Select, Steps, Tags |
-| `@zkevinly/ui/composite/*.astro` | Built from the primitives: CommandBlock, FilterBar, Header, HubTrail, RepoMeta, Search, Workflow                                                                         |
-| `@zkevinly/ui/layouts/*.astro`   | `Layout`: head, theme, header, `<main>`, search, reveal motion; slots `head` and `end`                                                                                   |
-| `@zkevinly/ui/lib/*`             | UI logic: `filter`, `spotlight`, `navigation`, `workflow` (layout + validation), `repo-info` (`applyRepoInfo`), `icon` (`resolveIcon`), `ping` (`applyPing`), `background` (`resolveBackground`), `time`     |
-| `@zkevinly/ui/types`             | Prop shapes (`CopyCommand`, `LinkItem`, `TrailStep`, `RepoInfo`, `WorkflowNode`...): structural, so your own richer types are assignable                                 |
-| `@zkevinly/ui/styles`            | Everything; or pick files: `styles/base/tokens.css`, `styles/layout/header.css`...                                                                                       |
+| Import                           | Contents                                                                                                                                                                                                 |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@zkevinly/ui/base/*.astro`      | Primitives: Avatar, Background, Badge, Breadcrumb, Button, CopyButton, Figure, Freshness, Grid, IconButton, LinkList, NavLink, Node, PageHeader, Prose, Section, Select, Steps, Tags                     |
+| `@zkevinly/ui/composite/*.astro` | Built from the primitives: CommandBlock, FilterBar, Header, HubTrail, RepoMeta, Search, Workflow                                                                                                         |
+| `@zkevinly/ui/layouts/*.astro`   | `Layout`: head, theme, header, `<main>`, search, reveal motion; slots `head` and `end`                                                                                                                   |
+| `@zkevinly/ui/lib/*`             | UI logic: `filter`, `spotlight`, `navigation`, `workflow` (layout + validation), `repo-info` (`applyRepoInfo`), `icon` (`resolveIcon`), `ping` (`applyPing`), `background` (`resolveBackground`), `time` |
+| `@zkevinly/ui/types`             | Prop shapes (`CopyCommand`, `LinkItem`, `TrailStep`, `RepoInfo`, `WorkflowNode`...): structural, so your own richer types are assignable                                                                 |
+| `@zkevinly/ui/styles`            | Everything; or pick files: `styles/base/tokens.css`, `styles/layout/header.css`...                                                                                                                       |
 
 See each component's header comment for its props and slots.
 
