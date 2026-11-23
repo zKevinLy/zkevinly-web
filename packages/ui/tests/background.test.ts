@@ -64,10 +64,7 @@ describe('resolveBackground', () => {
 
   it('encodes what could end the CSS url early', () => {
     const r = resolveBackground({ image: 'https://x/a b".jpg?x=(1)&y=<2>\\z' });
-    assert.equal(
-      r?.layer,
-      '--bg-image:url("https://x/a%20b%22.jpg?x=%281%29&y=%3C2%3E%5Cz")',
-    );
+    assert.equal(r?.layer, '--bg-image:url("https://x/a%20b%22.jpg?x=%281%29&y=%3C2%3E%5Cz")');
   });
 
   it('fails on a value it cannot place, naming the option', () => {

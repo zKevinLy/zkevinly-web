@@ -1,7 +1,0 @@
-/* ---------- No entrance animation on filterable items ----------
-   Items render in place: no fade/"pop" on load or reload. (Card hover lift is
-   a transition on .node-interactive and is unaffected.) */
-[data-filter-item] {
-  animation: none !important;
-  opacity: 1 !important;
-}
