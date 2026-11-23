@@ -58,10 +58,10 @@ pages that use it.
 
 | Import                           | Contents                                                                                                                                                                 |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@zkevinly/ui/base/*.astro`      | Primitives: Avatar, Badge, Breadcrumb, Button, CopyButton, Figure, Freshness, Grid, IconButton, LinkList, NavLink, Node, PageHeader, Prose, Section, Select, Steps, Tags |
+| `@zkevinly/ui/base/*.astro`      | Primitives: Avatar, Background, Badge, Breadcrumb, Button, CopyButton, Figure, Freshness, Grid, IconButton, LinkList, NavLink, Node, PageHeader, Prose, Section, Select, Steps, Tags |
 | `@zkevinly/ui/composite/*.astro` | Built from the primitives: CommandBlock, FilterBar, Header, HubTrail, RepoMeta, Search, Workflow                                                                         |
 | `@zkevinly/ui/layouts/*.astro`   | `Layout`: head, theme, header, `<main>`, search, reveal motion; slots `head` and `end`                                                                                   |
-| `@zkevinly/ui/lib/*`             | UI logic: `filter`, `spotlight`, `navigation`, `workflow` (layout + validation), `repo-info` (`applyRepoInfo`), `icon` (`resolveIcon`), `ping` (`applyPing`), `time`     |
+| `@zkevinly/ui/lib/*`             | UI logic: `filter`, `spotlight`, `navigation`, `workflow` (layout + validation), `repo-info` (`applyRepoInfo`), `icon` (`resolveIcon`), `ping` (`applyPing`), `background` (`resolveBackground`), `time`     |
 | `@zkevinly/ui/types`             | Prop shapes (`CopyCommand`, `LinkItem`, `TrailStep`, `RepoInfo`, `WorkflowNode`...): structural, so your own richer types are assignable                                 |
 | `@zkevinly/ui/styles`            | Everything; or pick files: `styles/base/tokens.css`, `styles/layout/header.css`...                                                                                       |
 
@@ -73,6 +73,32 @@ See each component's header comment for its props and slots.
 `<name>.svg|png|webp` Dashboard Icons file, a `/path` or an image URL; anything else throws).
 `<Node ping />` adds a status dot, rendered as "checking". The app decides what to check and calls
 `applyPing(el, result)` on the node's `.node-ping`; the package never makes the request.
+
+### Background
+
+`Layout` takes a Homepage-style `background`: any image URL, plus knobs for how it looks.
+
+```astro
+<Layout
+  name="Lab"
+  nav={nav}
+  background={{
+    image: 'https://images.unsplash.com/photo-....jpg', // /path, ./path, https://, data:image/
+    blur: 'md', // none | sm | md | lg | xl | 2xl | 3xl, or px
+    saturate: 80, // percent, 100 = unchanged
+    brightness: 60, // percent, 100 = unchanged
+    opacity: 90, // 0-100, how much of the image shows over the page colour
+    cardBlur: 'md', // blur behind each Node
+    cardOpacity: 70, // 0-100, how solid a Node is (lower lets the image through)
+  }}
+>
+```
+
+Only `image` is required; leave out what you don't need. The picture is fixed behind the page and
+the page colour stays underneath it, so light and dark themes both work (tune `brightness` per
+site). A bad value (unknown blur name, out of range, `javascript:` URL) fails the build. Without
+`image` nothing is rendered. Sites with their own shell can render `base/Background.astro` with
+the same options; `lib/background` exposes `resolveBackground` if you need the CSS variables.
 
 ### Data in, behaviour out
 

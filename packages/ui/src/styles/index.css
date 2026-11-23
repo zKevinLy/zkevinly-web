@@ -6,6 +6,7 @@
 @import './layout/header.css';
 @import './layout/page.css';
 @import './components/avatar.css';
+@import './components/background.css';
 @import './components/badge.css';
 @import './components/breadcrumb.css';
 @import './components/button.css';

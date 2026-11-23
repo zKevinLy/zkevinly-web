@@ -71,3 +71,6 @@ export interface WorkflowNode {
   branch?: string;
   tags?: string[];
 }
+
+/** The Layout's `background` option (image, blur, saturate, brightness, opacity, cardBlur...). */
+export type { BackgroundOptions, BlurStep } from './lib/background';

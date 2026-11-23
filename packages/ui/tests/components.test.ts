@@ -35,6 +35,25 @@ describe('Avatar', () => {
   });
 });
 
+describe('Background', () => {
+  it('renders nothing without an image', async () => {
+    assert.equal((await page('Background')).case('none').tags('div').length, 0);
+  });
+  it('is a hidden fixed layer carrying the image', async () => {
+    const a = attrs((await page('Background')).case('plain'), 'div');
+    assert.equal(a.class, 'bg-layer');
+    assert.equal(a['aria-hidden'], 'true');
+    assert.equal(a.style, '--bg-image:url("https://example.com/wall.jpg")');
+  });
+  it('passes blur, saturate, brightness and opacity as custom properties', async () => {
+    const a = attrs((await page('Background')).case('tuned'), 'div');
+    assert.equal(
+      a.style,
+      '--bg-image:url("/wall.jpg");--bg-blur:12px;--bg-saturate:50%;--bg-brightness:75%;--bg-opacity:0.4',
+    );
+  });
+});
+
 describe('Badge', () => {
   it('is a span without href', async () => {
     const c = (await page('Badge')).case('span');
@@ -821,5 +840,20 @@ describe('Layout', () => {
   });
   it('ships the reveal animation script', async () => {
     assert.ok((await page('Layout')).tags('script', { type: 'module' }).length >= 1);
+  });
+  it('has no background unless asked', async () => {
+    const p = await page('Layout');
+    assert.ok(!('data-bg' in attrs(p, 'html', {})));
+    assert.equal(attrs(p, 'html', {}).style, undefined);
+    assert.equal(p.tags('div', { class: 'bg-layer' }).length, 0);
+  });
+  it('puts the background layer first in <body> and the card options on <html>', async () => {
+    const p = await page('LayoutBackground');
+    const html = attrs(p, 'html', {});
+    assert.ok('data-bg' in html);
+    assert.equal(html.style, '--card-blur:12px;--card-opacity:60%');
+    const layer = attrs(p, 'div', { class: 'bg-layer' });
+    assert.equal(layer.style, '--bg-image:url("/wall.jpg");--bg-blur:24px');
+    assert.ok(p.html.indexOf('bg-layer') < p.html.indexOf('<header'));
   });
 });

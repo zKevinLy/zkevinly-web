@@ -8,10 +8,16 @@
  *
  * `transitions` (default true) turns on the ClientRouter. Without it every navigation is a
  * full page load; the scripts still get a first-load `astro:page-load`.
+ *
+ * `background` puts a picture behind the site, Homepage-style (image URL, blur, saturate,
+ * brightness, opacity; cardBlur / cardOpacity for the cards on top). See `lib/background`.
  */
 import { ClientRouter } from 'astro:transitions';
 import Header from '../components/composite/Header.astro';
 import Search from '../components/composite/Search.astro';
+import Background from '../components/base/Background.astro';
+import { resolveBackground } from '../lib/background';
+import type { BackgroundOptions } from '../lib/background';
 import '../styles/index.css';
 
 interface Props {
@@ -28,6 +34,7 @@ interface Props {
   searchPlaceholder?: string;
   transitions?: boolean;
   favicon?: string;
+  background?: BackgroundOptions;
 }
 
 const {
@@ -42,13 +49,15 @@ const {
   searchPlaceholder,
   transitions = true,
   favicon = '/favicon.svg',
+  background,
 } = Astro.props;
 const fullTitle = title ? `${title} · ${name}` : name;
+const bg = resolveBackground(background);
 const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site) : undefined;
 ---
 
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark" data-bg={bg ? '' : undefined} style={bg?.cards || undefined}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -82,6 +91,7 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site) : undefin
     <slot name="head" />
   </head>
   <body>
+    <Background {...background} />
     <Header name={name} nav={nav} version={version} aboutHref={aboutHref} githubUrl={githubUrl} />
     <!--
       Pagefind: once ANY element on the site carries data-pagefind-body, every page

@@ -1,0 +1,13 @@
+---
+import Background from '@zkevinly/ui/base/Background.astro';
+---
+
+<test-case id="none">
+  <Background />
+</test-case>
+<test-case id="plain">
+  <Background image="https://example.com/wall.jpg" />
+</test-case>
+<test-case id="tuned">
+  <Background image="/wall.jpg" blur="md" saturate={50} brightness={75} opacity={40} />
+</test-case>

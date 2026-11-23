@@ -1,0 +1,32 @@
+/* ---------- Background ---------- */
+
+/* Fixed behind everything. The blur eats the layer's own edges, so it is drawn larger than the
+   screen by twice the blur radius and nothing soft shows at the sides. */
+.bg-layer {
+  position: fixed;
+  inset: calc(var(--bg-blur, 0px) * -2);
+  z-index: -1;
+  background: var(--bg-image) center / cover no-repeat;
+  filter: blur(var(--bg-blur, 0px)) saturate(var(--bg-saturate, 100%))
+    brightness(var(--bg-brightness, 100%));
+  opacity: var(--bg-opacity, 1);
+  pointer-events: none;
+}
+
+/* The page colour on <html> stays as the backdrop (opacity blends the image into it); <body>'s own
+   background would otherwise paint over the layer. */
+html[data-bg] body {
+  background: transparent;
+}
+
+/* Cards: `cardOpacity` lets the picture show through, `cardBlur` keeps text readable over it. Both
+   are unset (and so do nothing) unless the site asks. */
+html[data-bg] .node {
+  background: color-mix(in srgb, var(--surface) var(--card-opacity, 100%), transparent);
+  -webkit-backdrop-filter: blur(var(--card-blur, 0px));
+  backdrop-filter: blur(var(--card-blur, 0px));
+}
+
+html[data-bg] .node:hover {
+  background: color-mix(in srgb, var(--surface-hover) var(--card-opacity, 100%), transparent);
+}

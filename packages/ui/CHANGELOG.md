@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `Layout`: optional `background` (Homepage-style): an image URL with `blur`, `saturate`,
+  `brightness`, `opacity`, plus `cardBlur` / `cardOpacity` for the cards over it. New
+  `base/Background` (the fixed image layer) and `lib/background` (`resolveBackground`, validates
+  at build time). New type `BackgroundOptions`.
 - `Node`: optional `icon` (a picture before the title, Homepage-style) taking `si-<slug>` (Simple
   Icons), `<name>.svg|png|webp` (Dashboard Icons), a `/path` or an image URL; unknown values fail the
   build. New `lib/icon` (`resolveIcon`). `WorkflowNode` takes `icon` too.

@@ -1,0 +1,18 @@
+---
+/**
+ * BASE: Background — a picture fixed behind the whole page, Homepage-style: an image URL plus blur,
+ * saturate, brightness and opacity. Renders nothing without an `image`.
+ *
+ * `Layout` renders this for you from its `background` prop (and also lets cards pick up
+ * `cardBlur` / `cardOpacity`); use it directly only in a page shell of your own. Options are
+ * described in `@zkevinly/ui/lib/background`.
+ */
+import { resolveBackground } from '../../lib/background';
+import type { BackgroundOptions } from '../../lib/background';
+
+type Props = BackgroundOptions;
+
+const resolved = resolveBackground(Astro.props);
+---
+
+{resolved && <div class="bg-layer" style={resolved.layer} aria-hidden="true" />}
