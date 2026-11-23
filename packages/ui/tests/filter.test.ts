@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  FILTER_ORDER_EVENT,
+  FILTER_REFRESH_EVENT,
   MIN_FILTER_ITEMS,
   activeTags,
   buildFilterModel,
@@ -278,5 +280,12 @@ describe('buildFilterModel', () => {
 
     const repo = buildFilterModel([src([], { repo: 'a/b' }), src([]), src([])]);
     assert.deepEqual(repo?.sorts, ['default', 'title', 'updated', 'stars']);
+  });
+});
+
+describe('filter events', () => {
+  it('has distinct, namespaced names for refreshing data and for a page reorder', () => {
+    assert.equal(FILTER_ORDER_EVENT, 'filter:order');
+    assert.equal(FILTER_REFRESH_EVENT, 'filter:refresh');
   });
 });

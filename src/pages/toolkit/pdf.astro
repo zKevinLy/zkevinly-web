@@ -21,13 +21,13 @@ const tool = toolkit.tools.find((t) => t.slug === 'pdf')!;
 
   <div class="tool" data-pdf-tool>
     <div class="tool-main">
-      <p class="callout" data-reveal>
+      <p class="callout">
         <strong>Private by design.</strong> Everything happens in this tab: nothing is uploaded and
         your documents are never saved in your browser, so closing the tab erases them. Keep the PDF
         you download. It carries its own data, so dropping it back here lets you edit it again.
       </p>
 
-      <div class="type-switch" role="group" aria-label="Document type" data-reveal>
+      <div class="type-switch" role="group" aria-label="Document type">
         {typeList.map((type) => (
           <Button class="type-btn" data-type={type.id} aria-pressed="false">
             {type.label}
@@ -36,7 +36,7 @@ const tool = toolkit.tools.find((t) => t.slug === 'pdf')!;
       </div>
       <p class="type-blurb" data-type-blurb></p>
 
-      <div class="actions" data-reveal>
+      <div class="actions">
         <div class="toolbar">
           <Button primary data-action="pdf">
             Download PDF
@@ -66,7 +66,7 @@ const tool = toolkit.tools.find((t) => t.slug === 'pdf')!;
         ></p>
       </div>
 
-      <div class="type-switch view-switch" role="group" aria-label="Editing view" data-reveal>
+      <div class="type-switch view-switch" role="group" aria-label="Editing view">
         <Button class="type-btn" data-view="json" aria-pressed="true">
           JSON
         </Button>

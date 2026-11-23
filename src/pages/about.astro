@@ -14,11 +14,11 @@ const { about } = site;
 
   <div class="about-body">
     {about.paragraphs.map((text) => (
-      <Prose reveal>{text}</Prose>
+      <Prose>{text}</Prose>
     ))}
   </div>
 
-  <div class="about-links" data-reveal>
+  <div class="about-links">
     <Button href={site.github} external>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
         <path d={siGithub.path}></path>

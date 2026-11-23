@@ -168,7 +168,7 @@ const { placeholder = 'Search the site...' } = Astro.props;
       // Nothing to clean up.
     }
 
-    // Wait for the page's reveal animation and layout to settle.
+    // Wait for layout to settle.
     setTimeout(() => {
       const target = findSpotlightTarget(pending.hash, pending.terms);
       if (target) spotlight(target);

@@ -130,3 +130,22 @@ describe('components only use classes the package styles', () => {
     });
   }
 });
+
+describe('pages render instantly', () => {
+  const stylesDir = join(SRC, 'styles');
+  const css = ['base', 'layout', 'components'].flatMap((g) =>
+    readdirSync(join(stylesDir, g))
+      .filter((f) => f.endsWith('.css'))
+      .map((f) => ({ file: `${g}/${f}`, text: read(stylesDir, g, f) })),
+  );
+
+  it('has no entrance-animation hook in any stylesheet', () => {
+    const offenders = css.filter((c) => /data-reveal|reveal-up/.test(c.text)).map((c) => c.file);
+    assert.deepEqual(offenders, [], 'pages must not animate in on load');
+  });
+
+  it('turns off the page-swap cross-fade', () => {
+    const base = css.find((c) => c.file === 'base/base.css')!.text;
+    assert.match(base, /::view-transition-old\(\*\)[^}]*animation:\s*none/);
+  });
+});

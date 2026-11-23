@@ -1,7 +1,8 @@
 ---
 /**
- * The page shell: <head> (meta, theme before first paint), Header, <main>, Search overlay,
- * and the reveal animation. Imports the package's styles, so a site only adds its own.
+ * The page shell: <head> (meta, theme before first paint), Header, <main> and Search overlay.
+ * Imports the package's styles, so a site only adds its own. Pages render instantly: there is
+ * no entrance animation on load and no fade between pages.
  *
  * Slots: default = page content; `head` = extra <head> tags; `end` = after the search overlay
  * (a site's own floating widgets, e.g. a chat bot).
@@ -101,7 +102,7 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site) : undefin
     {transitions ? (
       <main
         class="page"
-        transition:animate="fade"
+        transition:animate="none"
         data-pagefind-body={indexable ? '' : undefined}
         data-pagefind-ignore={indexable ? undefined : 'all'}
       >

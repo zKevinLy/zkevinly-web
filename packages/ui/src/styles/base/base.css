@@ -84,3 +84,11 @@ svg {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Pages swap instantly. The ClientRouter's default cross-fade (root and persisted elements) is
+   switched off; only intentional motion (hover, pulses) animates. */
+::view-transition-group(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation: none !important;
+}

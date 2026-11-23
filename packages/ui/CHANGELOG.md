@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Pages now render instantly: removed the entrance animation on load (`reveal.css`, `data-reveal`,
+  and the `reveal` prop on `Node`, `Prose` and `Section`) and the cross-fade between pages
+  (`<main transition:animate="none">` plus a global `::view-transition-*` override). Hover
+  transitions and intentional pulses (ping, freshness heartbeat, search spotlight) are unchanged.
+  Removed `card-motion.css`, which only existed to undo the reveal on filterable items.
+- `FilterBar`: listens for the new `FILTER_ORDER_EVENT` (`lib/filter`). A page that lets people
+  reorder its own items fires it, and the bar takes the DOM's current order as "Default order"
+  instead of undoing it on the next filter or sort change.
 - `Layout`: optional `background` (Homepage-style): an image URL with `blur`, `saturate`,
   `brightness`, `opacity`, plus `cardBlur` / `cardOpacity` for the cards over it. New
   `base/Background` (the fixed image layer) and `lib/background` (`resolveBackground`, validates

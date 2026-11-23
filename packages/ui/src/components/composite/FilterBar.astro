@@ -72,6 +72,7 @@ const { model } = Astro.props;
 
 <script>
   import {
+    FILTER_ORDER_EVENT,
     FILTER_REFRESH_EVENT,
     activeTags,
     isSortKey,
@@ -85,6 +86,8 @@ const { model } = Astro.props;
 
   /** apply() for every bar that's been wired up. A bar is only ever wired once. */
   const appliers = new Map<HTMLElement, () => void>();
+  /** For every wired bar: adopt the DOM's current item order as "Default order", then apply(). */
+  const reorders = new Map<HTMLElement, () => void>();
 
   function init(bar: HTMLElement) {
     if (appliers.has(bar)) return;
@@ -129,8 +132,8 @@ const { model } = Astro.props;
       });
 
       // Sort: appending in global order leaves each list sorted within its own parent.
-      // Only touch the DOM when the order actually changed: moving a node restarts its
-      // CSS animations and costs a reflow, and this runs on load and again once GitHub
+      // Only touch the DOM when the order actually changed: moving a node costs a
+      // reflow, and this runs on load and again once GitHub
       // data arrives (usually with no change to the order).
       const desired = new Map<Element, HTMLElement[]>();
       for (const i of sortOrder(data, sort)) {
@@ -198,10 +201,22 @@ const { model } = Astro.props;
 
     apply();
     appliers.set(bar, apply);
+    reorders.set(bar, () => {
+      items.splice(0, items.length, ...scope.querySelectorAll<HTMLElement>('[data-filter-item]'));
+      apply();
+    });
   }
 
   document.addEventListener('astro:page-load', () => {
     document.querySelectorAll<HTMLElement>('[data-filter-bar]').forEach(init);
+  });
+
+  // The page reordered its own items (FILTER_ORDER_EVENT): that order is the new default.
+  document.addEventListener(FILTER_ORDER_EVENT, () => {
+    for (const [bar, reorder] of reorders) {
+      if (bar.isConnected) reorder();
+      else reorders.delete(bar); // page was swapped out
+    }
   });
 
   // RepoMeta fetched fresher GitHub data in the browser: re-sort with it.

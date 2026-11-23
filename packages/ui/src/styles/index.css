@@ -10,7 +10,6 @@
 @import './components/badge.css';
 @import './components/breadcrumb.css';
 @import './components/button.css';
-@import './components/card-motion.css';
 @import './components/commands.css';
 @import './components/content.css';
 @import './components/filter-bar.css';
@@ -21,7 +20,6 @@
 @import './components/node.css';
 @import './components/page-header.css';
 @import './components/repo-meta.css';
-@import './components/reveal.css';
 @import './components/search.css';
 @import './components/select.css';
 @import './components/spotlight.css';

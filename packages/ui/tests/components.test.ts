@@ -319,14 +319,14 @@ describe('Node', () => {
     assert.equal(outside.attrs.target, '_blank');
     assert.equal(outside.attrs.rel, 'noopener noreferrer');
   });
-  it('supports heading level, size, reveal, searchable, class and attributes', async () => {
+  it('supports heading level, size, searchable, class and attributes', async () => {
     const c = (await page('Node')).case('variants');
     assert.equal(c.tags('h3').length, 0);
     assert.equal(attrs(c, 'h2').class, 'node-title');
     const a = attrs(c, 'article');
     const tokens = a.class.split(' ');
     for (const t of ['node', 'node-compact', 'extra']) assert.ok(tokens.includes(t), t);
-    assert.ok('data-reveal' in a);
+    assert.equal(a['data-reveal'], undefined);
     assert.ok('data-search-item' in a);
     assert.equal(a['data-x'], '1');
   });
@@ -395,7 +395,7 @@ describe('PageHeader', () => {
   it('renders the title and lead', async () => {
     const c = (await page('PageHeader')).case('lead');
     assert.equal(c.tags('h1', { class: 'page-title' }).length, 1);
-    assert.ok('data-reveal' in attrs(c, 'h1'));
+    assert.equal(attrs(c, 'h1')['data-reveal'], undefined);
     assert.equal(c.text, 'Title Lead text');
     assert.ok(!has(c, 'header', 'topic-head'));
   });
@@ -417,8 +417,10 @@ describe('Prose', () => {
     assert.equal(p['data-reveal'], undefined);
     assert.equal(c.text, 'Some text');
   });
-  it('can reveal', async () => {
-    assert.ok('data-reveal' in attrs((await page('Prose')).case('reveal'), 'p'));
+  it('accepts inline markup through the slot', async () => {
+    const c = (await page('Prose')).case('inline');
+    assert.equal(c.tags('em').length, 1);
+    assert.equal(c.text, 'Some rich text');
   });
 });
 
@@ -427,7 +429,7 @@ describe('Section', () => {
     const c = (await page('Section')).case('full');
     const s = attrs(c, 'section');
     assert.equal(s.class, 'mine');
-    assert.ok('data-reveal' in s, 'reveals by default');
+    assert.equal(s['data-reveal'], undefined, 'no entrance animation hook');
     assert.ok('data-filter-group' in s);
     assert.equal(c.tags('h2', { class: 'section-title' }).length, 1);
     assert.equal(c.tags('p', { class: 'section-note' }).length, 1);
@@ -838,7 +840,7 @@ describe('Layout', () => {
     assert.match(p.html, /<title>Acme<\/title>/);
     assert.equal(p.tags('meta', { name: 'description' }).length, 0);
   });
-  it('ships the reveal animation script', async () => {
+  it('ships the page-load script', async () => {
     assert.ok((await page('Layout')).tags('script', { type: 'module' }).length >= 1);
   });
   it('has no background unless asked', async () => {

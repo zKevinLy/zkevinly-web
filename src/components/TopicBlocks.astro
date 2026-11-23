@@ -50,7 +50,6 @@ const installApps = blocks.some((block) => block.type === 'installer')
             : undefined
         }
         filterGroup={block.type === 'links' || block.type === 'entries'}
-        reveal={block.type !== 'entries'}
       >
         {block.type === 'text' && <Prose>{block.content}</Prose>}
 

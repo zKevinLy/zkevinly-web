@@ -78,8 +78,6 @@ interface Props extends Omit<HTMLAttributes<'article'>, 'title'> {
   /** Heading level for the title (keep the page outline sensible). */
   as?: 'h2' | 'h3' | 'h4';
   size?: 'default' | 'compact';
-  /** Fade/slide in on page load (see Layout's GSAP script). */
-  reveal?: boolean;
   /** Dev search only: index this node as its own result (production indexes whole pages). */
   searchable?: boolean;
 }
@@ -98,7 +96,6 @@ const {
   links = [],
   as: Heading = 'h3',
   size = 'default',
-  reveal = false,
   searchable = false,
   class: className,
   ...attrs
@@ -130,7 +127,6 @@ const mark = resolveIcon(icon);
     selectable && 'node-selectable',
     className,
   ]}
-  data-reveal={reveal ? '' : undefined}
   data-search-item={searchable ? '' : undefined}
   {...attrs}
 >

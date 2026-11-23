@@ -155,6 +155,13 @@ export interface FilterSource {
 
 export const FILTER_REFRESH_EVENT = 'filter:refresh';
 
+/**
+ * Fire on `document` after a page reordered its own `[data-filter-item]`s (drag and drop, arrow
+ * buttons). FilterBar then takes the order the DOM is in now as the "Default order", so typing in
+ * the filter or switching the sort back to Default keeps the page's order instead of undoing it.
+ */
+export const FILTER_ORDER_EVENT = 'filter:order';
+
 /** Spread onto a Node: `<Node {...filterAttrs(source)} />`. */
 export function filterAttrs(
   source: FilterSource,

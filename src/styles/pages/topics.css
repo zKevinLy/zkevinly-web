@@ -9,9 +9,3 @@
   gap: 2.5rem;
   margin-top: 2rem;
 }
-
-/* Sections that hold filterable cards render in place too (see the package's card-motion.css). */
-.topic-blocks > section[data-reveal]:has([data-filter-item]) {
-  animation: none !important;
-  opacity: 1 !important;
-}
