@@ -85,6 +85,8 @@ docker build -t zkevinly-web .        # or build the image directly
 Settings go in `.env` (see `.env.example`): `GIPHY_API_KEYS` for chat GIFs, `GITHUB_TOKEN` for private-repo
 badges at runtime. To bake release/commit badges for the project cards in at build time, pass the token as a
 build secret: `docker build --secret id=github_token,env=GITHUB_TOKEN .`. `/healthz` is the health check.
+`.github/workflows/docker.yml` builds the image on pull requests and pushes `ghcr.io/<owner>/zkevinly-web` (`:latest`
+and `:<commit>`) on every merge to main.
 Run `npm run build:fast && npm run start:node` to try the Node host without Docker.
 
 ## Toolkit (`/toolkit`)
