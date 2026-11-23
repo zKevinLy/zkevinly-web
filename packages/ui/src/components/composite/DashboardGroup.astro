@@ -1,0 +1,32 @@
+---
+/** One reorderable section of a `Dashboard`: a titled grid of cards (slot) with a drag handle. */
+import Section from '../base/Section.astro';
+import Grid from '../base/Grid.astro';
+import DragHandle from '../base/DragHandle.astro';
+
+interface Props {
+  /** Section name: the heading and the key its order is saved under. */
+  name: string;
+  /** Place in the config: the order shown until someone reorders. */
+  index: number;
+  note?: string;
+  /** Hide the section when the filter leaves it empty. */
+  filterGroup?: boolean;
+}
+
+const { name, index, note, filterGroup = false } = Astro.props;
+---
+
+<div data-reorder-group={name} data-reorder-index={index}>
+  <Section
+    title={name}
+    note={note}
+    class="reorder-section dashboard-group"
+    filterGroup={filterGroup}
+  >
+    <DragHandle label={`${name} section`} section />
+    <Grid tight>
+      <slot />
+    </Grid>
+  </Section>
+</div>

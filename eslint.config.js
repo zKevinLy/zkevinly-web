@@ -21,7 +21,7 @@ export default [
   ...astro.configs['flat/jsx-a11y-recommended'],
   {
     // Cloudflare Worker + Node-side config run outside the browser bundle.
-    files: ['worker/**/*.js'],
+    files: ['worker/**/*.js', 'server/**/*.mjs'],
     languageOptions: {
       globals: {
         Request: 'readonly',
@@ -31,6 +31,8 @@ export default [
         AbortSignal: 'readonly',
         fetch: 'readonly',
         caches: 'readonly',
+        Headers: 'readonly',
+        console: 'readonly',
         process: 'readonly',
         globalThis: 'readonly',
       },

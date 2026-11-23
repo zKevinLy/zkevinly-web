@@ -71,6 +71,22 @@ carries the security headers, including the strict policy for `/toolkit`. Deploy
 `npm run build:fast && npm run deploy` (CI does this on every push to `main`). Other static hosts
 will serve the pages but not the API routes or the headers.
 
+## Docker (alternative host)
+
+The Cloudflare Worker stays the production host. The same site also runs as a container, so it can be
+hosted anywhere (`server/node.mjs` serves `dist/` with the `_headers` rules and runs the Worker's own
+`/api/*` handlers; nothing is duplicated).
+
+```sh
+docker compose up -d --build          # http://localhost:8080 (WEB_PORT to change)
+docker build -t zkevinly-web .        # or build the image directly
+```
+
+Settings go in `.env` (see `.env.example`): `GIPHY_API_KEYS` for chat GIFs, `GITHUB_TOKEN` for private-repo
+badges at runtime. To bake release/commit badges for the project cards in at build time, pass the token as a
+build secret: `docker build --secret id=github_token,env=GITHUB_TOKEN .`. `/healthz` is the health check.
+Run `npm run build:fast && npm run start:node` to try the Node host without Docker.
+
 ## Toolkit (`/toolkit`)
 
 Small tools that run entirely in the browser (first one: the PDF generator at `/toolkit/pdf`, which makes invoices, service logs and custom documents; the old `/toolkit/invoice` link redirects there).

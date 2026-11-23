@@ -1,0 +1,14 @@
+---
+import DashboardGroup from '@zkevinly/ui/composite/DashboardGroup.astro';
+---
+
+<test-case id="plain">
+  <DashboardGroup name="Media" index={0}>
+    <p>Cards</p>
+  </DashboardGroup>
+</test-case>
+<test-case id="filtered">
+  <DashboardGroup name="Tools" index={2} note="Handy" filterGroup>
+    <p>Cards</p>
+  </DashboardGroup>
+</test-case>

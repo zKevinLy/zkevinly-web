@@ -136,28 +136,162 @@ describe('Button (action mode)', () => {
   });
 });
 
-describe('CopyButton', () => {
-  it('copies its text, with a default label and aria-label', async () => {
-    const p = await page('CopyButton');
-    const c = p.case('default');
+describe('Button (icon variant)', () => {
+  it('is a labelled link with a tooltip and nav hook', async () => {
+    const a = attrs((await page('Button')).case('icon-link'), 'a');
+    assert.equal(a.id, 'home-btn');
+    assert.equal(a.class, 'btn btn-icon');
+    assert.equal(a.href, '/');
+    assert.equal(a['aria-label'], 'Home');
+    assert.equal(a['data-tooltip'], 'Home');
+    assert.equal(a['data-nav-href'], '/');
+    assert.equal(a['aria-current'], undefined);
+  });
+  it('is a <button> without href, with its own tooltip', async () => {
+    const c = (await page('Button')).case('icon-button');
+    assert.equal(c.tags('a').length, 0);
     const b = attrs(c, 'button');
     assert.equal(b.type, 'button');
-    assert.equal(b.class, 'copy-btn');
+    assert.equal(b['aria-label'], 'Theme');
+    assert.equal(b['data-tooltip'], 'Switch theme');
+  });
+  it('marks the current page and supports a small size', async () => {
+    const p = await page('Button');
+    assert.equal(attrs(p.case('icon-current'), 'a')['aria-current'], 'page');
+    const s = attrs(p.case('icon-small'), 'button');
+    assert.equal(s.class, 'btn btn-icon btn-sm');
+    assert.equal(s['data-reorder-dir'], '-1');
+  });
+});
+
+describe('Button (copy)', () => {
+  it('copies its text, with a default label and aria-label', async () => {
+    const c = (await page('Button')).case('copy');
+    const b = attrs(c, 'button');
+    assert.equal(b.type, 'button');
+    assert.equal(b.class, 'btn');
     assert.equal(b['data-copy'], 'npm i');
     assert.equal(b['data-copy-label'], 'Copy');
     assert.equal(b['aria-label'], 'Copy: npm i');
     assert.equal(c.tags('svg').length, 2, 'copy + done icons');
     assert.equal(c.text, 'Copy');
   });
-  it('takes a label, aria-label and extra class; text is decoded', async () => {
-    const b = attrs((await page('CopyButton')).case('custom'), 'button');
+  it('takes a variant, label, aria-label and extra class; text is decoded', async () => {
+    const b = attrs((await page('Button')).case('copy-custom'), 'button');
     assert.equal(b['data-copy'], 'a && b');
     assert.equal(b['data-copy-label'], 'Grab');
     assert.equal(b['aria-label'], 'Copy the script');
-    assert.ok(b.class.split(' ').includes('extra'));
+    assert.deepEqual(b.class.split(' '), ['btn', 'btn-segment', 'extra']);
   });
   it('ships its click handler script with the page', async () => {
-    assert.ok((await page('CopyButton')).tags('script', { type: 'module' }).length >= 1);
+    assert.ok((await page('Button')).tags('script', { type: 'module' }).length >= 1);
+  });
+});
+
+describe('DragHandle', () => {
+  it('is a hidden button labelled for the screen reader', async () => {
+    const b = attrs((await page('DragHandle')).case('card'), 'button');
+    assert.equal(b.type, 'button');
+    assert.equal(b.class, 'reorder-handle');
+    assert.ok('data-reorder-handle' in b);
+    assert.ok('hidden' in b);
+    assert.equal(b['aria-label'], 'Move Plexio: drag, or use the arrow keys');
+  });
+  it('has a section variant', async () => {
+    const b = attrs((await page('DragHandle')).case('section'), 'button');
+    assert.equal(b.class, 'reorder-handle reorder-handle-section');
+  });
+});
+
+describe('MoveButtons', () => {
+  it('moves a card earlier or later', async () => {
+    const c = (await page('MoveButtons')).case('card');
+    assert.ok('data-reorder-move' in attrs(c, 'div'));
+    assert.equal(c.tags('button').length, 2);
+    assert.ok(c.html.includes('Move Plexio earlier'));
+    assert.ok(c.html.includes('Move Plexio later'));
+    assert.ok(c.html.includes('btn-icon'));
+  });
+  it('moves a section up, down and between columns', async () => {
+    const c = (await page('MoveButtons')).case('section');
+    assert.equal(c.tags('button').length, 4);
+    assert.ok(has(c, 'div', 'reorder-move-section'));
+    assert.ok(c.html.includes('Move Media section to the next column'));
+  });
+});
+
+describe('ReorderColumns', () => {
+  it('puts its content in the first column and adds empty ones', async () => {
+    const c = (await page('ReorderColumns')).case('content');
+    assert.ok('data-reorder-groups' in attrs(c, 'div', { class: 'reorder-columns' }));
+    assert.ok(c.tags('div', { class: 'reorder-col' }).length >= 2);
+    assert.equal(c.tags('p').length, 1);
+  });
+  it('renders the columns with no content', async () => {
+    const c = (await page('ReorderColumns')).case('empty');
+    assert.equal(c.tags('p').length, 0);
+    assert.ok(c.tags('div', { class: 'reorder-col' }).length >= 2);
+  });
+});
+
+describe('ViewInit', () => {
+  it('applies the saved view before first paint', async () => {
+    const c = (await page('ViewInit')).case('one');
+    assert.ok(c.html.includes('ui:view'));
+    assert.ok(c.html.includes('astro:before-swap'));
+  });
+  it('can be rendered more than once', async () => {
+    assert.ok((await page('ViewInit')).case('two').html.includes('ui:view'));
+  });
+});
+
+describe('ReorderToolbar', () => {
+  it('has the view, column, reorder and reset controls', async () => {
+    const c = (await page('ReorderToolbar')).case('default');
+    assert.ok(c.html.includes('data-reorder-view="grid"'));
+    assert.ok(c.html.includes('data-reorder-view="list"'));
+    assert.ok(c.html.includes('data-reorder-edit'));
+    assert.ok(c.html.includes('data-reorder-reset'));
+    assert.ok(c.tags('button').length > 4);
+  });
+  it('uses icon buttons with tooltips and a status line', async () => {
+    const c = (await page('ReorderToolbar')).case('again');
+    assert.ok(c.html.includes('btn btn-icon'));
+    assert.ok(c.html.includes('data-tooltip="Reset to the config order"'));
+    assert.ok('data-reorder-status' in attrs(c, 'p'));
+  });
+});
+
+describe('Dashboard', () => {
+  it('is the page scope with a toolbar and columns', async () => {
+    const c = (await page('Dashboard')).case('plain');
+    const scope = attrs(c, 'div', { 'data-reorder-scope': 'home' });
+    assert.ok('data-filter-scope' in scope);
+    assert.ok(c.html.includes('data-reorder-edit'));
+    assert.ok(c.html.includes('reorder-columns'));
+    assert.ok(!c.html.includes('data-filter-sort'));
+  });
+  it('adds the filter bar when given a filter model', async () => {
+    const c = (await page('Dashboard')).case('filtered');
+    assert.ok(c.html.includes('data-reorder-scope="apps"'));
+    assert.ok(c.html.includes('data-filter-sort'));
+  });
+});
+
+describe('DashboardGroup', () => {
+  it('is one reorderable titled section with a handle', async () => {
+    const c = (await page('DashboardGroup')).case('plain');
+    const g = attrs(c, 'div', { 'data-reorder-group': 'Media' });
+    assert.equal(g['data-reorder-index'], '0');
+    assert.ok(c.html.includes('reorder-handle-section'));
+    assert.ok(c.html.includes('Move Media section: drag'));
+    assert.equal(c.tags('p').length, 1);
+  });
+  it('shows a note and can hide itself when filtered empty', async () => {
+    const c = (await page('DashboardGroup')).case('filtered');
+    assert.equal(attrs(c, 'div', { 'data-reorder-group': 'Tools' })['data-reorder-index'], '2');
+    assert.ok(c.text.includes('Handy'));
+    assert.ok(c.html.includes('data-filter-group'));
   });
 });
 
@@ -210,37 +344,6 @@ describe('Grid', () => {
   });
   it('can be tight', async () => {
     assert.equal(attrs((await page('Grid')).case('tight'), 'div').class, 'grid grid-tight');
-  });
-});
-
-describe('IconButton', () => {
-  it('is a labelled link with a tooltip and nav hook', async () => {
-    const a = attrs((await page('IconButton')).case('link'), 'a');
-    assert.equal(a.id, 'home-btn');
-    assert.equal(a.class, 'icon-btn');
-    assert.equal(a.href, '/');
-    assert.equal(a['aria-label'], 'Home');
-    assert.equal(a['data-tooltip'], 'Home');
-    assert.equal(a['data-nav-href'], '/');
-    assert.equal(a['aria-current'], undefined);
-    assert.equal(a.target, undefined);
-  });
-  it('is a <button> without href, with its own tooltip', async () => {
-    const c = (await page('IconButton')).case('button');
-    assert.equal(c.tags('a').length, 0);
-    const b = attrs(c, 'button');
-    assert.equal(b.type, 'button');
-    assert.equal(b.id, 'theme-btn');
-    assert.equal(b['aria-label'], 'Theme');
-    assert.equal(b['data-tooltip'], 'Switch theme');
-  });
-  it('marks the current page', async () => {
-    assert.equal(attrs((await page('IconButton')).case('current'), 'a')['aria-current'], 'page');
-  });
-  it('opens external links safely', async () => {
-    const a = attrs((await page('IconButton')).case('external'), 'a');
-    assert.equal(a.target, '_blank');
-    assert.equal(a.rel, 'noopener noreferrer');
   });
 });
 

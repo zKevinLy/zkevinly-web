@@ -58,7 +58,7 @@ pages that use it.
 
 | Import                           | Contents                                                                                                                                                                                                 |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@zkevinly/ui/base/*.astro`      | Primitives: Avatar, Background, Badge, Breadcrumb, Button, CopyButton, Figure, Freshness, Grid, IconButton, LinkList, NavLink, Node, PageHeader, Prose, Section, Select, Steps, Tags                     |
+| `@zkevinly/ui/base/*.astro`      | Primitives: Avatar, Background, Badge, Breadcrumb, Button, Figure, Freshness, Grid, LinkList, NavLink, Node, PageHeader, Prose, Section, Select, Steps, Tags                                             |
 | `@zkevinly/ui/composite/*.astro` | Built from the primitives: CommandBlock, FilterBar, Header, HubTrail, RepoMeta, Search, Workflow                                                                                                         |
 | `@zkevinly/ui/layouts/*.astro`   | `Layout`: head, theme, header, `<main>`, search; slots `head` and `end`. Pages render instantly (no load animation)                                                                                      |
 | `@zkevinly/ui/lib/*`             | UI logic: `filter`, `spotlight`, `navigation`, `workflow` (layout + validation), `repo-info` (`applyRepoInfo`), `icon` (`resolveIcon`), `ping` (`applyPing`), `background` (`resolveBackground`), `time` |
@@ -73,6 +73,13 @@ See each component's header comment for its props and slots.
 `<name>.svg|png|webp` Dashboard Icons file, a `/path` or an image URL; anything else throws).
 `<Node ping />` adds a status dot, rendered as "checking". The app decides what to check and calls
 `applyPing(el, result)` on the node's `.node-ping`; the package never makes the request.
+
+### Reorder (grid/list, columns, drag to reorder)
+
+Wrap a page in `<div data-reorder-scope="services">`, put `ReorderToolbar` in it, the sections in
+`ReorderColumns`, and mark each section `data-reorder-group` / `data-reorder-index` and each card
+`data-reorder-item` / `data-reorder-index`. Add `DragHandle` (and optionally `MoveButtons`) to each, and
+`ViewInit` in the layout head. Everything else is in the package.
 
 ### Background
 
@@ -142,3 +149,29 @@ with a unit test in `tests/`.
 `tests/packages/ui-boundary.test.ts` fails if the package imports from the app, or the app
 re-implements a package component. `components.test.ts` builds the fixture with Astro and queries
 the real rendered HTML (helpers in `tests/helpers/`).
+
+## Button
+
+There is one button component. Variants and options replace the old `IconButton`, `CopyButton` and
+hand-rolled move/mini buttons:
+
+```astro
+<Button>Save</Button> <!-- action: a real <button type="button"> -->
+<Button href="/x" external>
+  Go
+</Button>{' '}
+<!-- link styled as a button -->
+<Button primary>Export</Button> <!-- filled accent (variant="primary") -->
+<Button variant="icon" label="Theme" tooltip>
+  ...
+</Button>{' '}
+<!-- square icon-only; label is the aria-label -->
+<Button variant="icon" size="sm" label="Move up" data-reorder-dir="-1">
+  ...
+</Button>
+<Button copy="npm i" /> <!-- copy to clipboard; copyLabel="Grab" to rename -->
+<Button variant="segment" copy={cmd} /> <!-- end-cap of a row (CommandBlock) -->
+```
+
+Classes: `.btn` plus `.btn-primary`, `.btn-icon`, `.btn-segment`, `.btn-sm`. Copy state is `.is-copied` /
+`.is-manual`. Attributes (`data-*`, `aria-*`, `hidden`, `disabled`) are forwarded.

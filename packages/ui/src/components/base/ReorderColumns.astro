@@ -1,0 +1,18 @@
+---
+/**
+ * Holds a page's sections and lays them out in columns (grid view). The sections go in the first
+ * column; scripts/reorder.ts moves them between the columns to match the saved layout, and
+ * `data-cols` says how many are showing. With no saved layout it is one column, exactly the
+ * stacked sections the page had before. The list view ignores the columns and stacks everything.
+ */
+import { MAX_COLUMNS } from '../../lib/order';
+---
+
+<div class="reorder-columns" data-reorder-groups data-cols="1">
+  <div class="reorder-col" data-reorder-col>
+    <slot />
+  </div>
+  {Array.from({ length: MAX_COLUMNS - 1 }, () => (
+    <div class="reorder-col" data-reorder-col />
+  ))}
+</div>

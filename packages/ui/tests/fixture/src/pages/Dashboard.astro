@@ -1,0 +1,14 @@
+---
+import Dashboard from '@zkevinly/ui/composite/Dashboard.astro';
+---
+
+<test-case id="plain">
+  <Dashboard scope="home">
+    <p>Groups</p>
+  </Dashboard>
+</test-case>
+<test-case id="filtered">
+  <Dashboard scope="apps" filterModel={{ total: 3, tags: [], sorts: ['default', 'title'] }}>
+    <p>Groups</p>
+  </Dashboard>
+</test-case>

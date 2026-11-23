@@ -1,0 +1,22 @@
+# Run the site in Docker (an alternative to the Cloudflare Worker). Copy .env.example to .env first
+# if you want GIFs (GIPHY_API_KEYS) or private-repo badges (GITHUB_TOKEN).
+#   docker compose up -d --build
+services:
+  zkevinly-web:
+    image: ${WEB_IMAGE:-ghcr.io/zkevinly/zkevinly-web:latest}
+    build:
+      context: .
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
+    container_name: zkevinly-web
+    restart: unless-stopped
+    init: true
+    env_file:
+      - path: .env
+        required: false
+    mem_limit: 256m
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    ports:
+      - '${WEB_PORT:-8080}:8080'

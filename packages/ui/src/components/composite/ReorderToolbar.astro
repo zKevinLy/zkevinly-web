@@ -1,0 +1,52 @@
+---
+/**
+ * The dashboard's view controls: grid or list, and "reorder". Both are per-browser preferences
+ * (localStorage), handled by scripts/reorder.ts for the nearest `[data-reorder-scope]` ancestor.
+ */
+import { ArrowUpDown, LayoutGrid, List, RotateCcw } from '@lucide/astro';
+import { MAX_COLUMNS } from '../../lib/order';
+import Button from '../base/Button.astro';
+
+const columnChoices = Array.from({ length: MAX_COLUMNS }, (_, i) => i + 1);
+---
+
+<div class="reorder-toolbar" data-pagefind-ignore>
+  <div class="reorder-segment" role="group" aria-label="View">
+    <Button variant="icon" data-reorder-view="grid" aria-pressed="true" label="Grid view" tooltip>
+      <LayoutGrid size={18} aria-hidden="true" />
+    </Button>
+    <Button variant="icon" data-reorder-view="list" aria-pressed="false" label="List view" tooltip>
+      <List size={18} aria-hidden="true" />
+    </Button>
+  </div>
+  <div class="reorder-segment reorder-cols-picker" role="group" aria-label="Columns">
+    {columnChoices.map((count) => (
+      <Button
+        variant="icon"
+        data-reorder-cols={count}
+        aria-pressed={count === 1 ? 'true' : 'false'}
+        label={count === 1 ? '1 column' : `${count} columns`}
+        tooltip
+      >
+        {count}
+      </Button>
+    ))}
+  </div>
+  <Button variant="icon" data-reorder-edit aria-pressed="false" label="Reorder" tooltip>
+    <ArrowUpDown size={18} aria-hidden="true" />
+  </Button>
+  <Button
+    variant="icon"
+    data-reorder-reset
+    label="Reset order"
+    tooltip="Reset to the config order"
+    hidden
+  >
+    <RotateCcw size={18} aria-hidden="true" />
+  </Button>
+</div>
+<p class="reorder-status" data-reorder-status role="status" hidden></p>
+
+<script>
+  import '../../lib/reorder';
+</script>

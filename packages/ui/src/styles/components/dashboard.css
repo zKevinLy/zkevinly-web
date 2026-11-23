@@ -1,0 +1,18 @@
+/* ---------- Dashboard (DashboardGroup) ---------- */
+
+.dashboard-group {
+  margin-top: 2.5rem;
+}
+
+/* The base grid stops at two columns; a dashboard of small tiles can use the width. */
+@media (min-width: 1100px) {
+  .dashboard-group .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .dashboard-group .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

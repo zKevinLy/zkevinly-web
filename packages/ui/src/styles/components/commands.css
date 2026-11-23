@@ -61,42 +61,6 @@
   content: none;
 }
 
-.copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 5.25rem;
-  justify-content: center;
-  padding: 0 0.75rem;
-  border: 0;
-  border-left: 1px solid var(--border);
-  background: var(--surface);
-  font-size: 0.75rem;
-  color: var(--muted);
-  transition:
-    background-color 150ms ease,
-    color 150ms ease;
-}
-
-.copy-btn:hover {
-  background: var(--surface-hover);
-  color: var(--text);
-}
-
-.copy-btn .copy-btn-icon-done,
-.copy-btn.is-copied .copy-btn-icon-copy {
-  display: none;
-}
-
-.copy-btn.is-copied {
-  color: var(--accent);
-}
-
-/* Scripted copy was refused (e.g. by an extension): text is selected, user presses Ctrl+C. */
-.copy-btn.is-manual {
-  color: var(--warn);
-}
-
 /* Related-page button: same shell as a copy-able command, but it navigates. */
 .related-link {
   color: inherit;
@@ -129,8 +93,4 @@
 .related-link:focus-visible .related-go {
   background: var(--surface-hover);
   color: var(--accent);
-}
-
-.copy-btn.is-copied .copy-btn-icon-done {
-  display: block;
 }

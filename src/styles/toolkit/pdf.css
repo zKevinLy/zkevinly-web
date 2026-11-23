@@ -116,39 +116,10 @@
   font-size: 0.8125rem;
 }
 
-.row-remove,
-.mini-btn {
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
+/* Row / column controls are small icon Buttons (.btn .btn-icon .btn-sm); only the glyph size is local. */
 .row-remove {
-  width: 2rem;
-  height: 2rem;
   font-size: 1.25rem;
   line-height: 1;
-}
-
-.mini-btn {
-  min-width: 2rem;
-  height: 2rem;
-  padding: 0 0.4rem;
-  font-size: 0.8125rem;
-  line-height: 1;
-}
-
-.row-remove:hover,
-.mini-btn:hover:not(:disabled) {
-  background: var(--surface-hover);
-  color: var(--text);
-}
-
-.mini-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
 }
 
 @media (max-width: 640px) {
@@ -173,7 +144,7 @@
   }
 
   .row-remove,
-  .col-row .mini-btn {
+  .col-row .btn-icon {
     justify-self: end;
   }
 }

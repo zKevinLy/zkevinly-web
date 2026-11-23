@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.3.0
+
+- **Breaking:** `IconButton` and `CopyButton` are gone; `Button` does both. Use `variant="icon"` (with `label`
+  and `tooltip`), `copy="text"` (optionally `variant="segment"`), `size="sm"`, `current`, `navHref`.
+  `MoveButtons` and `ReorderToolbar` now render `Button`.
+- Classes: `.icon-btn` -> `.btn .btn-icon`, `.copy-btn` -> `.btn .btn-segment` (+ `.btn-text`,
+  `.btn-icon-copy`, `.btn-icon-done`). `icon-button.css` is merged into `button.css`.
+
+## 0.2.0
+
+- Reorder kit moved in from lab: `base/DragHandle`, `base/MoveButtons`, `base/ReorderColumns`,
+  `base/ViewInit`, `composite/ReorderToolbar`, `lib/order` (TypeScript), `lib/reorder` (the browser
+  script) and `styles/components/reorder.css`. Grid/list view, 1-4 columns and per-browser reordering.
+- Class names and attributes are `reorder-*` / `data-reorder-*` (were `lab-*`); the page container is
+  `[data-reorder-scope="<page>"]`. localStorage keys are `ui:view` and `ui:order:<scope>`, so saved
+  layouts from the old `lab:*` keys reset once.
+- `Dashboard` + `DashboardGroup` (composite): the page frame (scope, toolbar, filter bar, columns) and
+  one reorderable titled grid. 3-4 column grids at wide widths are the default (`dashboard.css`).
+- `lib/ping-refresh`: the shared status-dot loop (`startPingRefresh({ check, key, intervalMs })`) plus
+  `pingViaEndpoint` and `pingViaBrowser`; apps supply only the check.
+
 ## Unreleased
 
 - Pages now render instantly: removed the entrance animation on load (`reveal.css`, `data-reveal`,

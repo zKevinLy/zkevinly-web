@@ -1,0 +1,65 @@
+---
+/**
+ * Small buttons that move a card or a section. Hidden until the page is in "reorder" mode;
+ * scripts/reorder.ts handles the clicks. These are the way to reorder from a keyboard or a
+ * phone, where dragging isn't available.
+ *
+ * A card moves one place earlier or later in its section (`data-reorder-dir`). A section (`section`)
+ * moves up or down in its column the same way, and left or right into the next column
+ * (`data-reorder-col-dir`), which only matters, and only shows, when there is more than one column.
+ */
+import Button from './Button.astro';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from '@lucide/astro';
+
+interface Props {
+  /** What moves, for the screen reader: "Plexio", "Media section". */
+  label: string;
+  /** A whole section: up/down in its column, and between columns. */
+  section?: boolean;
+}
+
+const { label, section = false } = Astro.props;
+---
+
+<div
+  class:list={['reorder-move', section && 'reorder-move-section']}
+  data-reorder-move
+  data-pagefind-ignore
+  hidden
+>
+  {section ? (
+    <>
+      <Button variant="icon" size="sm" data-reorder-dir="-1" label={`Move ${label} up`}>
+        <ChevronUp size={16} aria-hidden="true" />
+      </Button>
+      <Button variant="icon" size="sm" data-reorder-dir="1" label={`Move ${label} down`}>
+        <ChevronDown size={16} aria-hidden="true" />
+      </Button>
+      <Button
+        variant="icon"
+        size="sm"
+        data-reorder-col-dir="-1"
+        label={`Move ${label} to the previous column`}
+      >
+        <ChevronLeft size={16} aria-hidden="true" />
+      </Button>
+      <Button
+        variant="icon"
+        size="sm"
+        data-reorder-col-dir="1"
+        label={`Move ${label} to the next column`}
+      >
+        <ChevronRight size={16} aria-hidden="true" />
+      </Button>
+    </>
+  ) : (
+    <>
+      <Button variant="icon" size="sm" data-reorder-dir="-1" label={`Move ${label} earlier`}>
+        <ChevronLeft size={16} aria-hidden="true" />
+      </Button>
+      <Button variant="icon" size="sm" data-reorder-dir="1" label={`Move ${label} later`}>
+        <ChevronRight size={16} aria-hidden="true" />
+      </Button>
+    </>
+  )}
+</div>

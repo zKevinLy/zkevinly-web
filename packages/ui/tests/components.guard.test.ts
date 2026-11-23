@@ -115,7 +115,7 @@ describe('components only use classes the package styles', () => {
     .flatMap((dir) => readdirSync(join(SRC, 'styles', dir)).map((f) => read(SRC, 'styles', dir, f)))
     .join('\n');
   // Hooks for scripts / markers that are intentionally unstyled.
-  const unstyled = new Set(['related', 'copy-btn-text', 'workflow-node', 'is-optional']);
+  const unstyled = new Set(['related', 'btn-text', 'workflow-node', 'is-optional']);
 
   for (const c of components) {
     it(c.name, () => {

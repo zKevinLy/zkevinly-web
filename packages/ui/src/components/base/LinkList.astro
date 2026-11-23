@@ -33,7 +33,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
             rel={external ? 'noopener noreferrer' : undefined}
           >
             <span class="cmd-text related-text">{link.title}</span>
-            <span class="copy-btn related-go" aria-hidden="true">
+            <span class="btn btn-segment related-go" aria-hidden="true">
               {link.download ? (
                 <Download size={14} />
               ) : external ? (
@@ -41,7 +41,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
               ) : (
                 <ArrowRight size={14} />
               )}
-              <span class="copy-btn-text">{action}</span>
+              <span class="btn-text">{action}</span>
             </span>
           </a>
         </div>

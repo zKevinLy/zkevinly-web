@@ -1,0 +1,28 @@
+---
+/**
+ * A dashboard page's frame: the page container ([data-reorder-scope], also the filter scope), the
+ * view/reorder toolbar, an optional filter bar and the columns the groups sit in. Fill the slot
+ * with `DashboardGroup`s. The business logic (what the groups and cards are) stays in the app.
+ */
+import ReorderToolbar from './ReorderToolbar.astro';
+import FilterBar from './FilterBar.astro';
+import ReorderColumns from '../base/ReorderColumns.astro';
+import type { FilterModel } from '../../lib/filter';
+
+interface Props {
+  /** Names the saved layout (`ui:order:<scope>`): one per page. */
+  scope: string;
+  /** From `buildFilterModel`; no filter bar when null/undefined. */
+  filterModel?: FilterModel | null;
+}
+
+const { scope, filterModel } = Astro.props;
+---
+
+<div data-filter-scope data-reorder-scope={scope}>
+  <ReorderToolbar />
+  {filterModel && <FilterBar model={filterModel} />}
+  <ReorderColumns>
+    <slot />
+  </ReorderColumns>
+</div>

@@ -1,0 +1,33 @@
+---
+/**
+ * The one grip a card or a section shows while the page is in "reorder" mode (hidden otherwise;
+ * scripts/reorder.ts shows and hides it). Drag it with a mouse, finger or pen to move the
+ * card or section. With the keyboard, focus it and press the arrow keys: a card moves earlier or
+ * later in its section; a section moves up or down in its column, and left or right into the next
+ * column (which only does anything when there is more than one column).
+ *
+ * With a mouse a whole card can be dragged too; the grip is what makes it work on touch screens,
+ * where dragging a card itself has to stay a scroll.
+ */
+import { GripHorizontal } from '@lucide/astro';
+
+interface Props {
+  /** What moves, for the screen reader: "Plexio", "Media section". */
+  label: string;
+  /** A whole section rather than a card. */
+  section?: boolean;
+}
+
+const { label, section = false } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={['reorder-handle', section && 'reorder-handle-section']}
+  data-reorder-handle
+  data-pagefind-ignore
+  aria-label={`Move ${label}: drag, or use the arrow keys`}
+  hidden
+>
+  <GripHorizontal size={16} aria-hidden="true" />
+</button>

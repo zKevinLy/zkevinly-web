@@ -1,35 +1,188 @@
 ---
 /**
- * BASE: Button — styled as a button. With `href` it is a link; without, a real <button type="button">
- * (for script-driven actions). Icon goes in the default slot before the text.
+ * BASE: Button — the one button. Every clickable control is this component, configured:
  *
- * Extra attributes (data-*, aria-*, hidden…) are forwarded so client scripts can hook in.
- * `primary` is the filled accent variant.
+ *   <Button>Save</Button>                          plain action (a real <button type="button">)
+ *   <Button href="/x">Go</Button>                  link styled as a button (`external` opens a new tab)
+ *   <Button primary>Export</Button>                filled accent (same as variant="primary")
+ *   <Button variant="icon" label="Theme" tooltip="Light mode"><Sun /></Button>
+ *                                                  square icon-only control; `label` is required (aria-label)
+ *   <Button copy="npm i" />                        copies `copy` to the clipboard (icon + "Copy" → "Copied!")
+ *   <Button variant="segment" copy={cmd} />        attached to the end of a row (command blocks)
+ *   <Button variant="icon" size="sm" label="Move up" data-reorder-dir="-1"><ChevronUp /></Button>
+ *
+ * Extra attributes (data-*, aria-*, hidden, disabled…) are forwarded so client scripts can hook in.
+ *
+ * Copying: one delegated click handler serves every `[data-copy]` button on every page (it survives
+ * ClientRouter swaps). Never write copy logic anywhere else. If the browser or an extension refuses the
+ * clipboard write (e.g. uBlock Origin's ClickFix protection on `irm … | iex`), the button does NOT claim
+ * success: it selects the text inside the nearest `[data-copy-root]` / `[data-copy-source]` so the person
+ * can press Ctrl/Cmd+C themselves.
  */
 import type { HTMLAttributes } from 'astro/types';
+import { Check, Copy } from '@lucide/astro';
 
-interface Props extends HTMLAttributes<'button'> {
+interface Props extends Omit<HTMLAttributes<'button'>, 'label'> {
+  /** Makes it a link. */
   href?: string;
-  /** Opens in a new tab when the link is external. */
+  /** Opens in a new tab when it is a link. */
   external?: boolean;
+  /** default: bordered. primary: filled accent. icon: square, icon only. segment: borderless end-cap of a row. */
+  variant?: 'default' | 'primary' | 'icon' | 'segment';
+  /** Shorthand for variant="primary". */
   primary?: boolean;
+  size?: 'md' | 'sm';
+  /** Accessible name. Required for icon buttons; for copy buttons it overrides "Copy: <text>". */
+  label?: string;
+  /** Hover tooltip text (icon buttons); `true` reuses `label`. */
+  tooltip?: string | boolean;
+  /** Copy this text on click; adds the copy/done icons and a text label. */
+  copy?: string;
+  /** Text shown on a copy button (default "Copy"). */
+  copyLabel?: string;
+  /** Marks the current page (nav-style buttons). */
+  current?: boolean;
+  /** Set when client script should track this link's active state. */
+  navHref?: string;
 }
 
-const { href, external = false, primary = false, class: className, ...attrs } = Astro.props;
+const {
+  href,
+  external = false,
+  variant: variantProp,
+  primary = false,
+  size = 'md',
+  label,
+  tooltip,
+  copy,
+  copyLabel = 'Copy',
+  current,
+  navHref,
+  class: className,
+  ...attrs
+} = Astro.props;
+
+const variant = variantProp ?? (primary ? 'primary' : 'default');
+const isCopy = copy !== undefined;
+const tip = tooltip === true ? label : tooltip || undefined;
+const ariaLabel = label ?? (isCopy ? `${copyLabel}: ${copy}` : undefined);
+const classes = [
+  'btn',
+  variant !== 'default' && `btn-${variant}`,
+  size === 'sm' && 'btn-sm',
+  className,
+];
+const shared = {
+  'aria-label': ariaLabel,
+  'data-tooltip': tip,
+  'data-copy': copy,
+  'data-copy-label': isCopy ? copyLabel : undefined,
+};
 ---
 
 {href !== undefined ? (
   <a
-    class:list={['btn', { 'btn-primary': primary }, className]}
+    class:list={classes}
     href={href}
     target={external ? '_blank' : undefined}
     rel={external ? 'noopener noreferrer' : undefined}
+    data-nav-href={navHref}
+    aria-current={current ? 'page' : undefined}
+    {...shared}
     {...attrs}
   >
-    <slot />
+    {isCopy && <Copy class="btn-icon-copy" size={14} aria-hidden="true" />}
+    {isCopy && <Check class="btn-icon-done" size={14} aria-hidden="true" />}
+    {isCopy ? (
+      <span class="btn-text" aria-live="polite">
+        {copyLabel}
+      </span>
+    ) : (
+      <slot />
+    )}
   </a>
 ) : (
-  <button type="button" class:list={['btn', { 'btn-primary': primary }, className]} {...attrs}>
-    <slot />
+  <button
+    type="button"
+    class:list={classes}
+    data-nav-href={navHref}
+    aria-current={current ? 'page' : undefined}
+    {...shared}
+    {...attrs}
+  >
+    {isCopy && <Copy class="btn-icon-copy" size={14} aria-hidden="true" />}
+    {isCopy && <Check class="btn-icon-done" size={14} aria-hidden="true" />}
+    {isCopy ? (
+      <span class="btn-text" aria-live="polite">
+        {copyLabel}
+      </span>
+    ) : (
+      <slot />
+    )}
   </button>
 )}
+
+<script>
+  /** Resolves true only if the browser reports the write succeeded. */
+  async function writeClipboard(text: string): Promise<boolean> {
+    if (!navigator.clipboard?.writeText) return false;
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Permission denied / blocked: caller falls back to manual copy.
+      return false;
+    }
+  }
+
+  /** Selects the visible text so Ctrl/Cmd+C works when scripted copy is refused. */
+  function selectForManualCopy(button: HTMLElement) {
+    const source = button
+      .closest('[data-copy-root]')
+      ?.querySelector<HTMLElement>('[data-copy-source]');
+    if (!source) return;
+
+    const range = document.createRange();
+    range.selectNodeContents(source);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  }
+
+  type State = 'copied' | 'manual';
+  const STATE_TEXT: Record<State, string> = { copied: 'Copied!', manual: 'Press Ctrl+C' };
+  const resetTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+
+  function showState(button: HTMLElement, state: State) {
+    const text = button.querySelector('.btn-text');
+    button.classList.toggle('is-copied', state === 'copied');
+    button.classList.toggle('is-manual', state === 'manual');
+    if (text) text.textContent = STATE_TEXT[state];
+
+    clearTimeout(resetTimers.get(button));
+    resetTimers.set(
+      button,
+      setTimeout(
+        () => {
+          button.classList.remove('is-copied', 'is-manual');
+          if (text) text.textContent = button.dataset.copyLabel ?? 'Copy';
+        },
+        state === 'copied' ? 1800 : 4000,
+      ),
+    );
+  }
+
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as Element).closest<HTMLElement>('[data-copy]');
+    if (!button) return;
+
+    const ok = await writeClipboard(button.dataset.copy ?? '');
+
+    if (ok) {
+      showState(button, 'copied');
+    } else {
+      selectForManualCopy(button);
+      showState(button, 'manual');
+    }
+  });
+</script>

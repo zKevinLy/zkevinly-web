@@ -1,14 +1,14 @@
 ---
 /**
  * COMPOSITE: the sticky top bar: brand, primary navigation, search trigger, theme toggle and
- * optional About / GitHub icons (bases: NavLink, IconButton). All content comes in through
+ * optional About / GitHub icons (bases: NavLink, Button). All content comes in through
  * props; the scripts only handle behaviour (active-link highlighting, theme toggle).
  *
  * The search trigger (#search-open) opens the overlay rendered by Search.astro.
  */
 import { CircleUserRound, Moon, Search, Sun } from '@lucide/astro';
 import { siGithub } from 'simple-icons';
-import IconButton from '../base/IconButton.astro';
+import Button from '../base/Button.astro';
 import NavLink from '../base/NavLink.astro';
 import { isActivePath } from '../../lib/navigation';
 
@@ -58,28 +58,30 @@ const isActive = (href: string) => isActivePath(pathname, href);
         <kbd>Ctrl K</kbd>
       </button>
 
-      <IconButton id="theme-toggle" label="Switch to light mode" tooltip="Light mode">
+      <Button variant="icon" id="theme-toggle" label="Switch to light mode" tooltip="Light mode">
         <Sun class="theme-icon-sun" size={19} aria-hidden="true" />
         <Moon class="theme-icon-moon" size={19} aria-hidden="true" />
-      </IconButton>
+      </Button>
 
       {aboutHref && (
-        <IconButton
+        <Button
+          variant="icon"
           href={aboutHref}
           navHref={aboutHref}
           label="About me"
+          tooltip
           current={isActive(aboutHref)}
         >
           <CircleUserRound size={19} aria-hidden="true" />
-        </IconButton>
+        </Button>
       )}
 
       {githubUrl && (
-        <IconButton href={githubUrl} label="GitHub" external>
+        <Button variant="icon" href={githubUrl} label="GitHub" tooltip external>
           <svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true">
             <path d={siGithub.path}></path>
           </svg>
-        </IconButton>
+        </Button>
       )}
     </div>
   </div>

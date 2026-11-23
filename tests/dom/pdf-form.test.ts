@@ -244,16 +244,16 @@ describe('table', () => {
   });
 
   it('adds a row, reports it and focuses the new row', () => {
-    click($('.btn', group('Items')));
+    click($('.btn:not(.btn-icon)', group('Items')));
     assert.equal(items().length, 2);
     assert.equal(rows().length, 2);
     assert.equal(changes, 1);
     assert.equal(dom.document.activeElement, $('input', rows()[1]));
-    assert.equal($('.btn', group('Items')).textContent, 'Add a line');
+    assert.equal($('.btn:not(.btn-icon)', group('Items')).textContent, 'Add a line');
   });
 
   it('removes a row, but never below the minimum', () => {
-    click($('.btn', group('Items')));
+    click($('.btn:not(.btn-icon)', group('Items')));
     click($('.row-remove', rows()[0]));
     assert.equal(items().length, 1);
     click($('.row-remove', rows()[0]));
@@ -265,7 +265,7 @@ describe('table', () => {
   it('honours minRows, default labels and column widths', () => {
     const plain = group('Plain table');
     assert.equal($$('.row', plain).length, 2);
-    assert.equal($('.btn', plain).textContent, 'Add row');
+    assert.equal($('.btn:not(.btn-icon)', plain).textContent, 'Add row');
     assert.match($('.rows-head', plain).style.getPropertyValue('--cols'), /^9rem 2rem$/);
     assert.equal($('.help', group('Items')).textContent, 'What you sold.');
   });
@@ -297,7 +297,7 @@ describe('list of cards', () => {
   });
 
   it('moves, duplicates and removes records', () => {
-    click($('.btn', group('Records')));
+    click($('.btn:not(.btn-icon)', group('Records')));
     assert.equal(records().length, 2);
     type($('input', cards()[0]) as HTMLInputElement, 'first');
     type($('input', cards()[1]) as HTMLInputElement, 'second');
@@ -330,15 +330,15 @@ describe('list of cards', () => {
     assert.equal((button(cards()[0], 'Remove') as HTMLButtonElement).disabled, true);
     const tags = group('Tags');
     assert.equal($$('.card', tags).length, 0);
-    click($('.btn', tags));
-    assert.equal($('.btn', tags).textContent, 'More tags');
+    click($('.btn:not(.btn-icon)', tags));
+    assert.equal($('.btn:not(.btn-icon)', tags).textContent, 'More tags');
     assert.equal((data.tags as Data[]).length, 1);
     click(button($('.card', tags), 'Remove'));
     assert.equal((data.tags as Data[]).length, 0);
   });
 
   it('adding focuses the new record, and long lists start collapsed', () => {
-    for (let i = 0; i < 3; i++) click($('.btn', group('Records')));
+    for (let i = 0; i < 3; i++) click($('.btn:not(.btn-icon)', group('Records')));
     assert.equal(records().length, 4);
     assert.equal($('.card-body', cards()[0]).hidden, true, 'more than three: collapsed');
     assert.equal($('.card-body', cards()[3]).hidden, false, 'the one just added is open');
@@ -425,13 +425,15 @@ describe('sheet', () => {
     assert.equal(sheet().rows[0][0], 'Pencil');
     click($('.row-remove', bodyRows()[0]));
     assert.equal(sheet().rows.length, 1);
-    click($$('.btn', group('Sheet')).find((b) => b.textContent === 'Add row')!);
+    click($$('.btn:not(.btn-icon)', group('Sheet')).find((b) => b.textContent === 'Add row')!);
     assert.deepEqual(sheet().rows[1], ['', '', '', '']);
     assert.equal(dom.document.activeElement, $$('input', bodyRows()[1])[0]);
   });
 
   it('adds columns (padding every row) up to 12, then stops', () => {
-    const add = $$('.btn', group('Sheet')).find((b) => b.textContent === 'Add column')!;
+    const add = $$('.btn:not(.btn-icon)', group('Sheet')).find(
+      (b) => b.textContent === 'Add column',
+    )!;
     click(add);
     assert.equal(sheet().columns.length, 5);
     assert.ok(sheet().rows.every((row) => row.length === 5));

@@ -10,12 +10,12 @@
  * (transition:persist) but disappears on reload. GIFs come from GIPHY, so the
  * panel always shows the "Powered by GIPHY" attribution.
  *
- * Bases: Avatar, IconButton. Content lives in config/chatbot.ts and the reply
+ * Bases: Avatar, Button. Content lives in config/chatbot.ts and the reply
  * picker in lib/ui/chatbot.ts.
  */
 import { Minus, SendHorizontal } from '@lucide/astro';
 import Avatar from '@zkevinly/ui/base/Avatar.astro';
-import IconButton from '@zkevinly/ui/base/IconButton.astro';
+import Button from '@zkevinly/ui/base/Button.astro';
 import { chatbot } from '../config/chatbot';
 ---
 
@@ -33,9 +33,9 @@ import { chatbot } from '../config/chatbot';
         <strong class="chat-name">{chatbot.name}</strong>
         <span class="chat-sub">GIFs & emoji only 🤐</span>
       </div>
-      <IconButton id="chat-collapse" label="Collapse chat" tooltip="Collapse">
+      <Button variant="icon" id="chat-collapse" label="Collapse chat" tooltip="Collapse">
         <Minus size={18} aria-hidden="true" />
-      </IconButton>
+      </Button>
     </header>
 
     <div id="chat-log" class="chat-log" role="log" aria-live="polite"></div>

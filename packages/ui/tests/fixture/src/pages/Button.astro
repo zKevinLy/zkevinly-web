@@ -25,3 +25,29 @@ import Button from '@zkevinly/ui/base/Button.astro';
     Go
   </Button>
 </test-case>
+<test-case id="icon-link">
+  <Button variant="icon" label="Home" tooltip href="/" navHref="/" id="home-btn">
+    <svg viewBox="0 0 1 1"></svg>
+  </Button>
+</test-case>
+<test-case id="icon-button">
+  <Button variant="icon" label="Theme" tooltip="Switch theme" id="theme-btn">
+    <svg viewBox="0 0 1 1"></svg>
+  </Button>
+</test-case>
+<test-case id="icon-current">
+  <Button variant="icon" label="Here" href="/here" current>
+    <svg viewBox="0 0 1 1"></svg>
+  </Button>
+</test-case>
+<test-case id="icon-small">
+  <Button variant="icon" size="sm" label="Move up" data-reorder-dir="-1">
+    <svg viewBox="0 0 1 1"></svg>
+  </Button>
+</test-case>
+<test-case id="copy">
+  <Button copy="npm i" />
+</test-case>
+<test-case id="copy-custom">
+  <Button variant="segment" copy="a && b" copyLabel="Grab" label="Copy the script" class="extra" />
+</test-case>

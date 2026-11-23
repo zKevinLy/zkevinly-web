@@ -81,7 +81,7 @@ export function renderForm(
   const iconButton = (glyph: string, label: string, onClick: () => void, disabled = false) => {
     const button = h(
       'button',
-      { type: 'button', class: 'mini-btn', 'aria-label': label, title: label },
+      { type: 'button', class: 'btn btn-icon btn-sm', 'aria-label': label, title: label },
       glyph,
     );
     button.disabled = disabled;
@@ -274,7 +274,7 @@ export function renderForm(
           'button',
           {
             type: 'button',
-            class: 'row-remove',
+            class: 'btn btn-icon btn-sm row-remove',
             'aria-label': `Remove ${rowLabel.toLowerCase()} ${index + 1}`,
           },
           '\u00d7',
@@ -464,7 +464,11 @@ export function renderForm(
           });
           const remove = h(
             'button',
-            { type: 'button', class: 'row-remove', 'aria-label': `Remove row ${r + 1}` },
+            {
+              type: 'button',
+              class: 'btn btn-icon btn-sm row-remove',
+              'aria-label': `Remove row ${r + 1}`,
+            },
             '\u00d7',
           );
           remove.addEventListener('click', () => {

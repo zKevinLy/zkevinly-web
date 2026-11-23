@@ -80,17 +80,7 @@ describe('@zkevinly/ui boundary', () => {
 
     // Hand-written copies of package markup (e.g. <div class="node">) belong in the package too.
     // (`tag` is left out: FilterBar reuses the pill style on a toggle <button>, which <Tags> can't render.)
-    const owned = [
-      'node',
-      'badge',
-      'btn',
-      'grid',
-      'tags',
-      'icon-btn',
-      'nav-link',
-      'copy-btn',
-      'cmd',
-    ];
+    const owned = ['node', 'badge', 'btn', 'grid', 'tags', 'nav-link', 'cmd'];
     const copies = appFiles.filter((f) =>
       new RegExp(`class="(?:${owned.join('|')})[ "]`).test(readFileSync(f, 'utf8')),
     );
